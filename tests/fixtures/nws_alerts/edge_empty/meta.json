@@ -1,0 +1,14 @@
+{
+  "source_id": "nws_alerts",
+  "captured_at": "2026-11-15T03:20:28.955944+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "active",
+      "url": "https://api.weather.gov/alerts?area=NY&limit=40",
+      "file": "active.json",
+      "fetched_at": "2026-11-15T03:20:28.955944+00:00"
+    }
+  ],
+  "note": "features = [] (no active alerts, the usual state)"
+}
