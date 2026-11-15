@@ -191,6 +191,7 @@ class Event:
 
 **Record rules**
 - Datetimes are tz-aware UTC, built only through `nyclive.timeutil`: `parse_iso_utc`,
+  `parse_naive_utc` (offset-less strings documented as UTC, e.g. NOAA `time_zone=gmt`),
   `from_epoch`, `local_to_utc(s, fmt)` (America/New_York; an ambiguous time takes the first
   occurrence).
 - `value` is a finite float. Booleans are 0.0/1.0. A missing value means no row.

@@ -23,7 +23,9 @@ def main(argv: list[str] | None = None) -> int:
     sub = p.add_subparsers(dest="cmd", required=True)
 
     pr = sub.add_parser("probe", help="check that registered feeds are reachable")
-    pr.add_argument("--phase", type=int, default=99, help="only sources used by this phase or earlier")
+    pr.add_argument(
+        "--phase", type=int, default=99, help="only sources used by this phase or earlier"
+    )
     pr.add_argument("--only", nargs="*", help="source ids to probe")
     pr.add_argument("--json", type=Path, help="write a JSON report here")
 

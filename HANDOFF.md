@@ -11,7 +11,7 @@ learned the hard way. Read it first, then `docs/ROADMAP.md`.
     `DECISIONS.md`, `DEV_SETUP.md`.
   - Source registry: `config/sources.yaml` (22 sources).
   - CLI: `uv run nyclive sources` and `uv run nyclive probe`.
-  - Tests: 3 offline tests pass, lint is clean.
+  - Tests: 30 offline tests pass, lint is clean.
 - **Last probe (2026-11-14):** 19 of 21 feeds healthy with no keys. OpenAQ and Bus Time were
   skipped because they need keys. `mta_subway_stations` was added afterwards and checked by hand.
 - **Plan review (2026-11-14):** an independent review tightened Phase 1 before any code. Changes:
@@ -22,6 +22,10 @@ learned the hard way. Read it first, then `docs/ROADMAP.md`.
   - The 311 cursor strategy was fixed (verified live).
   - Subway station locations were added as a source.
   - ROADMAP 1A step 1 (housekeeping) is done.
+- **1A step 2 done (2026-11-14):** `settings.py` (env + `.env`, data paths, UA, Socrata token as a
+  per-host header), `timeutil.py` (the only place times are parsed), `http.py` (`Http.get`: one
+  request at a time per host, 2 s gap, retries on network errors/429/5xx with Retry-After, 4xx fail
+  fast, raises `HttpError`). Smoke-tested live against NOAA.
 - **Repo:** public at https://github.com/alexxu2027/nyc-data (working name). MIT license. Ask
   before committing or pushing.
 - Research behind the plan: `docs/research/cv-and-video-feeds.md` (hardware limits, DOT cam
@@ -31,8 +35,8 @@ learned the hard way. Read it first, then `docs/ROADMAP.md`.
 Portfolio piece. All layers are in scope, replay comes after the live map, and it is a separate
 project from Tandem (ADR-001). Hardware: CPU-only Windows-on-ARM laptop now, an RTX 3050 PC later.
 
-## Next: ROADMAP Phase 1 → 1A, step 2
-Build 1A steps 2–7 in order, by hand, and stop at **Gate A** (noaa + Citi Bike collecting for 1 h,
+## Next: ROADMAP Phase 1 → 1A, step 3 (`model.py` + `sources/base.py`)
+Build 1A steps 3–7 in order, by hand, and stop at **Gate A** (noaa + Citi Bike collecting for 1 h,
 restart test green, as-of query works). Leave that collector running.
 
 After Gate A, the remaining adapters form 6 packages (ROADMAP 1B). They fit `/orchestrate` Tier 2
@@ -59,6 +63,8 @@ builders stay offline.
 - DOT speeds: `link_points` is truncated mid-coordinate; use `encoded_poly_line`.
 - NWS active alerts for NY can be empty; capture fixtures from `/alerts?area=NY`.
 - Open-Meteo: request `timeformat=unixtime`.
+- NOAA with `time_zone=gmt` returns `"2026-11-15 01:06"`: UTC with no offset. Use
+  `timeutil.parse_naive_utc`, never `local_to_utc`.
 - DOT speeds are about 2 h behind. FloodNet Open Data events are about 2 weeks behind.
 - DOT camera frames are 352×240, a new one every ~2 s: count objects per frame rather than track
   them (ADR-008).
