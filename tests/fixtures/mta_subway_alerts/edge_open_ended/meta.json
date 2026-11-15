@@ -1,0 +1,14 @@
+{
+  "source_id": "mta_subway_alerts",
+  "captured_at": "2026-11-15T03:20:30.993324+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "body",
+      "url": "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/camsys%2Fsubway-alerts.json",
+      "file": "body.json",
+      "fetched_at": "2026-11-15T03:20:30.993324+00:00"
+    }
+  ],
+  "note": "6 entities: 276422 Delays with its only period's end removed; 36463 Part Suspended with period[1] end removed, stop ids R30N/R30S and a route-only R selector; 36566 with no active_period and alert_type 'No Trains Running'; a copy of 36419 (id edge:long_description) with description x6; a duplicate of 276422; a non-alert entity"
+}
