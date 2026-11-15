@@ -1,0 +1,14 @@
+{
+  "source_id": "dot_traffic_speeds",
+  "captured_at": "2026-11-15T03:20:43.836479+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "page-000",
+      "url": "https://data.cityofnewyork.us/resource/i4gi-tjb9.json?$select=link_id,speed,travel_time,status,data_as_of,borough,link_name,encoded_poly_line,owner&$order=data_as_of%20DESC,:id&$limit=40",
+      "file": "page-000.json",
+      "fetched_at": "2026-11-15T03:20:43.836479+00:00"
+    }
+  ],
+  "note": "4 rows: link 4362250 twice (an older 20:37:05 copy with speed 30.5, travel_time 540, link_name OLD NAME, then the real 20:42:05 row); link 4362314 twice with identical rows"
+}
