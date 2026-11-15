@@ -111,10 +111,18 @@ see "Collector: start / stop" below.)
 - ✅ Wave 0 (conductor): `config/layers.yaml` (14 layers), `config/boroughs.geojson` (+
   `scripts/build_boroughs.py`), the `web/` scaffold (Vite 8, React 19, TS 6, MapLibre 6, Zustand 5,
   eslint, vitest), frozen `types.ts`, stubs; fastapi/uvicorn in the dev group.
-- ⏳ Wave 1 (parallel worktrees): U1 read-only API + `nyclive serve`, U2 transcript UI kit,
-  U3 web core (store, URL, polling, filters).
-- Then Gate W1 (merge; the dev harness shows live counts), wave 2 (U4 shell and panels, U5 map
-  and layers, U6 drawer), then integration, the browser acceptance list, and a Fable review.
+- ✅ Wave 1 merged (2026-11-15). Builders paused at the usage limit and were resumed with their
+  context.
+  - U1 API: 70 tests; api_smoke on live data passes every threshold (311 2.96 MB, 34 ms warm;
+    Citi Bike 304 on revalidate).
+  - U2 UI kit: 22 tests; Gallery at `/?gallery=1`.
+  - U3 core: 66 tests.
+- ✅ Gate W1: `nyclive serve` + the built app show live counts for all 14 layers (borough=BK +
+  Citi Bike filter → 180/2,519 stations, 206/974 cameras; health 14 ok).
+- ⏳ Wave 2 (parallel worktrees): U4 shell and panels, U5 map and layers, U6 drawer. Then
+  integration, the browser acceptance list, and a Fable review.
+- Run it: `cd web && npm run build`, then `uv run --no-sync nyclive serve`, then open
+  http://127.0.0.1:8000/. For dev: `nyclive serve` + `cd web && npm run dev` (port 5173).
 - **During the soak, use `uv run --no-sync` in the main checkout.** A plain `uv run` after a
   pyproject change tries to reinstall `nyclive.exe` while the collector holds it (os error 32).
 - Design brief: transcript-ui chrome, but a rich, colourful data map (colour-blind-safe ramps,
