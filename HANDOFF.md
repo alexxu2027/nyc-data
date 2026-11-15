@@ -104,8 +104,21 @@ see "Collector: start / stop" below.)
 - If the laptop sleeps or reboots, restart the collector; gaps are fine, the total just takes
   longer, but you need one unbroken 24 h stretch.
 
-## Next: Phase 2 (live map) can start now, while the soak runs
-FastAPI read-only API over state.db + archive, then Vite/React/MapLibre. See ROADMAP Phase 2.
+## Phase 2 (live map) in progress (2026-11-15), via /orchestrate Tier 2
+- Plan: one Fable planner call, saved to `.orchestrate/p2/plan.md` (gitignored, local). It has 7
+  units and frozen interfaces: §1 `config/layers.yaml`, §2 HTTP API, §3 `web/src/types.ts`,
+  §4 store, §5 URL format, §6 UI kit, §7 layout and map styling.
+- ✅ Wave 0 (conductor): `config/layers.yaml` (14 layers), `config/boroughs.geojson` (+
+  `scripts/build_boroughs.py`), the `web/` scaffold (Vite 8, React 19, TS 6, MapLibre 6, Zustand 5,
+  eslint, vitest), frozen `types.ts`, stubs; fastapi/uvicorn in the dev group.
+- ⏳ Wave 1 (parallel worktrees): U1 read-only API + `nyclive serve`, U2 transcript UI kit,
+  U3 web core (store, URL, polling, filters).
+- Then Gate W1 (merge; the dev harness shows live counts), wave 2 (U4 shell and panels, U5 map
+  and layers, U6 drawer), then integration, the browser acceptance list, and a Fable review.
+- **During the soak, use `uv run --no-sync` in the main checkout.** A plain `uv run` after a
+  pyproject change tries to reinstall `nyclive.exe` while the collector holds it (os error 32).
+- Design brief: transcript-ui chrome, but a rich, colourful data map (colour-blind-safe ramps,
+  clustering, pulses, halos).
 
 ## Collector: start / stop
 `uv run nyclive collect --keep-awake` starts it (it doesn't survive a reboot). To stop it: Task
