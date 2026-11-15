@@ -3,8 +3,10 @@
 Commands planned per docs/ROADMAP.md:
   probe     check every registered feed (available now)
   sources   list the registry (available now)
-  collect   run collectors on their schedules          (Phase 1)
-  capture   record a fixture payload for tests         (Phase 1)
+  collect   run collectors on their schedules          (available now)
+  status    per-source health from state.db            (available now)
+  compact   merge closed days in the archive           (available now)
+  capture   record a fixture payload for tests         (available now)
   serve     run the API                                (Phase 2)
   cv        run the camera counting worker             (Phase 4)
 """
@@ -40,8 +42,20 @@ def main(argv: list[str] | None = None) -> int:
     ca.add_argument("--note", default="", help="note stored in meta.json")
     ca.add_argument("--force", action="store_true", help="replace an existing case")
 
+    co = sub.add_parser("collect", help="run collectors on their schedules")
+    co.add_argument("--only", nargs="+", metavar="ID", help="collect only these sources")
+    co.add_argument("--once", action="store_true", help="run each source once and exit")
+    co.add_argument("--keep-awake", action="store_true", help="stop Windows sleeping meanwhile")
+    co.add_argument("-v", "--verbose", action="store_true")
+
+    sub.add_parser("status", help="per-source health from state.db")
+    sub.add_parser("compact", help="compact closed days and export their runs")
+
     args = p.parse_args(argv)
     reg = load_registry()
+
+    if args.cmd in {"collect", "status", "compact"}:
+        return _storage_command(args, reg)
 
     if args.cmd == "capture":
         from nyclive.capture import capture, parse_part_args
@@ -73,6 +87,48 @@ def main(argv: list[str] | None = None) -> int:
             print(f"P{s.phase}  {s.id:<26} {s.shape:<12} {cadence:<10} {s.status:<10} {s.name}")
         return 0
     return 2
+
+
+def _storage_command(args, reg) -> int:
+    from nyclive.collect.scheduler import Collector, SingleInstance, keep_awake, setup_logging
+    from nyclive.settings import load_settings
+    from nyclive.storage.state import StateStore
+    from nyclive.timeutil import now_utc
+
+    settings = load_settings()
+    if args.cmd == "status":
+        from nyclive.status import render, source_rows
+
+        _utf8_console()
+        if not settings.state_db.exists():
+            print(f"no state yet at {settings.state_db}; run `nyclive collect` first")
+            return 1
+        with StateStore(settings.state_db) as store:
+            print(render(source_rows(reg, store, now_utc())))
+        return 0
+
+    setup_logging(settings.logs_dir, verbose=getattr(args, "verbose", False))
+    with SingleInstance(settings.data_dir / "collect.lock"):
+        collector = Collector(reg, settings, only=getattr(args, "only", None))
+        try:
+            if args.cmd == "compact":
+                collector.maintenance()
+                return 0
+            if args.once:
+                results = collector.run_all_once()
+                return 0 if all(r.ok for r in results) else 1
+            if args.keep_awake and not keep_awake():
+                print("--keep-awake only works on Windows; continuing without it")
+            collector.run_forever()
+            return 0
+        finally:
+            collector.close()
+
+
+def _utf8_console() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
 
 
 if __name__ == "__main__":

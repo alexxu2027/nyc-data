@@ -11,7 +11,7 @@ import sqlite3
 import threading
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Self
 
@@ -160,6 +160,14 @@ class StateStore:
             (start, end),
         )
         return [dict(r) for r in rows]
+
+    def run_days_before(self, cutoff: str) -> list[date]:
+        """UTC days (before `cutoff`, an ISO date) that have runs in state.db."""
+        rows = self._all(
+            "SELECT DISTINCT substr(started_at, 1, 10) FROM runs WHERE started_at < ? ORDER BY 1",
+            (cutoff,),
+        )
+        return [date.fromisoformat(r[0]) for r in rows]
 
     def count(self, table: str, source: str | None = None) -> int:
         if table not in {"entities", "latest", "events", "runs", "source_state"}:

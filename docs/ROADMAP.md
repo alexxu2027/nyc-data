@@ -40,7 +40,7 @@ the soak test is wall-clock time, so Phase 2 scaffolding may start while it runs
    `citibike` (multi-part, change-only, sentinel).
 6. ✅ (2026-11-14) `storage/state.py`, `storage/archive.py`, `collect/pipeline.py` (`run_once`: fetch → parse →
    write, per ADR-011).
-7. `collect/scheduler.py`, `nyclive collect [--only ids] [--once] [--keep-awake]`, `nyclive status`.
+7. ✅ (2026-11-14) `collect/scheduler.py`, `nyclive collect [--only ids] [--once] [--keep-awake]`, `nyclive status`.
 
 **Gate A:** `nyclive collect --only noaa_tide_battery citibike_gbfs citibike_station_status` runs
 1 h, the restart test passes, and an as-of DuckDB query returns ≥ 2,000 Citi Bike stations for a

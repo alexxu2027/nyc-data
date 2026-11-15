@@ -42,6 +42,8 @@ git clone https://github.com/alexxu2027/nyc-data && cd nyc-data
 uv sync                      # Python 3.12 env + deps
 uv run nyclive sources       # list every registered feed
 uv run nyclive probe         # check they're all reachable right now
+uv run nyclive collect       # start collecting (Ctrl+C to stop); data goes to ./data
+uv run nyclive status        # health of each collected source
 uv run pytest                # offline tests (add -m live for network tests)
 ```
 No API keys are needed for anything in Phases 1–4.

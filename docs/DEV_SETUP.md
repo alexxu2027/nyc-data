@@ -13,6 +13,16 @@ uv run nyclive probe           # feed health table
 uv run ruff check src tests    # lint
 ```
 
+Collecting:
+```bash
+uv run nyclive collect --keep-awake      # all sources with an adapter; Ctrl+C stops it
+uv run nyclive collect --once --only citibike_station_status   # one run, then exit
+uv run nyclive status                    # per-source health (works while collecting)
+uv run nyclive compact                   # compact closed days (collect also does this)
+```
+Logs: `data/logs/collect.log` (UTC, rotated daily, 14 kept). Only one collector can run per data
+dir (`data/collect.lock`).
+
 Optional extras get installed when their phase starts:
 ```bash
 uv sync --extra api            # Phase 2: FastAPI, uvicorn

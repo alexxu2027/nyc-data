@@ -11,7 +11,7 @@ learned the hard way. Read it first, then `docs/ROADMAP.md`.
     `DECISIONS.md`, `DEV_SETUP.md`.
   - Source registry: `config/sources.yaml` (22 sources).
   - CLI: `uv run nyclive sources` and `uv run nyclive probe`.
-  - Tests: 108 offline tests pass, lint is clean.
+  - Tests: 114 offline tests pass, lint is clean.
 - **Last probe (2026-11-14):** 19 of 21 feeds healthy with no keys. OpenAQ and Bus Time were
   skipped because they need keys. `mta_subway_stations` was added afterwards and checked by hand.
 - **Plan review (2026-11-14):** an independent review tightened Phase 1 before any code. Changes:
@@ -44,6 +44,10 @@ learned the hard way. Read it first, then `docs/ROADMAP.md`.
   change-only + daily keyframe, event version log + closing on complete feeds, invalid records
   dropped not fatal, `WRITE_LOCK`). Restart and isolation acceptance tests live in
   `tests/test_pipeline.py`. Live smoke: 2,519 stations as-of; a repeat Citi Bike run wrote 0 rows.
+- **1A step 7 done (2026-11-14):** `collect/scheduler.py` (`Collector`: APScheduler jobs, backoff
+  after 3 failures → `degraded`, startup + 01:15 UTC maintenance, `SingleInstance` lock,
+  `keep_awake`, UTC rotating log), `status.py`, CLI `collect [--only] [--once] [--keep-awake]`,
+  `status`, `compact`. Isolation acceptance test in `tests/test_scheduler.py`.
 - **Repo:** public at https://github.com/alexxu2027/nyc-data (working name). MIT license. Ask
   before committing or pushing.
 - Research behind the plan: `docs/research/cv-and-video-feeds.md` (hardware limits, DOT cam
@@ -53,8 +57,8 @@ learned the hard way. Read it first, then `docs/ROADMAP.md`.
 Portfolio piece. All layers are in scope, replay comes after the live map, and it is a separate
 project from Tandem (ADR-001). Hardware: CPU-only Windows-on-ARM laptop now, an RTX 3050 PC later.
 
-## Next: ROADMAP Phase 1 → 1A, step 7 (scheduler, `nyclive collect`, `nyclive status`)
-Build 1A step 7 in order, by hand, and stop at **Gate A** (noaa + Citi Bike collecting for 1 h,
+## Next: ROADMAP Phase 1 → Gate A (1 h live run of the three 1A sources)
+Finish Gate A in order, by hand, and stop at **Gate A** (noaa + Citi Bike collecting for 1 h,
 restart test green, as-of query works). Leave that collector running.
 
 After Gate A, the remaining adapters form 6 packages (ROADMAP 1B). They fit `/orchestrate` Tier 2
