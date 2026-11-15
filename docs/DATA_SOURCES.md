@@ -4,7 +4,8 @@ The machine-readable registry is [`config/sources.yaml`](../config/sources.yaml)
 each source. Re-verify any time with `uv run nyclive probe`.
 
 **Last full probe:** 2026-11-14. 19 of 21 sources returned HTTP 200 with the expected content
-without a key. The other 2 were skipped because they need free keys. Report:
+without a key. The other 2 were skipped because they need free keys. `mta_subway_stations` (the
+22nd) was added and checked by hand the same day. Report:
 `data/probe/2026-11-14.json` (local only).
 
 ## Phase 1 sources (all keyless)
@@ -38,15 +39,25 @@ without a key. The other 2 were skipped because they need free keys. Report:
 - `…/mtagtfsfeeds/nyct%2Fnyct_ene.json`. Fields: station, trainno, equipment,
   equipmenttype (EL/ES), serving, ADA, outagedate, estimatedreturntoservice.
 - Quirks: dates are local-time strings like `12/16/2026 10:00:00 PM`, and the feed includes
-  **planned future** outages.
+  **planned future** outages. Records have no station id and an empty `borough`; join
+  `equipment` → `equipmentno` in `nyct%2Fnyct_ene_equipments.json` (`elevatorsgtfsstopid`,
+  `stationcomplexid`), then to `mta_subway_stations`. The `Content-Type` header is broken
+  (`${header.s3FileType}`), so never branch on it. `estimatedreturntoservice` is an estimate,
+  not an end time.
+
+**MTA subway stations** (`mta_subway_stations`)
+- data.ny.gov `39hk-dx4f`: `gtfs_stop_id`, `complex_id`, `stop_name`, `gtfs_latitude/longitude`,
+  `borough` as `M/Bk/Q/Bx/SI`. Daily refresh is plenty. Pins alerts and outages to stations.
 
 **MTA subway realtime** (`mta_subway_realtime`, Phase 5)
 - Protobuf feeds per line group: `nyct%2Fgtfs` (1–7, S), `-ace`, `-bdfm`, `-g`, `-jz`, `-nqrw`,
   `-l`, `-si`. Parse with `gtfs-realtime-bindings`, and use static GTFS for stop locations.
 
 **DOT real-time traffic speeds** (`dot_traffic_speeds`)
-- Socrata dataset `i4gi-tjb9`. Fields: `speed`, `travel_time`, `link_points` ("lat,lon lat,lon …"),
-  `data_as_of`, `link_id`, borough.
+- Socrata dataset `i4gi-tjb9`. Fields: `speed`, `travel_time`, `encoded_poly_line`,
+  `link_points`, `data_as_of`, `link_id`, borough.
+- Build geometry from `encoded_poly_line` (Google polyline). `link_points` is **truncated**
+  mid-coordinate. `data_as_of` is New York local with no offset.
 - Quirk: the newest row was about 2 h old at probe time, so label it "near-live".
 
 ### Water & weather
@@ -71,20 +82,26 @@ without a key. The other 2 were skipped because they need free keys. Report:
 **NWS alerts** (`nws_alerts`)
 - `https://api.weather.gov/alerts/active?area=NY` (GeoJSON). Filter by `geocode.SAME` ∈
   {036005, 036047, 036061, 036081, 036085}.
-- NWS asks for a User-Agent with contact info. Set `NYCLIVE_USER_AGENT` if you want to add one.
+- NWS asks for a User-Agent with contact info. The default UA carries the repo URL;
+  `NYCLIVE_USER_AGENT` overrides it.
+- Active alerts can be empty (221 bytes at probe time). Capture alert fixtures from
+  `/alerts?area=NY` (recent, including expired) so tests have real features.
 
 **Open-Meteo** (`openmeteo_current`)
 - `api.open-meteo.com/v1/forecast` with comma-separated lat/lon for 5 borough points;
-  `current=temperature_2m,precipitation,rain,wind_speed_10m`. Free for non-commercial use, no key.
+  `current=temperature_2m,precipitation,rain,wind_speed_10m&timeformat=unixtime`. Free for
+  non-commercial use, no key.
 
 ### City services & safety (NYC Open Data / Socrata)
 Base: `https://data.cityofnewyork.us/resource/<id>.json`, with SoQL params `$where`, `$order`,
 `$limit`, `$offset`. An optional free `SOCRATA_APP_TOKEN` header (`X-App-Token`) raises limits.
+Timestamps without an offset are **New York local**. Always send `$select`, a first-run lookback
+and a page cap; each dataset's cursor column is in its registry notes.
 
 | id | Dataset | Key field | Lag observed | Notes |
 |---|---|---|---|---|
-| `nyc_311` | `erm2-nwe9` 311 Service Requests | `unique_key` | ~1 day | Rows update when closed, so upsert. Pull incrementally |
-| `nyc_collisions` | `h9gi-nx95` Motor Vehicle Collisions | `collision_id` | ~3 days | Some rows have no lat/lon |
+| `nyc_311` | `erm2-nwe9` 311 Service Requests | `unique_key` | 1–2 days, daily refresh | Don't cursor on `:updated_at` (bulk-rewritten). Two queries: new by `created_date`, closures by `closed_date` (registry notes). Poll every 6 h |
+| `nyc_collisions` | `h9gi-nx95` Motor Vehicle Collisions | `collision_id` | ~3 days | Some rows have no lat/lon. `crash_date` + `crash_time` are separate local fields |
 | `dot_traffic_speeds` | `i4gi-tjb9` | `link_id` + `data_as_of` | ~2 h | See above |
 
 ## Phase 5 extras
@@ -101,7 +118,6 @@ Base: `https://data.cityofnewyork.us/resource/<id>.json`, with SoQL params `$whe
   (explain empty or blocked cams), **restaurant inspections**, **DOB permits**, **rat sightings**
   (a 311 subset).
 - **NYC flood hazard maps** (stormwater and coastal) as a static context layer.
-- **Static GTFS** for subway station locations, needed for alert and outage pins.
 - **Borough and NTA boundaries** (static GeoJSON).
 - **USGS stream gauges** near NYC (Bronx River).
 

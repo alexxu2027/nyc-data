@@ -27,3 +27,8 @@ Thumbs.db
 
 # Orchestrate scratch
 .orchestrate/
+
+# Local state
+.claude/settings.local.json
+*.db
+*.parquet

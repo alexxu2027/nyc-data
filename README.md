@@ -7,8 +7,12 @@ Toggle layers for Citi Bike docks, subway alerts, street-level flood sensors, ti
 how many cars, people and bikes a vision model is counting there. Later, drag a time slider back
 over a storm and watch the city react.
 
-> Status: **Phase 0 — foundations.** Docs, source registry and the feed probe are done; collectors are next.
-> See [`HANDOFF.md`](HANDOFF.md) for exactly where things stand.
+> **Status: early.** Working today: the source registry (22 feeds), a feed health probe, and tests.
+> In progress: collectors and the archive (Phase 1). Not built yet: the map, replay and camera
+> counting. See [docs/ROADMAP.md](docs/ROADMAP.md) for the plan and [`HANDOFF.md`](HANDOFF.md) for
+> exactly where things stand.
+
+The paragraph above the status box describes the goal, not what exists yet.
 
 ## Why this exists
 NYC publishes an enormous amount of data, but it lives in a dozen formats on a dozen sites, most of
@@ -28,11 +32,13 @@ replay), a real map UI, and applied computer vision on low-quality public video.
 | [docs/DATA_MODEL.md](docs/DATA_MODEL.md) | Entities / observations / events schemas and storage layout |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Phases with tasks and acceptance criteria |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Architecture decision records (why X over Y) |
-| [docs/DEV_SETUP.md](docs/DEV_SETUP.md) | Setting up on this laptop (Windows on ARM) and later the RTX 3050 PC |
+| [docs/DEV_SETUP.md](docs/DEV_SETUP.md) | Setup (Windows on ARM laptop now, RTX 3050 PC later) |
 | [config/sources.yaml](config/sources.yaml) | Machine-readable source registry (the source of truth) |
 
 ## Quickstart
+Prerequisites: [uv](https://docs.astral.sh/uv/) and git. uv installs Python 3.12 for you.
 ```bash
+git clone https://github.com/alexxu2027/nyc-data && cd nyc-data
 uv sync                      # Python 3.12 env + deps
 uv run nyclive sources       # list every registered feed
 uv run nyclive probe         # check they're all reachable right now
@@ -45,3 +51,6 @@ All sources are public. NYC Live counts and aggregates; it does **not** do face 
 recognition or track individuals, and camera frames are kept only briefly (see PRD §8).
 Data belongs to its publishers — NYC DOT, NYC Open Data, MTA, Lyft/Citi Bike, NOAA, NWS,
 FloodNet (NYU/CUNY/NYC), Open-Meteo and others; attribution is shown in the app.
+
+## License
+Code is [MIT](LICENSE). Data and fixture samples belong to their publishers.

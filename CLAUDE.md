@@ -6,8 +6,9 @@
 - Ask before committing or pushing.
 - `config/sources.yaml` is the source of truth for feeds. Add a source there first, then update
   `docs/DATA_SOURCES.md`, then write the adapter.
-- Adapters: `fetch` does network only, and `parse` is pure and tested on fixtures in
-  `tests/fixtures/<source>/`. `pytest` must never hit the network unless marked `live`.
+- Adapters follow DATA_MODEL "Adapter contract v1" (frozen at Gate A; change it only with an ADR).
+  `fetch` does network only, and `parse` is pure and tested on fixtures in
+  `tests/fixtures/<id>/<case>/`. `pytest` must never hit the network unless marked `live`.
 - Store times in UTC and render in America/New_York. Normalize boroughs to MN/BK/QN/BX/SI.
 - Phases 1–4 must stay keyless (a test enforces it). Never commit `.env` or anything in `data/`.
 - Be polite to public APIs: respect cadences and TTLs, and send one request at a time per host.

@@ -11,10 +11,10 @@ def test_registry_loads_and_validates():
         assert s.phase >= 1
 
 
-def test_every_phase1_source_is_keyless():
-    """The MVP must run with zero API keys (docs/DECISIONS.md, ADR-007)."""
+def test_phases_1_to_4_are_keyless():
+    """Phases 1-4 must run with zero API keys (docs/DECISIONS.md, ADR-007)."""
     reg = load_registry()
-    keyed = [s.id for s in reg.by_phase(1) if s.key_env]
+    keyed = [s.id for s in reg.by_phase(4) if s.key_env]
     assert keyed == []
 
 

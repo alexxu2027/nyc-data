@@ -8,7 +8,7 @@ bottom.
 
 ## Phase 0: Foundations ✅ (2026-11-14)
 - [x] PRD, architecture, data model, data sources, decisions, dev setup docs
-- [x] Source registry `config/sources.yaml` (21 sources)
+- [x] Source registry `config/sources.yaml` (21 sources; 22 with `mta_subway_stations`, added in the 2026-11-14 plan review)
 - [x] `nyclive sources`, `nyclive probe` with JSON report
 - [x] Registry tests (offline) plus a live probe test (`-m live`)
 - [x] Probe: 19 of 21 healthy, 2 skipped because they need keys
@@ -21,31 +21,73 @@ bottom.
 **Goal:** every Phase 1 source is polled on schedule, normalized and archived, so history starts
 accumulating.
 
-Tasks, in order:
-1. `settings.py`: data dir, UA, optional tokens, from env.
-2. `http.py`: shared client with timeouts, retries, per-host gap, and backoff.
-3. `model.py`: Entity, Observation and Event dataclasses plus Arrow schemas.
-4. `storage/state.py` (SQLite WAL) and `storage/archive.py` (Parquet append and `compact`).
-5. `nyclive capture <source>`: save fixtures. Capture one of each Phase 1 source.
-6. Adapters, each with parser tests on fixtures, roughly easiest first:
-   `noaa_tide_battery` → `openmeteo_current` → `nws_alerts` → `dot_cameras` → `citibike_*` →
-   `mta_elevator_outages` → `mta_subway_alerts` → `floodnet_sensors/events` → `nyc_311` →
-   `nyc_collisions` → `dot_traffic_speeds`.
-7. `collect/scheduler.py` and `nyclive collect`: jobs from the registry, health rows, change-only
-   writes, upserts.
-8. `nyclive compact` (nightly) and `nyclive status` (prints source health).
-9. **Spike (time-boxed to 2 h):** FloodNet live via FieldKit project 174. Record the outcome in
-   DECISIONS.md.
-10. Run collectors for 48 h and measure actual storage per source. Update ARCHITECTURE §5.
+Phase 1 has three stages. 1A builds one thin path end to end, so the adapter contract is tested
+on real data before it is copied 11 times. 1B fans out the remaining adapters. 1C is hardening;
+the soak test is wall-clock time, so Phase 2 scaffolding may start while it runs.
+
+### 1A. Walking skeleton (sequential; ends with collectors running)
+1. ✅ Housekeeping (2026-11-14): `.python-version` (3.12), `.gitattributes` (LF, fixtures binary),
+   pyarrow / duckdb / apscheduler (<4) / tzdata moved into core deps, keyless test covers Phases 1–4,
+   MIT LICENSE, public repo.
+2. `settings.py`, `timeutil.py` (`parse_iso_utc`, `from_epoch`, `local_to_utc`), `http.py`
+   (tests use `httpx.MockTransport`).
+3. `model.py` (records, `KINDS` / `METRICS` / `CATEGORIES`, `borough_code`, Arrow schemas) and
+   `sources/base.py`, exactly as DATA_MODEL "Adapter contract v1".
+4. `nyclive capture <source> [--part name=url ...] [--case real]` and `tests/helpers.py`
+   (`load_fixture`, `assert_valid_batch`).
+5. Reference adapters, written by hand: `noaa_tides` (cursor, entity + observations) and
+   `citibike` (multi-part, change-only, sentinel).
+6. `storage/state.py`, `storage/archive.py`, `collect/pipeline.py` (`run_once`: fetch → parse →
+   write, per ADR-011).
+7. `collect/scheduler.py`, `nyclive collect [--only ids] [--once] [--keep-awake]`, `nyclive status`.
+
+**Gate A:** `nyclive collect --only noaa_tide_battery citibike_gbfs citibike_station_status` runs
+1 h, the restart test passes, and an as-of DuckDB query returns ≥ 2,000 Citi Bike stations for a
+chosen minute. Leave it running from here. The adapter contract is now frozen as v1.
+
+### 1B. Remaining adapters (parallel-safe; builders work offline)
+8. Conductor: `sources/_socrata.py` (paging, `$select`, lookback, page cap); capture `real` fixtures for every remaining source.
+9. Packages, each owning only its module(s), `tests/fixtures/<id>/` and
+   `tests/sources/test_<module>.py`:
+   - B1 `openmeteo`, `nws_alerts`
+   - B2 `dot_cameras`
+   - B3 `mta_stations`, `mta_alerts`, `mta_elevators`
+   - B4 `floodnet` (sensors, events)
+   - B5 `nyc_311`, `nyc_collisions`
+   - B6 `dot_speeds`
+
+   Run B1 alone first as a pilot of the workflow (`/orchestrate` Tier 2), then the rest in parallel.
+10. Conductor: set `adapter:` in the registry, extend enums from builder handbacks, run
+    `nyclive collect --once --only <id>` live for each, update DATA_SOURCES.
+
+**Gate B:** the conformance test is green for every source with an adapter, and all of them are in
+the running collector.
+
+### 1C. Hardening
+11. `nyclive compact` (idempotent; runs at startup and daily for closed days).
+12. **Spike (time-boxed to 2 h):** FloodNet live via FieldKit project 174 (ADR-010). Any time after
+    Gate A. Record the outcome in DECISIONS.md.
+13. Soak test (see criteria). Measure storage and CPU per source and replace the estimates in
+    ARCHITECTURE §5.
 
 **Acceptance criteria**
-- [ ] `uv run nyclive collect` runs unattended for 24 h with no crash. A source that fails doesn't
-  stop the others.
-- [ ] Every Phase 1 source has ≥ 1 parser test on a real fixture, including at least one edge case.
-- [ ] After killing and restarting `collect`, there are no duplicate keys in the archive (a test
-  proves it).
-- [ ] `nyclive status` shows last success and lag for every source.
-- [ ] Measured storage is ≤ 1 GB/day.
+- [ ] Conformance test: every registry source with `adapter` set has `tests/fixtures/<id>/real/`
+  and at least one `edge_*` case (edge cases may be hand-derived from a real capture, noted in
+  `meta.json`), and `parse()` passes `assert_valid_batch`.
+- [ ] Restart test: run the pipeline on a fixture, crash after the archive write and before the
+  state commit, rerun, compact. Zero duplicate natural keys through archive reads and in the
+  compacted file.
+- [ ] Isolation test: a fake adapter that always raises goes `degraded`; the other sources keep
+  writing.
+- [ ] Soak: 48 h of `nyclive collect --keep-awake` in total, including at least one unbroken 24 h
+  run (it must cross a UTC midnight). From `runs`, every source has ≥ 95% successful scheduled runs
+  while the collector was up, and the process never exits on its own.
+- [ ] `nyclive status` prints last success, consecutive failures, rows in last run and data lag per
+  source.
+- [ ] Measured archive growth ≤ 150 MB/day after compaction, one file per closed day partition, and
+  collector CPU < 5% average. Measured numbers replace the estimates in ARCHITECTURE §5.
+- [ ] As-of smoke: Citi Bike state at a chosen minute comes from one day partition, ≥ 2,000
+  stations, < 2 s.
 
 ---
 
@@ -65,7 +107,8 @@ Tasks:
 8. Static borough/NTA boundaries for filtering and the neighborhood outline.
 
 **Acceptance criteria**
-- [ ] ≥ 12 layers toggleable. Each has a legend, attribution and at least one filter.
+- [ ] ≥ 10 layers toggleable. Each has a legend and attribution; the borough filter counts as a
+  filter, and layers with many features have at least one more.
 - [ ] Borough filter applies to all layers. URL reproduces the view exactly.
 - [ ] First useful render < 3 s locally. Layer refresh polling doesn't flash or jank.
 - [ ] Clicking a camera shows its live frame. Bulk thumbnails are never loaded.
@@ -89,6 +132,8 @@ Gaps are visibly marked.
 
 ## Phase 4: Cameras as sensors (CV)
 **Goal:** counts of cars, people and bikes on ~20 cameras as a map layer.
+- **Spike first (30 min):** benchmark `yolo11n`/`yolo11s` at `imgsz=1280` on the laptop under x64
+  emulation. Size the watchlist from the measured frames/s before planning the rest.
 - `config/watchlist.yaml`: pick ~20 good cameras (clear view, near FloodNet sensors and busy Citi
   Bike stations), with ROI polygons.
 - `cv/detector.py` (Ultralytics, CPU/CUDA switch) and `cv/worker.py` (`nyclive cv`).

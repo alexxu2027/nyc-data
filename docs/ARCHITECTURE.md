@@ -36,8 +36,9 @@ Status: design v1 (2026-11-14). Decisions referenced as ADR-n live in [DECISIONS
 ```
 
 There are three processes, and each one can be restarted independently:
-- `collect` is the only writer to `state.db` and `archive/`.
-- `cv` writes counts through the same storage module and is the only writer to `images/`.
+- Writers are `collect`, `cv` and `compact`, all through the storage module (one SQLite writer
+  at a time, `busy_timeout` set).
+- `cv` is the only writer to `images/`.
 - `serve` is read-only.
 
 ## 2. Repository layout (target)
@@ -52,17 +53,21 @@ nyc-live/
     registry.py                load/validate sources.yaml           ✅
     probe.py                   feed health check                    ✅
     settings.py                env + paths (data dir, UA, tokens)
+    timeutil.py                parse_iso_utc, from_epoch, local_to_utc (America/New_York)
     http.py                    shared client: timeouts, retries, backoff, per-host rate limit
-    model.py                   Entity / Observation / Event dataclasses + Arrow schemas
+    model.py                   Entity / Observation / Event, KINDS/METRICS/CATEGORIES, borough_code, Arrow schemas
     storage/
       state.py                 SQLite latest-state store
       archive.py               Parquet append + nightly compaction
       query.py                 DuckDB helpers for history/replay
     sources/                   one adapter module per source id
-      base.py                  Adapter protocol: fetch() → raw, parse(raw) → records
-      dot_cameras.py  citibike.py  mta_alerts.py  mta_elevators.py  noaa_tides.py
-      openmeteo.py  nws_alerts.py  floodnet.py  socrata.py (311, collisions, speeds)
+      base.py                  RawPayload, FetchContext, Batch (DATA_MODEL "Adapter contract v1")
+      _socrata.py              shared Socrata paging/$select/lookback helper (conductor-owned)
+      dot_cameras.py  citibike.py  noaa_tides.py  openmeteo.py  nws_alerts.py
+      mta_stations.py  mta_alerts.py  mta_elevators.py  floodnet.py
+      nyc_311.py  nyc_collisions.py  dot_speeds.py
     collect/
+      pipeline.py              run_once: fetch → parse → write (ADR-011)
       scheduler.py             APScheduler jobs from the registry; isolation + health rows
     api/
       app.py                   FastAPI app
@@ -72,8 +77,9 @@ nyc-live/
       worker.py                fetch frame → detect → count → write
       detector.py              Ultralytics wrapper (CPU/CUDA)
   tests/
-    fixtures/<source>/*.json   recorded payloads (nyclive capture)
-    test_<source>.py           parser tests, offline
+    fixtures/<id>/<case>/      recorded payloads + meta.json (nyclive capture)
+    sources/test_<module>.py   parser tests, offline
+    helpers.py                 load_fixture, assert_valid_batch
   web/                         Vite React app (Phase 2)
   data/                        gitignored: state.db, archive/, images/, probe/, logs/
   docs/
@@ -81,26 +87,27 @@ nyc-live/
 
 ## 3. Collectors
 
-**Adapter contract** (`sources/base.py`):
-```python
-class Adapter(Protocol):
-    source_id: str
-    def fetch(self, client: Http) -> RawPayload: ...                    # network only
-    def parse(self, raw: RawPayload, fetched_at: datetime) -> Batch: ...  # pure, unit-tested
-# Batch = entities: list[Entity], observations: list[Observation], events: list[Event]
-```
+**Adapter contract:** pinned in [DATA_MODEL.md](DATA_MODEL.md) → "Adapter contract v1". In short,
+each module in `sources/` exposes `SOURCE_IDS`, `fetch(ctx) -> RawPayload` (network only, gets
+the cursor in `ctx`) and `parse(raw) -> Batch` (pure). A module may serve several registry ids.
 - `parse` is a **pure function** of the payload. Tests feed it fixtures, so no network is involved.
-- The scheduler builds one job per source from `cadence_s`. Each job wraps fetch, parse, write in
+- The scheduler builds one job per source from `cadence_s`. APScheduler 3.x with a thread pool
+  of 4, `coalesce=True`, `max_instances=1`, and all storage writes behind one lock.
+  `--keep-awake` calls `SetThreadExecutionState` so Windows doesn't sleep. stdout is reconfigured
+  to UTF-8 (`errors="replace"`) so `status` can't crash on a cp1252 console.
+- Each job wraps fetch, parse, write in
   try/except and records a row in `source_health`: last attempt, last success, last error,
-  consecutive failures, rows written.
+  consecutive failures, rows written. Every run also appends to `runs` (ADR-011).
 - **Failure policy:** after 3 consecutive failures, back off exponentially (capped at 30 min) and
   mark the source `degraded`. The other sources are unaffected.
 - **Politeness:** one shared `httpx.Client`, a 25 s timeout, a 2 s minimum gap per host, honoring
-  `ttl`/`Retry-After`, and a User-Agent from `NYCLIVE_USER_AGENT`.
+  `ttl`/`Retry-After`, and a User-Agent with the repo URL (override with `NYCLIVE_USER_AGENT`).
+  Never branch on `Content-Type` (the MTA elevator feed sends a broken one).
 - **Dedupe:** every record has a natural key (see DATA_MODEL). Observations are written only if the
-  value changed since the last write for that key, which matters for Citi Bike. Events are upserted
-  on `event_id`, and a payload hash avoids rewriting events that haven't changed.
-- **Raw capture:** `nyclive capture <source>` saves one raw payload to `tests/fixtures/<source>/`.
+  value changed since the last write for that key, which matters for Citi Bike. Each day also starts with a
+  keyframe. Events are upserted on `event_id` in `state.db`; the archive keeps one row per
+  version (payload hash), and events that leave a complete feed are closed (ADR-011).
+- **Raw capture:** `nyclive capture <source>` saves one raw payload to `tests/fixtures/<id>/<case>/`.
   Nothing else stores raw payloads routinely, because doing so would blow the storage budget.
 
 **Source specifics** that shape adapters (details in DATA_SOURCES.md):
@@ -108,8 +115,11 @@ class Adapter(Protocol):
 - MTA alerts are about 1 MB per fetch, so hash-dedupe. Elevator dates are local-time strings, so
   parse them as America/New_York.
 - NWS: filter features to NYC SAME codes.
-- Socrata: incremental `$where=:updated_at > last_cursor` (or `created_date`), paged with `$limit`
-  and `$offset`, upserted on the row key.
+- Socrata: each dataset names its own cursor column in the registry notes. Never cursor on
+  `:updated_at` without checking it (311 bulk-rewrites it). Always send `$select`, `$order`,
+  `$limit` ≤ 5000, a first-run lookback and a per-run page cap. Timestamps with no offset are
+  New York local time.
+- Open-Meteo: request `timeformat=unixtime`.
 - FloodNet live: Phase 1 spike against FieldKit project 174. The fallback is daily Open Data events.
 
 ## 4. Data model (summary)
@@ -121,7 +131,7 @@ Every record is one of three shapes. See [DATA_MODEL.md](DATA_MODEL.md) for colu
 - **Event:** something with a start (and maybe an end) and a location. Examples: alert, 311
   request, crash, flood event, elevator outage.
 
-Keeping only three shapes gives the API and UI three generic renderers instead of 21 bespoke ones:
+Keeping only three shapes gives the API and UI three generic renderers instead of 20+ bespoke ones:
 - entities with latest observations become point or line layers,
 - events become point layers or a list,
 - observations become charts.
@@ -134,9 +144,10 @@ Keeping only three shapes gives the API and UI three generic renderers instead o
 | `data/images/` | JPEG files | Frames for watchlist cams only, 3-day retention, plus 1 frame per 15 min kept as a training set | CV debugging and future PyTorch training |
 
 **Write path:** each job appends a small Parquet file per table per run, e.g.
-`archive/source=citibike_station_status/table=observations/date=2026-11-15/part-0912.parquet`.
-A nightly `compact` job merges a day's parts into one file. Times are always UTC, and partition
-dates are UTC dates.
+`archive/source=citibike_station_status/table=observations/date=2026-11-15/part-091200-<run id>.parquet`.
+`compact` merges a closed day's parts into one deduped file; it runs at startup and daily, so a
+missed night can't leave thousands of part files. Partition dates are the UTC date of
+`fetched_at`. Full rules, including crash safety: ADR-011.
 
 **Budget (estimates, to be measured in Phase 1):**
 | Source | Raw volume | Stored (changed rows, Parquet) |
@@ -145,10 +156,11 @@ dates are UTC dates.
 | MTA alerts | 1 MB/min | < 5 MB/day after dedupe |
 | DOT speeds | small/5 min | ≈ 10 MB/day |
 | Everything else | small | < 10 MB/day |
-| Watchlist frames (20 cams × 1/min × 17 KB) | n/a | ≈ 0.5 GB/day, retention 3 days ⇒ ≈ 1.5 GB steady |
+| Watchlist frames (detect every 30 s, save 20 cams × 1/min × 17 KB) | n/a | ≈ 0.5 GB/day, retention 3 days ⇒ ≈ 1.5 GB steady |
 | Training frames (20 cams × 1/15 min) | n/a | ≈ 35 MB/day, kept |
 
-Total ≈ 100 MB/day kept plus a rolling ~1.5 GB of frames. That's fine on the laptop for months.
+Total ≈ 100 MB/day kept plus a rolling ~1.5 GB of frames. Disk is not the constraint (hundreds
+of GB free); the Phase 1 soak replaces these estimates with measured numbers.
 
 ## 6. API (FastAPI, read-only)
 | Method & path | Returns |
@@ -165,8 +177,9 @@ Total ≈ 100 MB/day kept plus a rolling ~1.5 GB of frames. That's fine on the l
 - Live updates use frontend polling every 30–60 s with `ETag`/`If-None-Match` (ADR-006).
   Server-sent events (SSE) may come later.
 - "State as of t": for entities, take the last observation ≤ t per (entity, metric), via DuckDB
-  `QUALIFY ROW_NUMBER()` over the day partition(s). For events, take those with
-  `starts_at ≤ t < coalesce(ends_at, ∞)`.
+  `QUALIFY ROW_NUMBER()` over partitions date(t) and date(t)+1 (the daily keyframe makes that
+  enough). For events, take the newest version ≤ t per event with
+  `starts_at ≤ t < coalesce(ends_at, ∞)`. Gaps come from the `runs` table.
 - Camera images: the frontend loads `imageUrl` from DOT directly and only when a camera is
   selected. It never bulk-loads thumbnails.
 
@@ -201,7 +214,8 @@ Total ≈ 100 MB/day kept plus a rolling ~1.5 GB of frames. That's fine on the l
   3. Detect, then count per class inside the ROI.
   4. Write observations (`metric = count_car`, etc.).
   5. Save the frame per the retention rules.
-- **Throughput:** about 20 cams every 30 s is 0.7 frames/s, comfortable on the laptop CPU. On the
+- **Throughput:** about 20 cams every 30 s is 0.7 frames/s. Whether the laptop CPU keeps up at
+  `imgsz=1280` under x64 emulation is unverified; a 30-minute benchmark spike opens Phase 4. On the
   RTX 3050 the watchlist can grow to 100+ cams.
 - **Device:** `device="cuda"` if available, else CPU, configured in settings. The code is
   otherwise identical.

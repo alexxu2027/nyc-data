@@ -4,7 +4,8 @@
 # Fields
 #   name        human label
 #   phase       roadmap phase that first uses it (see docs/ROADMAP.md)
-#   shape       entities | observations | events   (see docs/DATA_MODEL.md)
+#   shape       primary shape: entities | observations | events (see docs/DATA_MODEL.md);
+#               several sources also emit entities alongside it
 #   cadence_s   polling interval in seconds (null = on demand)
 #   auth        none | key:<ENV_VAR>
 #   probe       URL used by `nyclive probe` to check reachability (may use ${ENV_VAR})
@@ -14,7 +15,7 @@
 # Times: every source timestamp is stored in UTC; the UI renders America/New_York.
 
 user_agent_env: NYCLIVE_USER_AGENT
-default_user_agent: "nyc-live/0.1 (personal portfolio project)"
+default_user_agent: "nyc-live/0.1 (+https://github.com/alexxu2027/nyc-data)"
 
 sources:
 
@@ -94,7 +95,25 @@ sources:
     expect: equipment
     status: verified
     verified_on: 2026-11-14
-    notes: Includes planned future outages (outagedate in the future). Dates are local-time strings.
+    notes: >
+      Includes planned future outages (outagedate in the future). Dates are local-time strings.
+      No station id and an empty borough in this feed. Join equipment to equipmentno in
+      nyct%2Fnyct_ene_equipments.json (elevatorsgtfsstopid, stationcomplexid), then to
+      mta_subway_stations. Content-Type header is broken; never branch on it.
+
+  mta_subway_stations:
+    name: MTA subway stations (data.ny.gov 39hk-dx4f)
+    phase: 1
+    shape: entities
+    cadence_s: 86400
+    auth: none
+    probe: https://data.ny.gov/resource/39hk-dx4f.json?$limit=1
+    expect: gtfs_stop_id
+    status: verified
+    verified_on: 2026-11-14
+    notes: >
+      gtfs_stop_id, complex_id, stop_name, gtfs_latitude/longitude, borough as M/Bk/Q/Bx/SI.
+      Pins subway alerts and elevator outages to stations.
 
   mta_subway_realtime:
     name: MTA subway trip updates & vehicles (GTFS-rt protobuf)
@@ -132,7 +151,9 @@ sources:
     expect: current_units
     status: verified
     verified_on: 2026-11-14
-    notes: Free for non-commercial use. Request several points in one call (comma-separated lat/lon).
+    notes: >
+      Free for non-commercial use. Request several points in one call (comma-separated lat/lon).
+      Collectors request timeformat=unixtime; the probe URL's timezone param returns local strings.
 
   nws_alerts:
     name: National Weather Service active alerts (NY)
@@ -195,13 +216,18 @@ sources:
     name: 311 service requests (erm2-nwe9)
     phase: 1
     shape: events
-    cadence_s: 3600
+    cadence_s: 21600
     auth: none                # optional SOCRATA_APP_TOKEN raises rate limits
     probe: https://data.cityofnewyork.us/resource/erm2-nwe9.json?$limit=1&$order=created_date%20DESC
     expect: complaint_type
     status: verified
     verified_on: 2026-11-14
-    notes: Lags about a day. Pull incrementally by created_date and upsert on unique_key (rows get updated when closed).
+    notes: >
+      Refreshes about once a day, lags 1-2 days. Do NOT cursor on :updated_at (2026-11-14:
+      571,739 rows had :updated_at in the last 2 days, created back to 2020). Two bounded
+      queries per run, both with $select: (1) created_date > cursor for new rows;
+      (2) closed_date > cursor minus 3 days AND created_date > now minus 30 days, for closures.
+      First run looks back 7 days. Upsert on unique_key. Timestamps are NY local, no offset.
 
   nyc_collisions:
     name: Motor vehicle collisions (h9gi-nx95)
@@ -213,7 +239,9 @@ sources:
     expect: crash_date
     status: verified
     verified_on: 2026-11-14
-    notes: Lags several days. Some rows have no coordinates.
+    notes: >
+      Lags several days. Some rows have no coordinates. crash_date and crash_time are separate
+      NY-local fields. Check whether :updated_at is a usable cursor before relying on it.
 
   dot_traffic_speeds:
     name: DOT real-time traffic speeds (i4gi-tjb9)
@@ -226,8 +254,10 @@ sources:
     status: verified
     verified_on: 2026-11-14
     notes: >
-      Road segments with speed + travel time; geometry is a space-separated "lat,lon" list
-      in link_points. Newest row was ~2 h old at probe time, so it's near-live, not live.
+      Road segments with speed + travel time. Build geometry from encoded_poly_line (Google
+      polyline); link_points is truncated mid-coordinate. data_as_of is NY local, no offset.
+      Newest row was ~2 h old at probe time, so it's near-live, not live. Check whether
+      :updated_at is a usable cursor before relying on it.
 
   # --------------------------------------------------------------- extras
   opensky_nyc:

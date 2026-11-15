@@ -4,8 +4,8 @@ Format: context → decision → consequences. Add new ADRs at the bottom. Mark 
 rather than deleting them.
 
 ## ADR-001: Separate project from Tandem (2026-11-14)
-**Context:** Tandem (Citi Bike prediction) overlaps on data but is a class group project with
-beginner teammates.
+**Context:** Tandem (Citi Bike prediction) overlaps on data, but it is a separate class group
+project with its own stack and constraints.
 **Decision:** NYC Live is its own repo, `~/nyc-live`. It may share *data files* with Tandem later,
 never code dependencies.
 **Consequences:** freedom to use a heavier stack here without burdening teammates.
@@ -29,7 +29,7 @@ Spatial filtering is done in Python (bbox) or with simple lat/lon indexes.
 ## ADR-004: Parquet archive plus DuckDB for history (2026-11-14)
 **Context:** history is append-only, large, and queried by time range (replay and analysis).
 **Decision:** hive-partitioned Parquet (`source=/table=/date=`), small part files per run, nightly
-compaction. Query with DuckDB in-process.
+compaction. Query with DuckDB in-process. Write semantics are pinned in ADR-011.
 **Consequences:** cheap storage, easy to copy or share. The same files open in pandas, notebooks
 or Tableau. No database server.
 
@@ -72,3 +72,29 @@ Cloudflare Pages. Free, and the GPU is available for CV, but home uptime and pow
 API (project 174, public project list).
 **Decision pending:** use FieldKit only if public read is confirmed and polling at 5 min is
 acceptable (ideally confirmed with the FloodNet team). Otherwise use events only, labeled "as of".
+
+## ADR-011: Archive write semantics (2026-11-14)
+**Context:** Parquet is append-only, but observations are change-only and events are "upserted".
+Replay needs state as of t from one or two day partitions, and needs to know when collectors were
+down. Feeds like MTA alerts and elevator outages drop items when they end instead of closing them.
+**Decision:**
+1. The partition `date` is the UTC date of `fetched_at`. A closed day is never appended to again.
+2. Observations are change-only plus a **daily keyframe**: the first successful run of a source
+   each UTC day writes every current (kind, entity_id, metric), changed or not. As-of t reads
+   date(t) and date(t)+1 (late data), keeps `observed_at <= t`, and takes the newest row per key.
+3. Archived events are a version log: one row per (source, event_id, payload_hash). "Upsert"
+   applies to `state.db` only, which holds the current version.
+4. When a batch is marked complete for events, the pipeline closes any open event of that source
+   that is missing from it (`ends_at = fetched_at`, `props.closed_reason = "left_feed"`) and writes
+   a new version.
+5. Every job run appends a row to `runs` (in `state.db` and in the archive as
+   `source=_collector/table=runs`): source, started_at, finished_at, ok, bytes, rows_written,
+   error. Replay gaps come from this table.
+6. Write order per run: Parquet part (temp file, then rename to `part-HHMMSS-<run id>.parquet`),
+   then one SQLite transaction (state, cursor, health, run). A crash in between can leave duplicate
+   rows, so archive reads always dedupe on the natural key and `compact` rewrites a day deduped.
+   Compaction is idempotent and tolerates files it can't delete yet (Windows file locks).
+7. New columns must be nullable. Never rename or retype. Readers use `union_by_name`. Files use
+   zstd.
+**Consequences:** keys are unique within a date partition after compaction, not across days.
+Keyframes cost about one full snapshot per source per day, which is small next to the change rows.

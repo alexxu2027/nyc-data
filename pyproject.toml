@@ -4,16 +4,21 @@ version = "0.0.1"
 description = "NYC Live: one map for New York's live and historical open data, with cameras as sensors."
 readme = "README.md"
 requires-python = ">=3.12"
+license = "MIT"
 dependencies = [
     "httpx>=0.27",
     "pyyaml>=6.0",
+    "tzdata>=2024.1",          # zoneinfo needs it on Windows
+    "apscheduler>=3.10,<4",    # 4.x has a different API
+    "pyarrow>=17",
+    "duckdb>=1.1",
 ]
 
 [project.optional-dependencies]
 # Added per phase so early installs stay small. See docs/DEV_SETUP.md.
-collect = ["apscheduler>=3.10", "pyarrow>=17", "duckdb>=1.1", "gtfs-realtime-bindings>=1.0"]
 api = ["fastapi>=0.115", "uvicorn>=0.30"]
-cv = ["ultralytics>=8.3", "opencv-python-headless>=4.10"]
+cv = ["ultralytics>=8.3"]                  # brings its own opencv-python; don't add a second cv2
+transit = ["gtfs-realtime-bindings>=1.0"]  # Phase 5
 
 [project.scripts]
 nyclive = "nyclive.cli:main"

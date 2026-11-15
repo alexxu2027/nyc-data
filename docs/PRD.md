@@ -158,7 +158,7 @@ Start Phase 1 right away, because history starts accruing only when collectors r
 | FloodNet live endpoint undocumented | Med | Low | Phase 1 spike. Fall back to Open Data events (≈2-week lag), clearly labeled |
 | Storage growth (Citi Bike ≈1M rows/hr if stored naively) | Med | Med | Store changed rows only, compact Parquet nightly, image retention |
 | CV too slow or inaccurate on grainy frames | Med | Med | Count per frame (no tracking), ROI crops, `imgsz=1280`, small watchlist. Fine-tune on the 3050 later |
-| Scope creep (21 sources, 5 modes) | High | High | Strict phase gates with acceptance criteria. MVP = Phase 1 + 2 sources only |
+| Scope creep (22 sources, 5 modes) | High | High | Strict phase gates with acceptance criteria. MVP = Phase 1 + 2 sources only |
 | Licensing or terms surprises on public demo | Low | Med | Link rather than rehost camera images, attribute everything, no commercial use |
 
 ## 12. Open questions
@@ -166,4 +166,4 @@ Start Phase 1 right away, because history starts accruing only when collectors r
 2. Is the FieldKit live endpoint usable and acceptable to poll? (Phase 1 spike.)
 3. Which ~20 cameras go on the CV watchlist? (Pick by image quality and proximity to FloodNet
    sensors and busy Citi Bike stations.)
-4. Final name: "NYC Live" is a working title.
+4. Final name: "NYC Live" is a working title (repo is `nyc-data` for now).
