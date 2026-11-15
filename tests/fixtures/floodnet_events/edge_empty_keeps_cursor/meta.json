@@ -1,0 +1,14 @@
+{
+  "source_id": "floodnet_events",
+  "captured_at": "2026-11-15T03:20:36.307438+00:00",
+  "cursor": "2026-10-26T18:43:29+00:00",
+  "parts": [
+    {
+      "name": "page-000",
+      "url": "https://data.cityofnewyork.us/resource/aq7i-eu5q.json?$select=sensor_id,sensor_name,flood_start_time,flood_end_time,max_depth_inches,onset_time_mins,drain_time_mins,duration_mins,flood_profile_depth_inches,flood_profile_time_secs&$order=flood_start_time%20DESC,:id&$limit=30",
+      "file": "page-000.json",
+      "fetched_at": "2026-11-15T03:20:36.307438+00:00"
+    }
+  ],
+  "note": "no rows (nothing new); meta cursor set so parse keeps it"
+}
