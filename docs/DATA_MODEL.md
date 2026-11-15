@@ -84,15 +84,19 @@ the adapter) derives it from lat/lon with a point-in-polygon against the NYC bor
 boundaries (cached GeoJSON in `config/`).
 
 ## SQLite `state.db` tables
-- `entities`: same columns as Entity. PK (`kind`, `entity_id`).
-- `latest`: (`kind`, `entity_id`, `metric`) → `value`, `observed_at`.
-- `events_open`: events with `ends_at IS NULL OR ends_at > now() - 1 day`, plus the last 7 days of
-  311 and collisions for fast map queries.
-- `source_health`: `source`, `last_attempt`, `last_success`, `last_error`,
-  `consecutive_failures`, `rows_last_run`, `lag_s`.
-- `runs`: one row per job run: `source`, `started_at`, `finished_at`, `ok`, `bytes`,
-  `rows_written`, `error`. Also archived under `source=_collector/table=runs`. Replay gaps come
-  from this table (ADR-011).
+Implemented in `storage/state.py` (schema v1, `PRAGMA user_version`). Timestamps are ISO 8601 UTC
+text with microseconds, so they sort correctly as strings.
+- `entities`: same columns as Entity plus `payload_hash`, `first_seen`, `last_seen`. PK (`kind`,
+  `entity_id`).
+- `latest`: (`kind`, `entity_id`, `metric`) → `value`, `observed_at` (newest reading; never moves
+  backwards), `fetched_at`, `source`.
+- `events`: the current version of every event. Map queries filter on `ends_at`; `prune()` drops
+  closed events older than the retention window (the archive keeps them).
+- `source_state`: per source `cursor`, `keyframe_date`, `last_attempt`, `last_success`,
+  `last_error`, `consecutive_failures`, `rows_last_run`, `lag_s`.
+- `runs`: one row per job run: `run_id`, `source`, `started_at`, `finished_at`, `ok`, `bytes`,
+  `rows_written`, `error`. `compact` exports each closed day to
+  `source=_collector/table=runs`. Replay gaps come from this table (ADR-011).
 
 ## Archive layout
 ```

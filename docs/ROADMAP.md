@@ -38,7 +38,7 @@ the soak test is wall-clock time, so Phase 2 scaffolding may start while it runs
    (`load_fixture`, `assert_valid_batch`).
 5. ✅ (2026-11-14) Reference adapters, written by hand: `noaa_tides` (cursor, entity + observations) and
    `citibike` (multi-part, change-only, sentinel).
-6. `storage/state.py`, `storage/archive.py`, `collect/pipeline.py` (`run_once`: fetch → parse →
+6. ✅ (2026-11-14) `storage/state.py`, `storage/archive.py`, `collect/pipeline.py` (`run_once`: fetch → parse →
    write, per ADR-011).
 7. `collect/scheduler.py`, `nyclive collect [--only ids] [--once] [--keep-awake]`, `nyclive status`.
 

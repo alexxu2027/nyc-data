@@ -93,7 +93,10 @@ class RawPayload:
             "parts": parts_meta,
             "note": note,
         }
-        (case_dir / META_FILE).write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
+        # newline="\n": byte-identical meta.json on every OS (fixtures are committed as binary)
+        (case_dir / META_FILE).write_text(
+            json.dumps(meta, indent=2) + "\n", encoding="utf-8", newline="\n"
+        )
 
     @classmethod
     def load(cls, case_dir: Path) -> RawPayload:

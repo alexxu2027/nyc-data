@@ -87,13 +87,16 @@ down. Feeds like MTA alerts and elevator outages drop items when they end instea
 4. When a batch is marked complete for events, the pipeline closes any open event of that source
    that is missing from it (`ends_at = fetched_at`, `props.closed_reason = "left_feed"`) and writes
    a new version.
-5. Every job run appends a row to `runs` (in `state.db` and in the archive as
-   `source=_collector/table=runs`): source, started_at, finished_at, ok, bytes, rows_written,
-   error. Replay gaps come from this table.
+5. Every job run appends a row to `runs` in `state.db`: source, started_at, finished_at, ok,
+   bytes, rows_written, error. `compact` exports each closed day to the archive as
+   `source=_collector/table=runs` (one file per day, not one per run). Replay gaps come from this
+   table. *(Amended 2026-11-14 while building step 6: per-run runs files would have added ~1,440
+   tiny files per source per day.)*
 6. Write order per run: Parquet part (temp file, then rename to `part-HHMMSS-<run id>.parquet`),
    then one SQLite transaction (state, cursor, health, run). A crash in between can leave duplicate
    rows, so archive reads always dedupe on the natural key and `compact` rewrites a day deduped.
-   Compaction is idempotent and tolerates files it can't delete yet (Windows file locks).
+   Compaction is idempotent and tolerates files it can't delete yet (Windows file locks). A day
+   counts as closed 1 h after UTC midnight, so runs that started before midnight have finished.
 7. New columns must be nullable. Never rename or retype. Readers use `union_by_name`. Files use
    zstd.
 **Consequences:** keys are unique within a date partition after compaction, not across days.
