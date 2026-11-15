@@ -67,11 +67,28 @@ Cloudflare Pages. Free, and the GPU is available for CV, but home uptime and pow
 (c) Hybrid: VPS collects 24/7, the PC runs CV.
 **Leaning:** (a) to start, adding (b) if uptime under 95%.
 
-## ADR-010: FloodNet live data (open, Phase 1 spike)
+## ADR-010: FloodNet live data (decided 2026-11-15 after the Phase 1 spike)
 **Context:** Open Data events lag about 2 weeks. The live dashboard uses the undocumented FieldKit
 API (project 174, public project list).
-**Decision pending:** use FieldKit only if public read is confirmed and polling at 5 min is
+**Criteria set in Phase 0:** use FieldKit only if public read is confirmed and polling at 5 min is
 acceptable (ideally confirmed with the FloodNet team). Otherwise use events only, labeled "as of".
+**Spike findings (25 min, keyless):**
+- Public read works with no key. `GET api.fieldkit.org/projects/174/stations` lists 496 stations
+  (1.1 MB); 422 had updated in the last day.
+- `GET /sensors/data/tail?stations=<ids>` returns readings per station: `time` (epoch ms),
+  `sensorId`, `avg/min/max/last`. Sensor 44 = `wh.floodnet.depth` (inches, per `GET /sensors`).
+  The newest reading was ~5 min old.
+- Each response always carries the last 48 h (`bucketSize` 172800). 50 stations per request =
+  1.3 MB in 15 s, so all stations take ~10 requests and ~13 MB.
+- `/sensors/data/recently` returned empty windows.
+- At a 5 min cadence that is ~3.7 GB/day from an undocumented API run by a research project.
+**Decision:** don't poll FieldKit for now. The map shows Open Data flood events labeled "data as
+of". `floodnet_live` stays without an adapter.
+**Revisit if** the FloodNet team says polling is fine. Ready design: batches of 50 stations every
+30 min (the 48 h window means nothing is lost), depth only, change-only writes. That is ~600 MB
+a day of transfer, but small to store.
+**Consequences:** flood sensors show live locations and status, but depth arrives about 2 weeks
+late until the team agrees. The owner may email the FloodNet team.
 
 ## ADR-011: Archive write semantics (2026-11-14)
 **Context:** Parquet is append-only, but observations are change-only and events are "upserted".

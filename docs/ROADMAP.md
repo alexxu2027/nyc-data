@@ -67,29 +67,33 @@ running collector, live runs ok). Criteria: the conformance test is green for ev
 the running collector.
 
 ### 1C. Hardening
-11. `nyclive compact` (idempotent; runs at startup and daily for closed days).
-12. **Spike (time-boxed to 2 h):** FloodNet live via FieldKit project 174 (ADR-010). Any time after
-    Gate A. Record the outcome in DECISIONS.md.
-13. Soak test (see criteria). Measure storage and CPU per source and replace the estimates in
-    ARCHITECTURE §5.
+11. ✅ (2026-11-15) `nyclive compact` (idempotent; runs at startup and daily for closed days; the
+    collector also compacts the open day hourly).
+12. ✅ (2026-11-15) **Spike (time-boxed to 2 h):** FloodNet live via FieldKit project 174.
+    Outcome in ADR-010: public read works, but full polling is too heavy for an undocumented API
+    without the FloodNet team's OK, so it is not adopted for now.
+13. ⏳ (running since 2026-11-15 01:48 UTC) Soak test (see criteria). `scripts/soak_report.py`
+    checks it and measures storage and CPU; the final numbers replace ARCHITECTURE §5.
 
 **Acceptance criteria**
-- [ ] Conformance test: every registry source with `adapter` set has `tests/fixtures/<id>/real/`
+- [x] (2026-11-15: 42/42 for 14 sources, `tests/test_adapters_conformance.py`) Conformance test: every registry source with `adapter` set has `tests/fixtures/<id>/real/`
   and at least one `edge_*` case (edge cases may be hand-derived from a real capture, noted in
   `meta.json`), and `parse()` passes `assert_valid_batch`.
-- [ ] Restart test: run the pipeline on a fixture, crash after the archive write and before the
+- [x] (`test_restart_after_crash_leaves_no_duplicates_after_compact`; also a real kill/restart
+  at Gate A) Restart test: run the pipeline on a fixture, crash after the archive write and before the
   state commit, rerun, compact. Zero duplicate natural keys through archive reads and in the
   compacted file.
-- [ ] Isolation test: a fake adapter that always raises goes `degraded`; the other sources keep
+- [x] (`test_failing_source_degrades_and_backs_off_others_keep_writing`) Isolation test: a fake adapter that always raises goes `degraded`; the other sources keep
   writing.
-- [ ] Soak: 48 h of `nyclive collect --keep-awake` in total, including at least one unbroken 24 h
+- [ ] ⏳ (started 2026-11-15 01:48 UTC; check with `uv run python scripts/soak_report.py`) Soak: 48 h of `nyclive collect --keep-awake` in total, including at least one unbroken 24 h
   run (it must cross a UTC midnight). From `runs`, every source has ≥ 95% successful scheduled runs
   while the collector was up, and the process never exits on its own.
-- [ ] `nyclive status` prints last success, consecutive failures, rows in last run and data lag per
+- [x] `nyclive status` prints last success, consecutive failures, rows in last run and data lag per
   source.
-- [ ] Measured archive growth ≤ 150 MB/day after compaction, one file per closed day partition, and
+- [ ] ⏳ (provisional at 2.6 h: ≈ 48 MB/day incl. the one-off 311 backfill; CPU 0.10%; final
+  numbers come from `scripts/soak_report.py` after the soak) Measured archive growth ≤ 150 MB/day after compaction, one file per closed day partition, and
   collector CPU < 5% average. Measured numbers replace the estimates in ARCHITECTURE §5.
-- [ ] As-of smoke: Citi Bike state at a chosen minute comes from one day partition, ≥ 2,000
+- [x] (Gate A: 2,519 stations in 0.27 s) As-of smoke: Citi Bike state at a chosen minute comes from one day partition, ≥ 2,000
   stations, < 2 s.
 
 ---

@@ -153,7 +153,13 @@ Keeping only three shapes gives the API and UI three generic renderers instead o
 missed night can't leave thousands of part files. Partition dates are the UTC date of
 `fetched_at`. Full rules, including crash safety: ADR-011.
 
-**Budget (estimates, to be measured in Phase 1):**
+**Measured so far** (2026-11-15, `scripts/soak_report.py` at 2.6 h, 14 sources; provisional
+until the soak ends): archive 5.3 MB, ≈ 48 MB/day extrapolated. That figure is inflated by the
+one-off 311 first-run backfill (4.2 MB of 50k rows); Citi Bike status is ≈ 0.5 MB after 2.6 h.
+Collector CPU is 0.10% of the machine (1.1% of one core) under x64 emulation. Final per-day
+numbers replace the table below once closed days exist.
+
+**Budget (original estimates):**
 | Source | Raw volume | Stored (changed rows, Parquet) |
 |---|---|---|
 | Citi Bike status | 1 MB/min | ≈ 20–40 MB/day |

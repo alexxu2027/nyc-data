@@ -218,8 +218,11 @@ sources:
     probe: https://api.fieldkit.org/projects
     expect: NYC FloodNet
     status: partial
-    verified_on: 2026-11-14
+    verified_on: 2026-11-15
     notes: >
+      NOT COLLECTED (ADR-010, 2026-11-15): public read works (/projects/174/stations,
+      /sensors/data/tail?stations=..., sensor 44 = depth) but full polling is ~13 MB per poll from
+      an undocumented API; waiting on the FloodNet team's OK.
       Powers dataviz.floodnet.nyc. Project list is public (NYC FloodNet = id 174) but the
       per-sensor reading endpoints are undocumented. Phase 1 spike decides whether we use
       it; fallback is events-only flooding. Poll gently and attribute FloodNet.

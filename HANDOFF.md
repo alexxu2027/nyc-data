@@ -90,11 +90,22 @@ see "Collector: start / stop" below.)
   7. and 9. Cursor ties, DST and future-dated rows: overlap and clamping.
   8. (not fixed, documented) ~0.15% of 311 rows are inserted late; see DATA_SOURCES.
 
-## Next: ROADMAP 1C (hardening), then Phase 2 (live map)
-- 1C: `compact` is done (hourly open-day + daily closed-day). Left: the FloodNet live spike
-  (2 h, ADR-010) and the soak test (48 h total, incl. one unbroken 24 h). The collector is
-  already running, so the soak has started: check `uv run nyclive status` and the `runs` table.
-- Phase 2 scaffolding (FastAPI + MapLibre) may start while the soak runs.
+## Phase 1: everything built; only the soak's wall-clock time is left
+- ✅ 1C compact (hourly open day + daily closed days); ✅ FloodNet live spike → ADR-010 (public
+  read works; full polling ≈ 13 MB/poll from an undocumented API, so not adopted until the
+  FloodNet team OKs it; email them if you want live depth).
+- ✅ Acceptance criteria met: conformance, restart, isolation, status, as-of smoke.
+- ⏳ Soak + measured storage/CPU: the collector has run since 2026-11-15 01:48 UTC. At 2.6 h,
+  `scripts/soak_report.py` showed every source ≥ 95% ok, ≈ 48 MB/day (incl. the one-off 311
+  backfill), CPU 0.10% of the machine. **To close Phase 1:** leave the laptop plugged in and the
+  collector running until the report says `SOAK: PASS` (48 h total incl. one unbroken 24 h that
+  crosses UTC midnight, so the earliest is about 2026-11-17 01:50 UTC = Nov 16, 8:50 PM NY). Then
+  copy its numbers into ARCHITECTURE §5 and tick the last two ROADMAP boxes.
+- If the laptop sleeps or reboots, restart the collector; gaps are fine, the total just takes
+  longer, but you need one unbroken 24 h stretch.
+
+## Next: Phase 2 (live map) can start now, while the soak runs
+FastAPI read-only API over state.db + archive, then Vite/React/MapLibre. See ROADMAP Phase 2.
 
 ## Collector: start / stop
 `uv run nyclive collect --keep-awake` starts it (it doesn't survive a reboot). To stop it: Task
