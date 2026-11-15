@@ -62,9 +62,9 @@ def test_real_events_mapping():
     assert all(e.category == "flood" for e in b.events)
     e = _event(b, f"{DITMARS}:2026-10-26T14:43:29.000")
     assert e.entity_refs == (f"flood_sensor:{DITMARS}",) and e.borough == "BX"
-    # floating times read as NY local (EDT, UTC-4); UNVERIFIED for FloodNet
-    assert e.starts_at == datetime(2026, 10, 26, 18, 43, 29, tzinfo=UTC)
-    assert e.ends_at == datetime(2026, 10, 26, 22, 5, 50, tzinfo=UTC)
+    # FloodNet floating times are UTC (verified against NOAA tides, see module docstring)
+    assert e.starts_at == datetime(2026, 10, 26, 14, 43, 29, tzinfo=UTC)
+    assert e.ends_at == datetime(2026, 10, 26, 18, 5, 50, tzinfo=UTC)
     assert e.severity == 2 and e.title == "Flooding at BX - Ditmars St/Hunter Ave 2, 5.16 in"
     p = e.props
     assert (p["max_depth_inches"], p["onset_mins"], p["drain_mins"], p["duration_mins"]) == (
@@ -79,7 +79,7 @@ def test_real_events_mapping():
 
 def test_real_events_cursor_is_newest_start_utc():
     b = parse_fixture(EVENTS, module="floodnet")
-    assert b.cursor == "2026-10-26T18:43:29+00:00"
+    assert b.cursor == "2026-10-26T14:43:29+00:00"
 
 
 def test_real_long_profile_is_dropped():
@@ -98,7 +98,7 @@ def test_severity_thresholds_and_missing_end():
     assert no_end.ends_at is None
     assert b.events[3].ends_at is None  # end before start
     assert b.events[0].ends_at is not None
-    assert b.cursor == "2026-10-25T15:34:20+00:00"
+    assert b.cursor == "2026-10-25T11:34:20+00:00"
 
 
 def test_long_profile_dropped_and_bad_profile_omitted():
@@ -108,7 +108,7 @@ def test_long_profile_dropped_and_bad_profile_omitted():
     assert long.props["profile_dropped"] is True and "profile_time_secs" not in long.props
     assert _size(long.props) <= PROPS_MAX_BYTES
     assert "profile_dropped" not in bad.props and "profile_depth_inches" not in bad.props
-    assert b.cursor == "2026-10-27T05:00:00+00:00"
+    assert b.cursor == "2026-10-27T01:00:00+00:00"
 
 
 def test_empty_page_keeps_cursor():
@@ -148,16 +148,16 @@ def test_fetch_events_first_run_and_with_cursor():
     raw = floodnet.fetch(_ctx(EVENTS, handler))
     assert [p.name for p in raw.parts] == ["page-000"] and raw.cursor is None
     first = seen[0]
-    # now - 90 days = 2026-08-16T18:00Z = 14:00 EDT
-    assert first["$where"] == "flood_start_time > '2026-08-16T14:00:00.000'"
+    # now - 90 days = 2026-08-16T18:00Z; FloodNet literals are UTC wall-clock
+    assert first["$where"] == "flood_start_time > '2026-08-16T18:00:00.000'"
     assert first["$order"] == "flood_start_time,:id"
     assert first["$select"] == ",".join(floodnet.EVENT_COLUMNS)
     assert first["$limit"] == "5000"
 
     raw = floodnet.fetch(_ctx(EVENTS, handler, cursor="2026-10-26T18:43:29+00:00"))
     assert raw.cursor == "2026-10-26T18:43:29+00:00"
-    # cursor - 30 days = 2026-09-26T18:43:29Z = 14:43:29 EDT
-    assert seen[1]["$where"] == "flood_start_time > '2026-09-26T14:43:29.000'"
+    # cursor - 30 days = 2026-09-26T18:43:29Z, sent as UTC wall-clock
+    assert seen[1]["$where"] == "flood_start_time > '2026-09-26T18:43:29.000'"
 
 
 def test_fetch_events_page_cap():

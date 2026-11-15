@@ -43,7 +43,7 @@ SELECT = (
 )
 ORDER = "data_as_of"
 MAX_PAGES = 5
-FIRST_RUN_LOOKBACK = timedelta(hours=1)
+FIRST_RUN_LOOKBACK = timedelta(hours=4)  # the feed lags ~2 h; 1 h returned nothing live
 KIND = "road_segment"
 METRICS = (("speed", "speed_mph"), ("travel_time", "travel_time_s"))
 _ESCAPED_PIPE = "\\\\|"  # two backslashes then a pipe, as published

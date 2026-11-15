@@ -5,9 +5,10 @@ One module, two registry ids (like citibike): parse dispatches on raw.source_id.
 Socrata datasets paged with `_socrata.fetch_pages` into parts `page-000`, `page-001`, ...
 
 Quirks: every value is a string, `tidally_influenced` is "Yes"/"No", and the depth profile comes
-as a string holding a JSON list ("[0.00, 0.51, ...]"). Flood times are floating timestamps and
-are read as New York local like every Socrata dataset (UNVERIFIED for FloodNet: the tidal sensors
-in the real fixture peak near high water only if the raw times are UTC; see the 1B handback).
+as a string holding a JSON list ("[0.00, 0.51, ...]"). Flood times are floating timestamps but,
+unlike most Socrata data, they are **UTC** (verified 2026-11-15: Beach 84 St flood peaks land
+29-61 min after NOAA Rockaway Inlet high tides when read as UTC, and near low tide when read as
+New York time). So they go through `parse_naive_utc`, and the `$where` literal is UTC too.
 The events dataset lags about two weeks, so the cursor rewinds 30 days on each run.
 """
 
@@ -15,12 +16,12 @@ from __future__ import annotations
 
 import json
 import math
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from nyclive.model import PROPS_MAX_BYTES, Entity, Event, borough_code
 from nyclive.sources import _socrata
 from nyclive.sources.base import Batch, FetchContext, RawPayload
-from nyclive.timeutil import local_to_utc, parse_iso_utc
+from nyclive.timeutil import parse_iso_utc, parse_naive_utc
 
 SOURCE_IDS = ("floodnet_sensors", "floodnet_events")
 
@@ -62,6 +63,11 @@ _MINUTES = {
 
 
 # ---------------------------------------------------------------------------------- fetch
+def _utc_literal(dt: datetime) -> str:
+    """A Socrata floating literal holding UTC wall-clock time (FloodNet events are UTC)."""
+    return dt.astimezone(UTC).replace(tzinfo=None).isoformat(timespec="milliseconds")
+
+
 def fetch(ctx: FetchContext) -> RawPayload:
     sid = ctx.source.id
     if sid == "floodnet_sensors":
@@ -83,7 +89,7 @@ def fetch(ctx: FetchContext) -> RawPayload:
             EVENTS_URL,
             select=EVENT_COLUMNS,
             order="flood_start_time",
-            where=f"flood_start_time > '{_socrata.floating(since)}'",
+            where=f"flood_start_time > '{_utc_literal(since)}'",
             max_pages=EVENT_MAX_PAGES,
         )
     else:
@@ -200,7 +206,7 @@ def _parse_events(raw: RawPayload) -> Batch:
             continue
         event_id = f"{sensor_id}:{start_raw}"
         try:
-            starts_at = local_to_utc(start_raw)
+            starts_at = parse_naive_utc(start_raw)
         except ValueError:
             continue
         if event_id in seen:
@@ -210,7 +216,7 @@ def _parse_events(raw: RawPayload) -> Batch:
         end_raw = _text(r.get("flood_end_time"))
         if end_raw is not None:
             try:
-                ends_at = local_to_utc(end_raw)
+                ends_at = parse_naive_utc(end_raw)
             except ValueError:
                 ends_at = None
             if ends_at is not None and ends_at < starts_at:

@@ -132,7 +132,7 @@ def test_fetch_where_select_order_and_page_cap():
     assert [p.name for p in raw.parts] == [f"page-{i:03d}" for i in range(5)]
     assert len(seen) == 5 and seen[-1]["$offset"] == "20000"
     first = seen[0]
-    assert first["$where"] == "data_as_of > '2026-11-14T12:00:00.000'"  # now - 1 h, NY local
+    assert first["$where"] == "data_as_of > '2026-11-14T09:00:00.000'"  # now - 4 h, NY local
     assert first["$select"] == (
         "link_id,speed,travel_time,status,data_as_of,borough,link_name,encoded_poly_line,owner"
     )
