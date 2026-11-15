@@ -48,6 +48,8 @@ FIRST_RUN_LOOKBACK = timedelta(days=7)
 CLOSED_OVERLAP = timedelta(days=3)  # closed_date > cursor minus this
 CLOSED_MAX_AGE = timedelta(days=30)  # only closures of requests created within this
 MAX_PAGES = 5
+CLOSED_MAX_PAGES = 10  # the closed window already held 28k rows live (> 5 x 5000)
+CURSOR_OVERLAP = timedelta(hours=1)  # ties at a page cap + the DST fall-back hour
 PREFIXES = ("new", "closed")
 CATEGORY = "complaint_311"
 RESOLUTION_MAX_CHARS = 500
@@ -60,7 +62,7 @@ def fetch(ctx: FetchContext) -> RawPayload:
         URL,
         select=SELECT,
         order="created_date",
-        where=f"created_date > '{_socrata.floating(since)}'",
+        where=f"created_date > '{_socrata.floating(since - CURSOR_OVERLAP)}'",
         prefix="new",
         max_pages=MAX_PAGES,
     )
@@ -74,7 +76,7 @@ def fetch(ctx: FetchContext) -> RawPayload:
             f" AND created_date > '{_socrata.floating(ctx.now - CLOSED_MAX_AGE)}'"
         ),
         prefix="closed",
-        max_pages=MAX_PAGES,
+        max_pages=CLOSED_MAX_PAGES,
     )
     return _socrata.payload(ctx, new + closed)
 
@@ -109,8 +111,8 @@ def parse(raw: RawPayload) -> Batch:
         except (KeyError, TypeError, ValueError):
             continue
         newest = t if newest is None or t > newest else newest
-    if newest is not None:
-        batch.cursor = newest.isoformat()
+    if newest is not None:  # clamp: a future-dated row must not stall the cursor
+        batch.cursor = min(newest, raw.fetched_at).isoformat()
     return batch
 
 

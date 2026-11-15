@@ -137,3 +137,18 @@ def test_fetch_caps_at_5_pages():
     raw, seen = _fetch(None, page)
     assert [p.name for p in raw.parts] == [f"page-00{i}" for i in range(5)]
     assert [p["$offset"] for p in seen] == ["0", "5000", "10000", "15000", "20000"]
+
+
+def test_future_dated_row_cannot_push_cursor_past_fetch_time():
+    """Review finding 9: a typo'd future crash_date would otherwise stall the cursor."""
+    import json
+    from dataclasses import replace
+
+    from nyclive.sources import nyc_collisions
+
+    raw = load_fixture("nyc_collisions")
+    rows = json.loads(raw.part("page-000").content)
+    rows[0]["crash_date"] = "2099-01-01T00:00:00.000"
+    raw = replace(raw, parts=(replace(raw.part("page-000"), content=json.dumps(rows).encode()),))
+    b = nyc_collisions.parse(raw)
+    assert b.cursor <= raw.fetched_at.isoformat()

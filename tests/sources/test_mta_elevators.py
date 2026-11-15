@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
 import httpx
+import pytest
 from helpers import parse_fixture
 
 from nyclive.http import Http
@@ -108,4 +109,5 @@ def test_fetch_gets_outages_then_equipments():
     assert [p.name for p in raw.parts] == ["outages", "equipments"]
     base = "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/"
     assert seen == [base + "nyct%2Fnyct_ene.json", base + "nyct%2Fnyct_ene_equipments.json"]
-    assert len(mta_elevators.parse(raw)) == 0
+    with pytest.raises(ValueError, match="empty"):
+        mta_elevators.parse(raw)  # the mock bodies are empty: rejected, not "complete"

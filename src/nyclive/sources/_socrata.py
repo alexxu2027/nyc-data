@@ -13,6 +13,7 @@ Conductor-owned: adapters import it, builders don't edit it.
 from __future__ import annotations
 
 import json
+import logging
 from collections.abc import Iterable
 from datetime import datetime
 
@@ -20,6 +21,7 @@ from nyclive.sources.base import FetchContext, RawPart, RawPayload
 from nyclive.timeutil import NY, ensure_utc
 
 MAX_LIMIT = 5000
+log = logging.getLogger(__name__)
 
 
 def floating(dt: datetime) -> str:
@@ -58,6 +60,14 @@ def fetch_pages(
         parts.append(RawPart(f"{prefix}-{i:03d}", str(r.url), r.content, ctx.now))
         if len(json.loads(r.content)) < page_size:
             break
+    else:
+        log.warning(
+            "%s: %s hit its page cap (%d x %d rows); the rest waits for the next run",
+            ctx.source.id,
+            prefix,
+            max_pages,
+            page_size,
+        )
     return parts
 
 

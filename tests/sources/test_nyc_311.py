@@ -133,7 +133,8 @@ def test_fetch_first_run_looks_back_7_days():
     new, closed = seen
     assert all(p["$select"] == SELECT and p["$limit"] == "5000" for p in seen)
     assert new["$order"] == "created_date,:id"
-    assert new["$where"] == "created_date > '2026-11-07T13:00:00.000'"  # now - 7 d, NY local
+    # now - 7 d - 1 h overlap, NY local
+    assert new["$where"] == "created_date > '2026-11-07T12:00:00.000'"
     assert closed["$order"] == "closed_date,:id"
     assert closed["$where"] == (
         "closed_date > '2026-11-04T13:00:00.000' AND created_date > '2026-10-15T14:00:00.000'"
@@ -144,7 +145,7 @@ def test_fetch_with_cursor():
     raw, seen = _fetch("2026-11-13T07:05:34+00:00")
     assert raw.cursor == "2026-11-13T07:05:34+00:00"
     new, closed = seen
-    assert new["$where"] == "created_date > '2026-11-13T02:05:34.000'"
+    assert new["$where"] == "created_date > '2026-11-13T01:05:34.000'"  # cursor - 1 h overlap
     assert closed["$where"] == (
         "closed_date > '2026-11-10T02:05:34.000' AND created_date > '2026-10-15T14:00:00.000'"
     )
@@ -161,5 +162,5 @@ def test_fetch_caps_each_query_at_5_pages():
     http = Http("t", transport=httpx.MockTransport(handler), min_gap_s=0)
     raw = nyc_311.fetch(FetchContext(load_registry().sources[SID], http, None, NOW))
     names = [p.name for p in raw.parts]
-    assert names == [f"new-00{i}" for i in range(5)] + [f"closed-00{i}" for i in range(5)]
+    assert names == [f"new-{i:03d}" for i in range(5)] + [f"closed-{i:03d}" for i in range(10)]
     assert [p["$offset"] for p in seen[:5]] == ["0", "5000", "10000", "15000", "20000"]

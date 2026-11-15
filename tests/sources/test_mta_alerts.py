@@ -2,7 +2,8 @@ import json
 from datetime import UTC, datetime
 
 import httpx
-from helpers import parse_fixture
+import pytest
+from helpers import load_fixture, parse_fixture
 
 from nyclive.http import Http
 from nyclive.model import PROPS_MAX_BYTES
@@ -90,9 +91,10 @@ def test_long_description_is_trimmed():
     assert e.props["description"].endswith("…") and len(e.props["description"]) > 3000
 
 
-def test_feed_without_entities_is_a_complete_empty_batch():
-    b = parse_fixture(SID, "edge_empty", module="mta_alerts")
-    assert len(b) == 0 and b.complete == frozenset({"events"})
+def test_feed_without_entities_is_rejected_not_complete():
+    """An empty feed would close every open alert; it is treated as a failed run instead."""
+    with pytest.raises(ValueError, match="no alerts"):
+        mta_alerts.parse(load_fixture(SID, "bad_empty"))
 
 
 def test_station_id_strips_only_direction_suffix():
@@ -117,4 +119,5 @@ def test_fetch():
     assert seen == [
         "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/camsys%2Fsubway-alerts.json"
     ]
-    assert len(mta_alerts.parse(raw)) == 0
+    with pytest.raises(ValueError):
+        mta_alerts.parse(raw)  # the mock body is an empty feed

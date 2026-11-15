@@ -218,8 +218,9 @@ tests/helpers.py                                 # load_fixture(source_id, case=
                                                  # assert_valid_batch(batch, source_id)
 tests/test_adapters_conformance.py               # conductor-owned; iterates the registry
 ```
-- Cases are `real` (from `nyclive capture`) and `edge_<what>` (hand-derived; the change is
-  described in `meta.note`). Each case is ≤ 256 KB: trim arrays, keep the envelope.
+- Cases are `real` (from `nyclive capture`), `edge_<what>` (hand-derived; the change is
+  described in `meta.note`) and `bad_<what>` (a payload `parse` must reject with `ValueError`,
+  e.g. an empty MTA feed that would otherwise close every open event). Each case is ≤ 256 KB: trim arrays, keep the envelope.
 - `assert_valid_batch` checks enums, UTC awareness, borough codes, coordinates inside an NYC
   bounding box or None, unique keys within the batch, serializable props, and that parsing twice
   gives equal output.

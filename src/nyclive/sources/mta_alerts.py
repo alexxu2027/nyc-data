@@ -42,8 +42,12 @@ def parse(raw: RawPayload) -> Batch:
     if raw.source_id not in SOURCE_IDS:
         raise ValueError(f"mta_alerts adapter does not serve {raw.source_id!r}")
     doc = raw.json("body")
-    if not isinstance(doc, dict) or not isinstance(doc.get("entity", []), list):
-        raise ValueError("expected a GTFS-rt FeedMessage")  # noqa: TRY004 (contract)
+    if not isinstance(doc, dict) or not isinstance(doc.get("header"), dict):
+        raise ValueError("expected a GTFS-rt FeedMessage with a header")  # noqa: TRY004 (contract)
+    if not isinstance(doc.get("entity"), list) or not doc["entity"]:
+        # The feed always carries planned work; an empty set is a glitch, and treating it as
+        # complete would close every open alert (review finding 2026-11-15).
+        raise ValueError("GTFS-rt feed has no alerts; refusing to treat it as complete")
     batch = Batch(complete=frozenset({"events"}))
     seen: set[str] = set()
     for entity in doc.get("entity", []):

@@ -60,6 +60,8 @@ without a key. The other 2 were skipped because they need free keys. `mta_subway
   mid-coordinate. `data_as_of` is New York local with no offset.
 - The polyline is published with every `|` escaped as two backslashes + `|`; undo that before
   decoding (otherwise ~1 in 4 links decodes outside NYC). Some polylines are themselves truncated.
+- Publish batches overlap by minutes across links, so the cursor re-reads 15 min behind (a strict
+  `>` lost 8–21% of readings live).
 - Rows with a negative `status` (seen: -101) carry speed 0 / travel time 0 = no reading; they
   produce no observations. The feed lags ~2 h, so the first-run lookback is 4 h.
 - Quirk: the newest row was about 2 h old at probe time, so label it "near-live".
@@ -109,7 +111,7 @@ and a page cap; each dataset's cursor column is in its registry notes.
 
 | id | Dataset | Key field | Lag observed | Notes |
 |---|---|---|---|---|
-| `nyc_311` | `erm2-nwe9` 311 Service Requests | `unique_key` | 1–2 days, daily refresh | Don't cursor on `:updated_at` (bulk-rewritten). Two queries: new by `created_date`, closures by `closed_date` (registry notes). Poll every 6 h |
+| `nyc_311` | `erm2-nwe9` 311 Service Requests | `unique_key` | 1–2 days, daily refresh | Don't cursor on `:updated_at` (bulk-rewritten). Two queries: new by `created_date` (re-read 1 h behind the cursor for ties/DST), closures by `closed_date` (up to 10 pages; the window held 28k rows live). Poll every 6 h. Known gap: ~0.15% of rows are inserted weeks after their `created_date` and are only caught if they close within the closed window |
 | `nyc_collisions` | `h9gi-nx95` Motor Vehicle Collisions | `collision_id` | ~3 days | Some rows have no lat/lon. `crash_date` + `crash_time` are separate local fields |
 | `dot_traffic_speeds` | `i4gi-tjb9` | `link_id` + `data_as_of` | ~2 h | See above |
 

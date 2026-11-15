@@ -321,3 +321,67 @@ def test_state_v1_migrates_to_v2(tmp_path):
     con.close()
     with StateStore(db) as s:
         assert s.events_for("s")["e"]["last_seen"] == "2026-01-01"
+
+
+def _events_adapter(sid, events_by_run):
+    """An adapter whose parse returns the next list of events each run (complete feed)."""
+    runs = iter(events_by_run)
+
+    def parse(raw):
+        return Batch(events=list(next(runs)), complete=frozenset({"events"}))
+
+    return parse
+
+
+def test_superseded_event_with_future_end_is_closed(store, tmp_path):
+    """Review finding 2: only ends_at=None events used to be closed."""
+    arch, sid = tmp_path / "archive", "nws_alerts"
+    warn = Event(sid, "w1", "weather_alert", "Flash Flood Warning", T1, T1 + timedelta(hours=2))
+    upd = Event(
+        sid, "w2", "weather_alert", "Flash Flood Warning (upd)", T1, T1 + timedelta(hours=3)
+    )
+    raw1 = RawPayload(sid, (RawPart("active", "u", b"{}", T1),))
+    t2 = T1 + timedelta(minutes=10)
+    raw2 = at(raw1, t2)
+    parse = _events_adapter(sid, [[warn], [upd]])
+    raws = iter([raw1, raw2])
+    a = Adapter("x", (sid,), lambda ctx: next(raws), parse)
+    run_once(REG.sources[sid], a, None, store, arch, now=clock(T1))
+    run_once(REG.sources[sid], a, None, store, arch, now=clock(t2))
+    w1 = store.events_for(sid)["w1"]
+    assert w1["ends_at"] == ts_(t2) and '"left_feed"' in w1["props"]
+
+
+def test_event_leaving_before_it_starts_ends_at_its_start(store, tmp_path):
+    """Review finding 3: a cancelled planned outage must not get ends_at < starts_at."""
+    arch, sid = tmp_path / "archive", "mta_elevator_outages"
+    future = T1 + timedelta(days=3)
+    planned = Event(sid, "EL1:x", "elevator_outage", "Planned outage", future)
+    other = Event(sid, "EL2:y", "elevator_outage", "Other outage", T1)
+    raws = iter(
+        [
+            RawPayload(sid, (RawPart("outages", "u", b"[]", T1),)),
+            RawPayload(sid, (RawPart("outages", "u", b"[]", T1 + timedelta(hours=1)),)),
+        ]
+    )
+    a = Adapter(
+        "x", (sid,), lambda ctx: next(raws), _events_adapter(sid, [[planned, other], [other]])
+    )
+    run_once(REG.sources[sid], a, None, store, arch, now=clock(T1))
+    run_once(REG.sources[sid], a, None, store, arch, now=clock(T1 + timedelta(hours=1)))
+    closed = store.events_for(sid)["EL1:x"]
+    assert closed["ends_at"] == closed["starts_at"] == ts_(future)
+    assert "left_feed_before_start" in closed["props"]
+    versions = archive.read_table(arch, sid, "events", [T1.date()]).to_pylist()
+    assert all(v["ends_at"] is None or v["ends_at"] >= v["starts_at"] for v in versions)
+
+
+def test_prune_drops_long_open_unseen_events(store, tmp_path):
+    """Review finding 5: 311 requests that never close used to stay in state forever."""
+    sid = "nyc_311"
+    ev = Event(sid, "r1", "complaint_311", "Noise", T1)  # open, never closes
+    raw = RawPayload(sid, (RawPart("new-000", "u", b"[]", T1),))
+    a = Adapter("x", (sid,), lambda ctx: raw, lambda raw: Batch(events=[ev]))
+    run_once(REG.sources[sid], a, None, store, tmp_path, now=clock(T1))
+    store.prune(ts_(T1 + timedelta(days=30)), ts_(T1 + timedelta(days=30)))
+    assert store.count("events", sid) == 0

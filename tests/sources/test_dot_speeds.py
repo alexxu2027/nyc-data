@@ -142,5 +142,5 @@ def test_fetch_where_select_order_and_page_cap():
 
     seen.clear()
     raw = dot_speeds.fetch(FetchContext(src, http, "2026-11-15T01:42:05+00:00", now))
-    assert seen[0]["$where"] == "data_as_of > '2026-11-14T20:42:05.000'"
+    assert seen[0]["$where"] == "data_as_of > '2026-11-14T20:27:05.000'"  # cursor - 15 min overlap
     assert raw.cursor == "2026-11-15T01:42:05+00:00"

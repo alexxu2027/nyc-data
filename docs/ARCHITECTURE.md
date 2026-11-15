@@ -117,8 +117,12 @@ the cursor in `ctx`) and `parse(raw) -> Batch` (pure). A module may serve severa
 - NWS: filter features to NYC SAME codes.
 - Socrata: each dataset names its own cursor column in the registry notes. Never cursor on
   `:updated_at` without checking it (311 bulk-rewrites it). Always send `$select`, `$order`,
-  `$limit` ≤ 5000, a first-run lookback and a per-run page cap. Timestamps with no offset are
-  New York local time.
+  `$limit` ≤ 5000, a first-run lookback and a per-run page cap (hitting it logs a warning).
+  Re-read a little behind the cursor; change-only writes make the overlap free. Clamp cursors to
+  the fetch time. Timestamps with no offset are New York local time (FloodNet events: UTC).
+- Complete feeds: an event that leaves the feed is closed even if it had a scheduled end in the
+  future; one that leaves before it starts ends at its start. An empty payload from a feed that
+  is never empty (MTA) is rejected, so a glitch can't close everything.
 - Open-Meteo: request `timeformat=unixtime`.
 - FloodNet live: Phase 1 spike against FieldKit project 174. The fallback is daily Open Data events.
 

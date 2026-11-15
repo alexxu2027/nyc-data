@@ -253,6 +253,8 @@ def _parse_events(raw: RawPayload) -> Batch:
             )
         )
         newest = starts_at if newest is None or starts_at > newest else newest
+    if newest is not None:
+        newest = min(newest, raw.fetched_at)  # a sensor clock glitch must not stall the cursor
     if newest is not None and (raw.cursor is None or newest > parse_iso_utc(raw.cursor)):
         batch.cursor = newest.isoformat()  # never moves back (the fetch window rewinds 30 days)
     return batch

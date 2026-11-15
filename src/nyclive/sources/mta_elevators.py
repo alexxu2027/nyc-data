@@ -49,6 +49,10 @@ def parse(raw: RawPayload) -> Batch:
     outages, equipments = raw.json("outages"), raw.json("equipments")
     if not isinstance(outages, list) or not isinstance(equipments, list):
         raise ValueError("outages and equipments must be JSON arrays")  # noqa: TRY004 (contract)
+    if not outages or not equipments:
+        # Hundreds of outages are always listed; an empty set is a glitch, and treating it as
+        # complete would close every open outage (review finding 2026-11-15).
+        raise ValueError("empty outages or equipments; refusing to treat it as complete")
     batch = Batch(complete=frozenset({"events", "entities"}))
     equipment: dict[str, dict] = {}
     for row in equipments:

@@ -43,6 +43,7 @@ SELECT = (
 )
 ORDER = "data_as_of"
 MAX_PAGES = 5
+CURSOR_OVERLAP = timedelta(minutes=15)
 FIRST_RUN_LOOKBACK = timedelta(hours=4)  # the feed lags ~2 h; 1 h returned nothing live
 KIND = "road_segment"
 METRICS = (("speed", "speed_mph"), ("travel_time", "travel_time_s"))
@@ -50,13 +51,18 @@ _ESCAPED_PIPE = "\\\\|"  # two backslashes then a pipe, as published
 
 
 def fetch(ctx: FetchContext) -> RawPayload:
-    since = parse_iso_utc(ctx.cursor) if ctx.cursor else ctx.now - FIRST_RUN_LOOKBACK
+    since = (
+        parse_iso_utc(ctx.cursor) if ctx.cursor else ctx.now - FIRST_RUN_LOOKBACK + CURSOR_OVERLAP
+    )
     parts = _socrata.fetch_pages(
         ctx,
         URL,
         select=SELECT,
         order=ORDER,
-        where=f"data_as_of > '{_socrata.floating(since)}'",
+        # Publish batches overlap by minutes across links, so re-read behind the cursor;
+        # change-only writes make the overlap free (review finding 2026-11-15: a strict > lost
+        # 8-21% of readings live).
+        where=f"data_as_of > '{_socrata.floating(since - CURSOR_OVERLAP)}'",
         max_pages=MAX_PAGES,
     )
     return _socrata.payload(ctx, parts)
@@ -167,8 +173,8 @@ def parse(raw: RawPayload) -> Batch:
                 Observation(sid, KIND, link_id, metric, observed_at, value, fetched_at)
             )
 
-    if readings:
-        batch.cursor = max(t for t, _ in readings).isoformat()
+    if readings:  # clamp: a future-dated row must not stall the cursor
+        batch.cursor = min(max(t for t, _ in readings), raw.fetched_at).isoformat()
     return batch
 
 

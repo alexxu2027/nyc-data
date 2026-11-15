@@ -239,7 +239,11 @@ def _write(
         out.event_state.append(_event_state(row, prev, fetched_at))
     if "events" in batch.complete:
         for eid, prev in known_ev.items():
-            if eid in in_batch or prev["ends_at"] is not None:
+            if eid in in_batch:
+                continue
+            # Close anything still "active" that left the feed, including events with a
+            # scheduled end that was cancelled or superseded (review finding 2026-11-15).
+            if prev["ends_at"] is not None and prev["ends_at"] <= ts(fetched_at):
                 continue
             closed = _closed_version(prev, fetched_at)
             ev_rows.append(closed)
@@ -270,11 +274,15 @@ def _event_state(row: dict, prev: dict | None, fetched_at: datetime) -> dict:
 def _closed_version(prev: dict, fetched_at: datetime) -> dict:
     """Archive row for an open event that disappeared from a complete feed."""
     props = json.loads(prev["props"] or "{}")
-    props["closed_reason"] = "left_feed"
+    starts_at = datetime.fromisoformat(prev["starts_at"])
+    # An event that leaves the feed before it starts (a cancelled planned outage) ends at its
+    # start, so ends_at >= starts_at always holds.
+    ends_at = max(fetched_at, starts_at)
+    props["closed_reason"] = "left_feed" if ends_at == fetched_at else "left_feed_before_start"
     row = {
         "source": prev["source"], "event_id": prev["event_id"], "category": prev["category"],
         "subtype": prev["subtype"], "title": prev["title"],
-        "starts_at": datetime.fromisoformat(prev["starts_at"]), "ends_at": fetched_at,
+        "starts_at": starts_at, "ends_at": ends_at,
         "severity": prev["severity"], "lat": prev["lat"], "lon": prev["lon"],
         "geometry_wkt": prev["geometry_wkt"], "borough": prev["borough"],
         "entity_refs": json.loads(prev["entity_refs"] or "[]"),

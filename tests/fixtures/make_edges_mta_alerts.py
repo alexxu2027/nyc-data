@@ -68,7 +68,7 @@ def open_ended(doc):
     return doc
 
 
-edit("edge_empty", "no entity key (a quiet feed; proto JSON omits the empty list)", empty)
+edit("bad_empty", "no entity key: must be rejected, not treated as a complete empty feed", empty)
 edit(
     "edge_open_ended",
     "6 entities: 276422 Delays with its only period's end removed; 36463 Part Suspended with "

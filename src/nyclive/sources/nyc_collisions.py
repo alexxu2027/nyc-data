@@ -95,8 +95,8 @@ def parse(raw: RawPayload) -> Batch:
         seen.add(event.event_id)
         batch.events.append(event)
         newest = event.starts_at if newest is None or event.starts_at > newest else newest
-    if newest is not None:
-        batch.cursor = newest.isoformat()
+    if newest is not None:  # clamp: a typo'd future crash_date must not stall the cursor
+        batch.cursor = min(newest, raw.fetched_at).isoformat()
     return batch
 
 

@@ -257,7 +257,7 @@ class StateStore:
                 raise
         return n
 
-    def prune(self, before: str) -> None:
+    def prune(self, before: str, open_before: str | None = None) -> None:
         """Drop closed events not seen since `before`, and runs older than it (the archive
         keeps both). "Seen", not "ended": a feed that re-sends old closed events (collisions,
         FloodNet) must keep them in state, or every run would re-write them as new."""
@@ -267,6 +267,12 @@ class StateStore:
                 " AND COALESCE(last_seen, updated_at) < ?",
                 (before,),
             )
+            if open_before:  # e.g. 311 requests that never close; complete feeds re-see theirs
+                self._conn.execute(
+                    "DELETE FROM events WHERE ends_at IS NULL"
+                    " AND COALESCE(last_seen, updated_at) < ?",
+                    (open_before,),
+                )
             self._conn.execute("DELETE FROM runs WHERE started_at < ?", (before,))
 
 

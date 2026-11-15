@@ -80,7 +80,15 @@ see "Collector: start / stop" below.)
     FloodNet events were being re-written every run).
 - 311's first run hit its page cap (50,000 rows); the cursor catches up at up to 25k new rows per
   6-hour run, well above ~10k complaints/day.
-- A Fable review of 1B is the last orchestrate step (findings get fixed and logged here).
+- **Fable review of 1B (2026-11-15): 9 findings, 8 fixed** (232 tests):
+  1. DOT speeds lost 8–21% of readings (batches overlap), so it now re-reads 15 min behind.
+  2. Superseded or cancelled alerts with a future end were never closed; now they are.
+  3. A cancelled planned outage could get ends_at < starts_at; it now ends at its start.
+  4. The 311 closed query was already capped; it now gets 10 pages, and any cap logs a warning.
+  5. Never-closed 311 requests grew state forever; they are pruned after 45 days unseen.
+  6. An empty MTA payload would have closed every open event; it is now rejected (`bad_*`).
+  7. and 9. Cursor ties, DST and future-dated rows: overlap and clamping.
+  8. (not fixed, documented) ~0.15% of 311 rows are inserted late; see DATA_SOURCES.
 
 ## Next: ROADMAP 1C (hardening), then Phase 2 (live map)
 - 1C: `compact` is done (hourly open-day + daily closed-day). Left: the FloodNet live spike

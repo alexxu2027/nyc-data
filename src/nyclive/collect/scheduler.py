@@ -35,6 +35,7 @@ log = logging.getLogger("nyclive.collect")
 DEGRADED_AFTER = 3
 MAX_BACKOFF_S = 30 * 60
 STATE_RETENTION = timedelta(days=7)
+OPEN_EVENT_RETENTION = timedelta(days=45)  # open events not seen this long are dropped
 POOL_SIZE = 4
 STAGGER_S = 3  # spread first runs so startup isn't a burst
 
@@ -121,7 +122,7 @@ class Collector:
                 runs = self.store.runs_between(day.isoformat(), (day + timedelta(1)).isoformat())
                 archive.export_runs(self.settings.archive_dir, day, runs)
             written = archive.compact(self.settings.archive_dir, now)
-            self.store.prune(ts(now - STATE_RETENTION))
+            self.store.prune(ts(now - STATE_RETENTION), ts(now - OPEN_EVENT_RETENTION))
         if written:
             log.info("maintenance: compacted %d partition(s)", len(written))
 
