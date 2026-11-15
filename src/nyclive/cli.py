@@ -31,8 +31,36 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("sources", help="list registered sources")
 
+    ca = sub.add_parser("capture", help="record a raw payload as a test fixture")
+    ca.add_argument("source", help="registry id")
+    ca.add_argument("--case", default="real", help="fixture case name (default: real)")
+    ca.add_argument("--part", action="append", metavar="NAME=URL", help="fetch these URLs instead")
+    ca.add_argument("--cursor", help="cursor to pass to the adapter's fetch()")
+    ca.add_argument("--trim", type=int, metavar="N", help="keep N items of the largest JSON list")
+    ca.add_argument("--note", default="", help="note stored in meta.json")
+    ca.add_argument("--force", action="store_true", help="replace an existing case")
+
     args = p.parse_args(argv)
     reg = load_registry()
+
+    if args.cmd == "capture":
+        from nyclive.capture import capture, parse_part_args
+        from nyclive.settings import load_settings
+
+        if args.case != "real" and not args.case.startswith("edge_"):
+            raise SystemExit("--case must be 'real' or start with 'edge_'")
+        capture(
+            reg,
+            load_settings(),
+            args.source,
+            case=args.case,
+            parts=parse_part_args(args.part),
+            cursor=args.cursor,
+            trim=args.trim,
+            note=args.note,
+            force=args.force,
+        )
+        return 0
 
     if args.cmd == "probe":
         from nyclive.probe import run_probe

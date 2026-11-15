@@ -38,6 +38,7 @@ packages = ["src/nyclive"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["tests"]
 markers = ["live: hits real network endpoints (run with -m live)"]
 addopts = "-m 'not live'"
 

@@ -34,7 +34,7 @@ the soak test is wall-clock time, so Phase 2 scaffolding may start while it runs
    (tests use `httpx.MockTransport`).
 3. ✅ (2026-11-14) `model.py` (records, `KINDS` / `METRICS` / `CATEGORIES`, `borough_code`, Arrow schemas) and
    `sources/base.py`, exactly as DATA_MODEL "Adapter contract v1".
-4. `nyclive capture <source> [--part name=url ...] [--case real]` and `tests/helpers.py`
+4. ✅ (2026-11-14) `nyclive capture <source> [--part name=url ...] [--case real]` and `tests/helpers.py`
    (`load_fixture`, `assert_valid_batch`).
 5. Reference adapters, written by hand: `noaa_tides` (cursor, entity + observations) and
    `citibike` (multi-part, change-only, sentinel).
