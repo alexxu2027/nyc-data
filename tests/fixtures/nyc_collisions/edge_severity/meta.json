@@ -1,0 +1,14 @@
+{
+  "source_id": "nyc_collisions",
+  "captured_at": "2026-11-15T03:20:40.589552+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "page-000",
+      "url": "https://data.cityofnewyork.us/resource/h9gi-nx95.json?$order=crash_date%20DESC,:id&$limit=30",
+      "file": "page-000.json",
+      "fetched_at": "2026-11-15T03:20:40.589552+00:00"
+    }
+  ],
+  "note": "820a200c..: persons_killed and pedestrians_killed 1 (0 injured); a1269442..: persons_killed and motorist_killed 1 (2 injured)"
+}

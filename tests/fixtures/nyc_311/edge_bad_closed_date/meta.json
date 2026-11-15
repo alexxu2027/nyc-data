@@ -1,0 +1,20 @@
+{
+  "source_id": "nyc_311",
+  "captured_at": "2026-11-15T03:20:39.205991+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "new-000",
+      "url": "https://data.cityofnewyork.us/resource/erm2-nwe9.json?$select=unique_key,created_date,closed_date,agency,complaint_type,descriptor,status,borough,incident_zip,latitude,longitude,resolution_description&$order=created_date%20DESC,:id&$limit=30",
+      "file": "new-000.json",
+      "fetched_at": "2026-11-15T03:20:37.056916+00:00"
+    },
+    {
+      "name": "closed-000",
+      "url": "https://data.cityofnewyork.us/resource/erm2-nwe9.json?$select=unique_key,created_date,closed_date,agency,complaint_type,descriptor,status,borough,incident_zip,latitude,longitude,resolution_description&$where=closed_date%20IS%20NOT%20NULL&$order=closed_date%20DESC,:id&$limit=30",
+      "file": "closed-000.json",
+      "fetched_at": "2026-11-15T03:20:39.205991+00:00"
+    }
+  ],
+  "note": "closed-000 71096195: closed_date set to 2026-11-11T20:05:00.000, a day before its created_date 2026-11-12T20:05:00.000"
+}

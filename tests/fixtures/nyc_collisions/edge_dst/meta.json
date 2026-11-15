@@ -1,0 +1,14 @@
+{
+  "source_id": "nyc_collisions",
+  "captured_at": "2026-11-15T03:20:40.589552+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "page-000",
+      "url": "https://data.cityofnewyork.us/resource/h9gi-nx95.json?$order=crash_date%20DESC,:id&$limit=30",
+      "file": "page-000.json",
+      "fetched_at": "2026-11-15T03:20:40.589552+00:00"
+    }
+  ],
+  "note": "1110bd45.. 2026-11-01 1:30 (repeated hour, single-digit hour); 3f9057e7.. 2026-03-08 2:30 (skipped hour); 158b5470.. 2026-07-04 23:30 (EDT, next day in UTC); 179a3fde.. 2026-11-12 23:59 (newest crash)"
+}
