@@ -7,7 +7,7 @@ Commands planned per docs/ROADMAP.md:
   status    per-source health from state.db            (available now)
   compact   merge closed days in the archive           (available now)
   capture   record a fixture payload for tests         (available now)
-  serve     run the API                                (Phase 2)
+  serve     run the read-only API and web app          (available now)
   cv        run the camera counting worker             (Phase 4)
 """
 
@@ -51,7 +51,15 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("status", help="per-source health from state.db")
     sub.add_parser("compact", help="compact closed days and export their runs")
 
+    se = sub.add_parser("serve", help="run the read-only API (and web/dist if built)")
+    se.add_argument("--host", default="127.0.0.1")
+    se.add_argument("--port", type=int, default=8000)
+    se.add_argument("--reload", action="store_true", help="restart on code changes (dev)")
+    se.add_argument("--no-web", action="store_true", help="serve /api only, not web/dist")
+
     args = p.parse_args(argv)
+    if args.cmd == "serve":
+        return _serve(args)
     reg = load_registry()
 
     if args.cmd in {"collect", "status", "compact"}:
@@ -123,6 +131,29 @@ def _storage_command(args, reg) -> int:
             return 0
         finally:
             collector.close()
+
+
+def _serve(args) -> int:
+    try:
+        import fastapi  # noqa: F401
+        import uvicorn
+    except ImportError:
+        print("`nyclive serve` needs the api extra: run `uv sync --extra api`", file=sys.stderr)
+        return 1
+    import os
+
+    if args.no_web:
+        os.environ["NYCLIVE_NO_WEB"] = "1"
+    print(f"NYC Live API on http://{args.host}:{args.port}/  (docs at /api/docs)")
+    uvicorn.run(
+        "nyclive.api.app:app_from_env",
+        factory=True,
+        host=args.host,
+        port=args.port,
+        reload=args.reload,
+        log_level="info",
+    )
+    return 0
 
 
 def _utf8_console() -> None:
