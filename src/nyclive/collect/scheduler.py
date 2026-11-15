@@ -5,7 +5,7 @@
 - Failure policy: after 3 consecutive failures a source is `degraded` and backs off
   exponentially (cadence x 2^(n-2), capped at 30 min). One success resets it.
 - Maintenance at startup and daily at 01:15 UTC: compact closed days, export their `runs`,
-  prune old rows from state.db.
+  prune old rows from state.db. Hourly at :07, today's partitions are compacted too.
 - A lock file stops two collectors from writing the same data dir.
 """
 
@@ -125,6 +125,12 @@ class Collector:
         if written:
             log.info("maintenance: compacted %d partition(s)", len(written))
 
+    def compact_open(self) -> None:
+        """Hourly: compact today's partitions too, so open-day reads stay fast."""
+        with WRITE_LOCK:
+            written = archive.compact(self.settings.archive_dir, self.now(), include_open=True)
+        log.debug("compact_open: %d partition(s)", len(written))
+
     # ------------------------------------------------------------------------------ forever
     def run_forever(self) -> None:
         from apscheduler.executors.pool import ThreadPoolExecutor
@@ -148,6 +154,7 @@ class Collector:
                 misfire_grace_time=src.cadence_s,
             )
         sched.add_job(self.maintenance, "cron", hour=1, minute=15, id="_maintenance")
+        sched.add_job(self.compact_open, "cron", minute=7, id="_compact_open")
         log.info("collecting %d source(s): %s", len(self.sources), ", ".join(self.sources))
         try:
             sched.start()

@@ -246,3 +246,38 @@ def test_export_runs(store, tmp_path):
     t = archive.read_table(arch, archive.RUNS_SOURCE, "runs", [day])
     assert path and t.num_rows == 1 and t["ok"].to_pylist() == [True]
     assert archive.export_runs(arch, day, runs) is None  # already exported
+
+
+def test_compact_open_day_then_keep_writing(store, tmp_path):
+    arch = tmp_path / "archive"
+    a, raw = status_adapter()
+    n_keys = len(citibike.parse(raw).observations)
+    run_once(STATUS, a, None, store, arch, now=clock(T1))
+    assert archive.compact(arch, now=T1) == []  # open day untouched by default
+    assert archive.compact(arch, now=T1, include_open=True)
+    # A later run in the same day adds a part next to compacted.parquet.
+    import json
+
+    doc = json.loads(raw.part("station_status").content)
+    doc["data"]["stations"][0]["num_bikes_available"] += 5
+    doc["data"]["stations"][0]["last_reported"] += 60
+    t2 = T1 + timedelta(minutes=1)
+    body = json.dumps(doc).encode()
+    set_raw(
+        a,
+        at(
+            replace(
+                raw, parts=(raw.part("manifest"), replace(raw.part("station_status"), content=body))
+            ),
+            t2,
+        ),
+    )
+    run_once(STATUS, a, None, store, arch, now=clock(t2))
+    names = sorted(
+        f.name for f in archive.partition_files(arch, STATUS.id, "observations", T1.date())
+    )
+    assert names[0] == archive.COMPACTED and len(names) == 2
+    assert len(obs_rows(arch, STATUS.id, T1.date())) == n_keys + 1
+    archive.compact(arch, now=t2, include_open=True)
+    assert len(archive.partition_files(arch, STATUS.id, "observations", T1.date())) == 1
+    assert len(obs_rows(arch, STATUS.id, T1.date())) == n_keys + 1

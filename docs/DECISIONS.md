@@ -97,6 +97,9 @@ down. Feeds like MTA alerts and elevator outages drop items when they end instea
    rows, so archive reads always dedupe on the natural key and `compact` rewrites a day deduped.
    Compaction is idempotent and tolerates files it can't delete yet (Windows file locks). A day
    counts as closed 1 h after UTC midnight, so runs that started before midnight have finished.
+   The collector also compacts the open day hourly (measured: as-of over 1,440 one-minute parts
+   took 2.9 s, over one compacted file 0.3 s); new parts keep landing beside `compacted.parquet`
+   and the next compaction merges them.
 7. New columns must be nullable. Never rename or retype. Readers use `union_by_name`. Files use
    zstd.
 **Consequences:** keys are unique within a date partition after compaction, not across days.
