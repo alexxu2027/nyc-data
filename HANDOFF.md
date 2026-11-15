@@ -11,7 +11,7 @@ learned the hard way. Read it first, then `docs/ROADMAP.md`.
     `DECISIONS.md`, `DEV_SETUP.md`.
   - Source registry: `config/sources.yaml` (22 sources).
   - CLI: `uv run nyclive sources` and `uv run nyclive probe`.
-  - Tests: 114 offline tests pass, lint is clean.
+  - Tests: 115 offline tests pass, lint is clean.
 - **Last probe (2026-11-14):** 19 of 21 feeds healthy with no keys. OpenAQ and Bus Time were
   skipped because they need keys. `mta_subway_stations` was added afterwards and checked by hand.
 - **Plan review (2026-11-14):** an independent review tightened Phase 1 before any code. Changes:
@@ -57,7 +57,18 @@ learned the hard way. Read it first, then `docs/ROADMAP.md`.
 Portfolio piece. All layers are in scope, replay comes after the live map, and it is a separate
 project from Tandem (ADR-001). Hardware: CPU-only Windows-on-ARM laptop now, an RTX 3050 PC later.
 
-## Next: ROADMAP Phase 1 → Gate A (1 h live run of the three 1A sources)
+## Gate A in progress (started 2026-11-15 01:49 UTC)
+- The collector runs **detached** (hidden window) for noaa + Citi Bike with `--keep-awake`; log in
+  `data/logs/collect.log`. The first 30 min were clean. It was killed and restarted at 02:19 UTC (a
+  real restart test that also loaded hourly open-day compaction); runs resumed immediately.
+- **To finish Gate A:** after 02:50 UTC run `uv run python scripts/gate_a.py`. It checks all runs
+  ok, ≥ 1 h collected, as-of ≥ 2,000 stations in < 2 s, and unique keys. If it passes, tick Gate A
+  in ROADMAP and leave the collector running.
+- **To stop the collector:** Task Manager → end the `python.exe` running `nyclive collect`, or in
+  PowerShell: `Get-CimInstance Win32_Process | ? CommandLine -like '*nyclive*collect*' |
+  % { Stop-Process -Id $_.ProcessId }`. It does not restart after a reboot.
+
+## Then: ROADMAP 1B
 Finish Gate A in order, by hand, and stop at **Gate A** (noaa + Citi Bike collecting for 1 h,
 restart test green, as-of query works). Leave that collector running.
 
