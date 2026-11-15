@@ -42,7 +42,7 @@ WKT `LINESTRING(lon lat, …)`. Everything source-specific that doesn't fit a co
 | `ends_at` | ts? | null = ongoing/unknown |
 | `lat`, `lon` | float? | some events have none (e.g. citywide alerts); then `geometry_wkt` or `entity_refs` |
 | `geometry_wkt` | str? | NWS alert polygons |
-| `entity_refs` | list[str] | `kind:entity_id` items, e.g. `subway_station:A27` (alerts can name many) |
+| `entity_refs` | list[str] | `kind:entity_id` items, e.g. `subway_station:A27` (alerts can name many). `kind` is in `KINDS` or `REF_ONLY_KINDS` (`subway_route`) |
 | `borough` | str? | `MN`…`SI`; null = citywide or unknown, and passes every borough filter |
 | `severity` | int 0–3 | normalized: 0 info · 1 minor · 2 moderate · 3 severe |
 | `title` | str | one line for the feed |
@@ -197,7 +197,8 @@ class Event:
 - `value` is a finite float. Booleans are 0.0/1.0. A missing value means no row.
 - `kind`, `metric`, `category` come from `model.KINDS` / `METRICS` / `CATEGORIES`. Builders propose
   additions in their handback; only the conductor edits `model.py`.
-- `props` is JSON-serializable, about 2 KB at most per record. Adapters never compute hashes.
+- `props` is JSON-serializable, at most 4 KB per record (`model.PROPS_MAX_BYTES`; NWS alert
+  descriptions alone can pass 2 KB). Adapters never compute hashes.
 - Severity defaults: NWS Extreme/Severe 3, Moderate 2, Minor 1, Unknown 0; collisions killed 3,
   injured 2, else 1; 311 is 0.
 - Adapters may import only stdlib, `nyclive.model`, `nyclive.timeutil`, `nyclive.sources.base`,
@@ -218,8 +219,8 @@ tests/test_adapters_conformance.py               # conductor-owned; iterates the
   bounding box or None, unique keys within the batch, serializable props, and that parsing twice
   gives equal output.
 
-**Registry:** `Source` gains `adapter: str | None` and optional `max_lag_s` (dataclass first, then
-yaml, or loading fails). `adapter` is null for `dot_camera_image`, `basemap_openfreemap`,
+**Registry:** `Source` has `adapter: str | None` and optional `max_lag_s` (added in 1A step 3). A
+yaml field the dataclass doesn't know fails loading with a clear message. `adapter` is null for `dot_camera_image`, `basemap_openfreemap`,
 `floodnet_live` (until the spike) and all Phase 5 sources. "Collected source" means `adapter` is set.
 
 **Module → registry ids**

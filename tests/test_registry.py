@@ -29,3 +29,25 @@ def test_phase1_sources_reachable():
     from nyclive.probe import run_probe
 
     assert run_probe(load_registry(), max_phase=1) == 0
+
+
+def test_unknown_registry_field_gives_clear_error(tmp_path):
+    f = tmp_path / "sources.yaml"
+    f.write_text(
+        "sources:\n  x:\n    name: X\n    phase: 1\n    shape: events\n    cadence_s: 60\n"
+        "    auth: none\n    colour: red\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="add them to Source first"):
+        load_registry(f)
+
+
+def test_adapter_needs_cadence(tmp_path):
+    f = tmp_path / "sources.yaml"
+    f.write_text(
+        "sources:\n  x:\n    name: X\n    phase: 1\n    shape: events\n    cadence_s: null\n"
+        "    auth: none\n    adapter: x_feed\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="cadence_s"):
+        load_registry(f)

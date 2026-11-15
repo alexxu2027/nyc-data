@@ -30,6 +30,8 @@ class Source:
     status: str = "unverified"
     verified_on: str | None = None
     notes: str = ""
+    adapter: str | None = None  # module in nyclive.sources; None = not collected
+    max_lag_s: int | None = None  # data older than this counts as stale in `status`
 
     @property
     def key_env(self) -> str | None:
@@ -61,8 +63,14 @@ class Registry:
 def load_registry(path: Path = DEFAULT_REGISTRY) -> Registry:
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
     sources: dict[str, Source] = {}
+    known = set(Source.__dataclass_fields__) - {"id"}
     for sid, spec in (raw.get("sources") or {}).items():
-        src = Source(id=sid, **{k: v for k, v in spec.items()})
+        unknown = set(spec) - known
+        if unknown:
+            raise ValueError(
+                f"source '{sid}': unknown field(s) {sorted(unknown)}; add them to Source first"
+            )
+        src = Source(id=sid, **spec)
         _validate(src)
         sources[sid] = src
     ua = os.environ.get(raw.get("user_agent_env", ""), "") or raw.get(
@@ -79,6 +87,10 @@ def _validate(s: Source) -> None:
         problems.append(f"status must be one of {sorted(STATUSES)}")
     if not (s.auth == "none" or s.auth.startswith("key:")):
         problems.append("auth must be 'none' or 'key:<ENV_VAR>'")
+    if s.adapter is not None and not re.fullmatch(r"[a-z][a-z0-9_]*", s.adapter):
+        problems.append("adapter must be a module name like 'noaa_tides'")
+    if s.adapter is not None and s.cadence_s is None:
+        problems.append("a collected source (adapter set) needs a cadence_s")
     if s.cadence_s is not None and s.cadence_s < 30:
         problems.append("cadence_s under 30 s is too aggressive for public feeds")
     if problems:

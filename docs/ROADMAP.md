@@ -32,7 +32,7 @@ the soak test is wall-clock time, so Phase 2 scaffolding may start while it runs
 2. ✅ (2026-11-14) `settings.py`, `timeutil.py` (`parse_iso_utc`, `parse_naive_utc`, `from_epoch`,
    `local_to_utc`), `http.py`
    (tests use `httpx.MockTransport`).
-3. `model.py` (records, `KINDS` / `METRICS` / `CATEGORIES`, `borough_code`, Arrow schemas) and
+3. ✅ (2026-11-14) `model.py` (records, `KINDS` / `METRICS` / `CATEGORIES`, `borough_code`, Arrow schemas) and
    `sources/base.py`, exactly as DATA_MODEL "Adapter contract v1".
 4. `nyclive capture <source> [--part name=url ...] [--case real]` and `tests/helpers.py`
    (`load_fixture`, `assert_valid_batch`).
