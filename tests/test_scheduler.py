@@ -115,7 +115,7 @@ def test_unknown_or_uncollected_ids_are_rejected(tmp_path):
     with pytest.raises(SystemExit, match="unknown"):
         Collector(REG, settings, only=["nope"], http=None)
     with pytest.raises(SystemExit, match="no adapter"):
-        Collector(REG, settings, only=["nyc_311"], http=None)
+        Collector(REG, settings, only=["mta_subway_realtime"], http=None)  # Phase 5, no adapter
 
 
 def test_single_instance_lock(tmp_path):

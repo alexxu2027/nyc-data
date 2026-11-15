@@ -24,6 +24,7 @@ sources:
   # ---------------------------------------------------------------- cameras
   dot_cameras:
     name: NYC DOT traffic cameras (list)
+    adapter: dot_cameras
     phase: 1
     shape: entities
     cadence_s: 86400
@@ -79,6 +80,7 @@ sources:
   # --------------------------------------------------------------------- MTA
   mta_subway_alerts:
     name: MTA subway service alerts (GTFS-rt as JSON)
+    adapter: mta_alerts
     phase: 1
     shape: events
     cadence_s: 60
@@ -91,6 +93,7 @@ sources:
 
   mta_elevator_outages:
     name: MTA elevator & escalator outages
+    adapter: mta_elevators
     phase: 1
     shape: events
     cadence_s: 300
@@ -107,6 +110,7 @@ sources:
 
   mta_subway_stations:
     name: MTA subway stations (data.ny.gov 39hk-dx4f)
+    adapter: mta_stations
     phase: 1
     shape: entities
     cadence_s: 86400
@@ -148,6 +152,7 @@ sources:
 
   openmeteo_current:
     name: Open-Meteo current weather (borough points)
+    adapter: openmeteo
     phase: 1
     shape: observations
     cadence_s: 900
@@ -162,6 +167,7 @@ sources:
 
   nws_alerts:
     name: National Weather Service active alerts (NY)
+    adapter: nws_alerts
     phase: 1
     shape: events
     cadence_s: 120
@@ -177,6 +183,7 @@ sources:
 
   floodnet_sensors:
     name: FloodNet sensor deployments (NYC Open Data kb2e-tjy3)
+    adapter: floodnet
     phase: 1
     shape: entities
     cadence_s: 86400
@@ -189,6 +196,7 @@ sources:
 
   floodnet_events:
     name: FloodNet flood events (NYC Open Data aq7i-eu5q)
+    adapter: floodnet
     phase: 1
     shape: events
     cadence_s: 86400
@@ -219,6 +227,7 @@ sources:
   # ------------------------------------------------------- NYC Open Data
   nyc_311:
     name: 311 service requests (erm2-nwe9)
+    adapter: nyc_311
     phase: 1
     shape: events
     cadence_s: 21600
@@ -236,6 +245,7 @@ sources:
 
   nyc_collisions:
     name: Motor vehicle collisions (h9gi-nx95)
+    adapter: nyc_collisions
     phase: 1
     shape: events
     cadence_s: 86400
@@ -250,6 +260,7 @@ sources:
 
   dot_traffic_speeds:
     name: DOT real-time traffic speeds (i4gi-tjb9)
+    adapter: dot_speeds
     phase: 1
     shape: observations
     cadence_s: 300

@@ -17,7 +17,7 @@ from typing import Any, Self
 
 from nyclive.timeutil import ensure_utc
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2  # v2: events.last_seen (2026-11-15)
 
 _DDL = """
 CREATE TABLE IF NOT EXISTS entities (
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS events (
     source TEXT NOT NULL, event_id TEXT NOT NULL, category TEXT, subtype TEXT, title TEXT,
     starts_at TEXT, ends_at TEXT, severity INTEGER, lat REAL, lon REAL, geometry_wkt TEXT,
     borough TEXT, entity_refs TEXT, props TEXT, payload_hash TEXT,
-    first_seen TEXT, updated_at TEXT,
+    first_seen TEXT, updated_at TEXT, last_seen TEXT,
     PRIMARY KEY (source, event_id)
 );
 CREATE INDEX IF NOT EXISTS events_ends ON events (source, ends_at);
@@ -67,7 +67,7 @@ LATEST_COLS = ("kind", "entity_id", "metric", "source", "value", "observed_at", 
 EVENT_COLS = (
     "source", "event_id", "category", "subtype", "title", "starts_at", "ends_at", "severity",
     "lat", "lon", "geometry_wkt", "borough", "entity_refs", "props", "payload_hash",
-    "first_seen", "updated_at",
+    "first_seen", "updated_at", "last_seen",
 )  # fmt: skip
 RUN_COLS = ("run_id", "source", "started_at", "finished_at", "ok", "bytes", "rows_written", "error")
 
@@ -87,6 +87,7 @@ class RunCommit:
     keyframe_date: str | None
     entities: list[dict[str, Any]] = field(default_factory=list)  # full rows (ENTITY_COLS)
     seen_entities: list[tuple[str, str]] = field(default_factory=list)  # bump last_seen only
+    seen_events: list[str] = field(default_factory=list)  # event_ids: bump last_seen only
     latest: list[dict[str, Any]] = field(default_factory=list)  # LATEST_COLS
     events: list[dict[str, Any]] = field(default_factory=list)  # EVENT_COLS
     lag_s: float | None = None
@@ -111,6 +112,9 @@ class StateStore:
                 raise RuntimeError(
                     f"{path} has schema v{version}; this code knows v{SCHEMA_VERSION}"
                 )
+            if version == 1:  # v1 -> v2: events.last_seen, backfilled from updated_at
+                c.execute("ALTER TABLE events ADD COLUMN last_seen TEXT")
+                c.execute("UPDATE events SET last_seen = updated_at")
             c.executescript(_DDL)
             c.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
 
@@ -193,6 +197,11 @@ class StateStore:
                     )
                 _upsert(conn, "latest", LATEST_COLS, ("kind", "entity_id", "metric"), c.latest)
                 _upsert(conn, "events", EVENT_COLS, ("source", "event_id"), c.events)
+                if c.seen_events:
+                    conn.executemany(
+                        "UPDATE events SET last_seen = ? WHERE source = ? AND event_id = ?",
+                        [(run["finished_at"], c.source, e) for e in c.seen_events],
+                    )
                 _insert_run(conn, run)
                 conn.execute(
                     """INSERT INTO source_state (source, cursor, keyframe_date, last_attempt,
@@ -249,10 +258,14 @@ class StateStore:
         return n
 
     def prune(self, before: str) -> None:
-        """Drop closed events and runs older than `before` (the archive keeps them)."""
+        """Drop closed events not seen since `before`, and runs older than it (the archive
+        keeps both). "Seen", not "ended": a feed that re-sends old closed events (collisions,
+        FloodNet) must keep them in state, or every run would re-write them as new."""
         with self._lock:
             self._conn.execute(
-                "DELETE FROM events WHERE ends_at IS NOT NULL AND ends_at < ?", (before,)
+                "DELETE FROM events WHERE ends_at IS NOT NULL"
+                " AND COALESCE(last_seen, updated_at) < ?",
+                (before,),
             )
             self._conn.execute("DELETE FROM runs WHERE started_at < ?", (before,))
 

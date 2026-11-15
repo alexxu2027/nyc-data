@@ -49,7 +49,7 @@ chosen minute. Leave it running from here. The adapter contract is now frozen as
 
 ### 1B. Remaining adapters (parallel-safe; builders work offline)
 8. ✅ (2026-11-15) Conductor: `sources/_socrata.py` (paging, `$select`, lookback, page cap); capture `real` fixtures for every remaining source.
-9. Packages, each owning only its module(s), `tests/fixtures/<id>/` and
+9. ✅ (2026-11-15) Packages, each owning only its module(s), `tests/fixtures/<id>/` and
    `tests/sources/test_<module>.py`:
    - B1 `openmeteo`, `nws_alerts`
    - B2 `dot_cameras`
@@ -59,10 +59,11 @@ chosen minute. Leave it running from here. The adapter contract is now frozen as
    - B6 `dot_speeds`
 
    Run B1 alone first as a pilot of the workflow (`/orchestrate` Tier 2), then the rest in parallel.
-10. Conductor: set `adapter:` in the registry, extend enums from builder handbacks, run
+10. ✅ (2026-11-15) Conductor: set `adapter:` in the registry, extend enums from builder handbacks, run
     `nyclive collect --once --only <id>` live for each, update DATA_SOURCES.
 
-**Gate B:** the conformance test is green for every source with an adapter, and all of them are in
+**Gate B ✅ passed 2026-11-15 03:39 UTC** (42/42 conformance checks for 14 sources; all 14 in the
+running collector, live runs ok). Criteria: the conformance test is green for every source with an adapter, and all of them are in
 the running collector.
 
 ### 1C. Hardening

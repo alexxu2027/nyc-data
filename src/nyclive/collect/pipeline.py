@@ -129,6 +129,7 @@ def run_once(
                     ),
                     entities=rows.entity_state,
                     seen_entities=rows.seen_entities,
+                    seen_events=rows.seen_events,
                     latest=rows.latest_state,
                     events=rows.event_state,
                     lag_s=_lag_s(batch, fetched_at),
@@ -160,6 +161,7 @@ class _Rows:
     total: int = 0
     entity_state: list = field(default_factory=list)
     seen_entities: list = field(default_factory=list)
+    seen_events: list = field(default_factory=list)
     latest_state: list = field(default_factory=list)
     event_state: list = field(default_factory=list)
 
@@ -230,6 +232,7 @@ def _write(
         h = payload_hash(ev)
         prev = known_ev.get(ev.event_id)
         if prev and prev["payload_hash"] == h:
+            out.seen_events.append(ev.event_id)
             continue
         row = archive.event_row(ev, h, fetched_at)
         ev_rows.append(row)
@@ -260,6 +263,7 @@ def _event_state(row: dict, prev: dict | None, fetched_at: datetime) -> dict:
         "updated_at": ts(row["updated_at"]),
         "entity_refs": json.dumps(row["entity_refs"]),
         "first_seen": prev["first_seen"] if prev else ts(fetched_at),
+        "last_seen": ts(fetched_at),
     }
 
 

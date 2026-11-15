@@ -58,6 +58,10 @@ without a key. The other 2 were skipped because they need free keys. `mta_subway
   `link_points`, `data_as_of`, `link_id`, borough.
 - Build geometry from `encoded_poly_line` (Google polyline). `link_points` is **truncated**
   mid-coordinate. `data_as_of` is New York local with no offset.
+- The polyline is published with every `|` escaped as two backslashes + `|`; undo that before
+  decoding (otherwise ~1 in 4 links decodes outside NYC). Some polylines are themselves truncated.
+- Rows with a negative `status` (seen: -101) carry speed 0 / travel time 0 = no reading; they
+  produce no observations. The feed lags ~2 h, so the first-run lookback is 4 h.
 - Quirk: the newest row was about 2 h old at probe time, so label it "near-live".
 
 ### Water & weather
@@ -74,6 +78,9 @@ without a key. The other 2 were skipped because they need free keys. `mta_subway
   `/sensors/data/recently`, `/sensors/data/tail` and `/stations`, all undocumented.
   **Phase 1 spike:** confirm public read access and polling etiquette, ideally by contacting the
   FloodNet team. If no, the map shows events with a "data as of" label.
+- **Event times are UTC**, not New York local like other Socrata data (verified 2026-11-15:
+  tidal-sensor flood peaks land 29–61 min after NOAA Rockaway Inlet high tides when read as
+  UTC). The `$where` cursor literal is UTC too. Some sensors have `date_removed`.
 
 **NOAA tide gauge, The Battery** (`noaa_tide_battery`)
 - CO-OPS datagetter, station `8518750`, `product=water_level` (6-min) plus `product=predictions`
@@ -84,6 +91,8 @@ without a key. The other 2 were skipped because they need free keys. `mta_subway
   {036005, 036047, 036061, 036081, 036085}.
 - NWS asks for a User-Agent with contact info. The default UA carries the repo URL;
   `NYCLIVE_USER_AGENT` overrides it.
+- Expiration statements (VTEC EXP) arrive after the event, so `onset` > `ends`; they are skipped.
+  The original alert then leaves the active feed and the pipeline closes it.
 - Active alerts can be empty (221 bytes at probe time). Capture alert fixtures from
   `/alerts?area=NY` (recent, including expired) so tests have real features.
 

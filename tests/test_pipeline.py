@@ -14,6 +14,7 @@ from nyclive.sources import citibike, noaa_tides
 from nyclive.sources.base import Adapter, Batch, RawPart, RawPayload
 from nyclive.storage import archive
 from nyclive.storage.state import StateStore
+from nyclive.storage.state import ts as ts_
 
 REG = load_registry()
 STATUS = REG.sources["citibike_station_status"]
@@ -281,3 +282,42 @@ def test_compact_open_day_then_keep_writing(store, tmp_path):
     archive.compact(arch, now=t2, include_open=True)
     assert len(archive.partition_files(arch, STATUS.id, "observations", T1.date())) == 1
     assert len(obs_rows(arch, STATUS.id, T1.date())) == n_keys + 1
+
+
+def test_prune_keeps_old_closed_events_that_are_still_being_sent(store, tmp_path):
+    """Regression (2026-11-15): pruning by ends_at made collisions re-write every run."""
+    arch = tmp_path / "archive"
+    sid = "nyc_collisions"
+    src = REG.sources[sid]
+    old = T1 - timedelta(days=9)
+    ev = Event(sid, "c1", "collision", "Collision", old, old)  # instant, ended 9 days ago
+
+    def parse(raw):
+        return Batch(events=[ev])
+
+    raw = RawPayload(sid, (RawPart("body", "u", b"{}", T1),))
+    a = Adapter("x", (sid,), lambda ctx: raw, parse)
+    assert run_once(src, a, None, store, arch, now=clock(T1)).rows_written == 1
+    store.prune(ts_(T1 - timedelta(days=7)))  # it was seen today, so it stays
+    assert store.count("events", sid) == 1
+    assert run_once(src, a, None, store, arch, now=clock(T1)).rows_written == 0
+    store.prune(ts_(T1 + timedelta(days=8)))  # not seen for 8 days: now it goes
+    assert store.count("events", sid) == 0
+
+
+def test_state_v1_migrates_to_v2(tmp_path):
+    import sqlite3
+
+    db = tmp_path / "old.db"
+    con = sqlite3.connect(db)
+    con.executescript(
+        "CREATE TABLE events (source TEXT NOT NULL, event_id TEXT NOT NULL, category TEXT,"
+        " subtype TEXT, title TEXT, starts_at TEXT, ends_at TEXT, severity INTEGER, lat REAL,"
+        " lon REAL, geometry_wkt TEXT, borough TEXT, entity_refs TEXT, props TEXT,"
+        " payload_hash TEXT, first_seen TEXT, updated_at TEXT, PRIMARY KEY (source, event_id));"
+        "INSERT INTO events (source, event_id, updated_at) VALUES ('s', 'e', '2026-01-01');"
+        "PRAGMA user_version=1;"
+    )
+    con.close()
+    with StateStore(db) as s:
+        assert s.events_for("s")["e"]["last_seen"] == "2026-01-01"

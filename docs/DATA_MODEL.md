@@ -84,14 +84,15 @@ the adapter) derives it from lat/lon with a point-in-polygon against the NYC bor
 boundaries (cached GeoJSON in `config/`).
 
 ## SQLite `state.db` tables
-Implemented in `storage/state.py` (schema v1, `PRAGMA user_version`). Timestamps are ISO 8601 UTC
+Implemented in `storage/state.py` (schema v2, `PRAGMA user_version`; v1 migrates in place). Timestamps are ISO 8601 UTC
 text with microseconds, so they sort correctly as strings.
 - `entities`: same columns as Entity plus `payload_hash`, `first_seen`, `last_seen`. PK (`kind`,
   `entity_id`).
 - `latest`: (`kind`, `entity_id`, `metric`) → `value`, `observed_at` (newest reading; never moves
   backwards), `fetched_at`, `source`.
-- `events`: the current version of every event. Map queries filter on `ends_at`; `prune()` drops
-  closed events older than the retention window (the archive keeps them).
+- `events`: the current version of every event, plus `last_seen` (schema v2). Map queries filter
+  on `ends_at`; `prune()` drops closed events not *seen* for 7 days (the archive keeps them).
+  Pruning by `ends_at` instead made re-sent old events (collisions, FloodNet) re-write every run.
 - `source_state`: per source `cursor`, `keyframe_date`, `last_attempt`, `last_success`,
   `last_error`, `consecutive_failures`, `rows_last_run`, `lag_s`.
 - `runs`: one row per job run: `run_id`, `source`, `started_at`, `finished_at`, `ok`, `bytes`,
