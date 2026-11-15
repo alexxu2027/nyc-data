@@ -71,15 +71,17 @@ start it again with `uv run nyclive collect --keep-awake`. To stop it: Task Mana
 `Get-CimInstance Win32_Process | ? CommandLine -like '*nyclive*collect*' | % { Stop-Process -Id $_.ProcessId }`.
 Restart it after adding adapters so it picks up new sources.
 
-## Next: ROADMAP 1B (remaining adapters)
-1. Conductor first (step 8): write `sources/_socrata.py` (paging, `$select`, lookback, page cap)
-   and capture `real` fixtures for every remaining source, so builders stay offline.
-2. Then 6 packages (step 9), each owning only its module(s), fixtures and test file: B1
-   openmeteo + nws_alerts, B2 dot_cameras, B3 mta_stations/alerts/elevators, B4 floodnet, B5
-   nyc_311 + nyc_collisions, B6 dot_speeds. This fits `/orchestrate` Tier 2. Pilot B1 alone,
-   then run the rest in parallel.
-3. Step 10: set `adapter:` in the registry, run `nyclive collect --once --only <id>` live for
-   each, restart the collector, update DATA_SOURCES. Gate B = conformance test green for all.
+## ROADMAP 1B in progress (2026-11-15)
+- ✅ Step 8 (conductor): `sources/_socrata.py`; `real` fixtures for all 11 remaining sources;
+  `parse_fixture(module=)` so builders test before the registry names the adapter.
+- ✅ B2 `dot_cameras` (conductor inline; 974 cameras live, no problems).
+- ✅ B1 pilot `openmeteo` + `nws_alerts` (Opus builder in a worktree, merged; live OK). NWS
+  expiration statements (onset > ends) are skipped by design.
+- ⏳ Wave 2 running in parallel worktrees: B3 MTA (stations, alerts, elevators), B4 FloodNet,
+  B5 311 + collisions, B6 DOT speeds. Briefs: `.orchestrate/1b/context.md` and `plan.md`
+  (gitignored, local only).
+- Then step 10 (conductor): merge, set `adapter:` in sources.yaml, `nyclive collect --once --only
+  <id>` live for each, restart the collector, update DATA_SOURCES; one Fable review; Gate B.
 
 ## Open decisions
 - ADR-009 hosting (decide in Phase 3).
