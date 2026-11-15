@@ -1,0 +1,14 @@
+{
+  "source_id": "dot_cameras",
+  "captured_at": "2026-11-15T03:20:29.544200+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "body",
+      "url": "https://webcams.nyctmc.org/api/cameras",
+      "file": "body.json",
+      "fetched_at": "2026-11-15T03:20:29.544200+00:00"
+    }
+  ],
+  "note": "cams[0] at 0,0; [1] offline; [2] empty area; [3] null name; [4] swapped lat/lon; plus a row with no id"
+}
