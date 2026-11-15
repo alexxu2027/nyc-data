@@ -1,0 +1,14 @@
+{
+  "source_id": "mta_subway_stations",
+  "captured_at": "2026-11-15T03:20:30.355947+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "body",
+      "url": "https://data.ny.gov/resource/39hk-dx4f.json?$limit=5000",
+      "file": "body.json",
+      "fetched_at": "2026-11-15T03:20:30.355947+00:00"
+    }
+  ],
+  "note": "first 8 real rows; [1] borough Bx, [2] SI, [3] 'Nowhere'; [4] lat NaN, lon blank; [5] no ada key; [6] blank stop_name; plus a row with no gtfs_stop_id and a duplicate of R01"
+}

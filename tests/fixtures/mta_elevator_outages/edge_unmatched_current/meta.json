@@ -1,0 +1,20 @@
+{
+  "source_id": "mta_elevator_outages",
+  "captured_at": "2026-11-15T03:20:33.665422+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "outages",
+      "url": "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fnyct_ene.json",
+      "file": "outages.json",
+      "fetched_at": "2026-11-15T03:20:31.579339+00:00"
+    },
+    {
+      "name": "equipments",
+      "url": "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fnyct_ene_equipments.json",
+      "file": "equipments.json",
+      "fetched_at": "2026-11-15T03:20:33.665422+00:00"
+    }
+  ],
+  "note": "outages = real[0:11] + dup of [8]; equipments = real rows for those minus EL142/EL143 (125 St, unmatched) + a row with no equipmentno. [0] EL124 current (11/14 7:15 AM, not upcoming, maintenance, blank estimate); EL123 stop ids 'A07, L01N' and isactive N; [3] ES999 escalator (unmatched); [5] outagedate 'soon'; [6] blank equipment; [7] estimate 'TBD'"
+}
