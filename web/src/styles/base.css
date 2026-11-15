@@ -1,0 +1,860 @@
+/* Base and component styles (U2). Class names here are part of the UI kit: other units may
+ * use them directly (.l, .screen, .chip, .t, .num, .muted, .full/.short, .boxed, .float,
+ * .hscroll, .hide-phone, .hide-mid) but should prefer the React primitives in src/ui.
+ */
+
+/* ---- Reset ------------------------------------------------------------------------------ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  font-weight: 400 !important; /* law 1: one weight, everywhere, including third-party CSS */
+  font-synthesis: none;
+}
+
+html {
+  font-family: var(--mono);
+  font-size: 15px;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body,
+[data-theme],
+.screen {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--mono);
+  font-size: 1rem;
+  line-height: var(--lh);
+  font-variant-ligatures: none;
+  font-variant-numeric: tabular-nums;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font: inherit;
+  margin: 0;
+}
+
+p,
+ul,
+ol,
+dl,
+dd,
+figure,
+blockquote {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* ---- Utilities -------------------------------------------------------------------------- */
+
+.muted {
+  color: var(--muted);
+}
+
+.upper {
+  text-transform: uppercase;
+}
+
+.boxed {
+  border: 1px solid var(--ink);
+}
+
+.float {
+  border: 1px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink); /* hard offset, never blurred */
+}
+
+.hscroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+
+.hscroll::-webkit-scrollbar {
+  display: none;
+}
+
+.short {
+  display: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---- Panel ------------------------------------------------------------------------------ */
+
+.panel {
+  counter-reset: ln;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.panel.numbered {
+  --gw: 5ch;
+}
+
+.panel-head,
+.panel-body,
+.panel-foot {
+  padding: 0 var(--pad-x) 0 var(--gw);
+}
+
+.panel-head,
+.panel-foot {
+  flex: none;
+}
+
+.panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto; /* no overscroll-behavior here: an unconstrained panel must not trap the wheel */
+  overflow-anchor: none;
+}
+
+.panel-title {
+  display: inline-block;
+  text-transform: uppercase;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0 1.5ch;
+  margin: -1px 0;
+}
+
+/* ---- The line grid ---------------------------------------------------------------------- */
+
+.l {
+  counter-increment: ln;
+  position: relative;
+  min-height: var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  column-gap: 2ch;
+}
+
+.l > .l-main {
+  min-width: 0;
+}
+
+.l > .l-right {
+  flex: none;
+  margin-left: auto;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.l.c {
+  justify-content: center;
+  text-align: center;
+}
+
+.l.c > .l-right {
+  margin-left: 0;
+}
+
+.l.indent {
+  padding-left: calc(var(--indent, 1) * 2ch);
+}
+
+.l.nowrap {
+  flex-wrap: nowrap;
+}
+
+.l.nowrap > .l-main {
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.l.clickable {
+  cursor: pointer;
+}
+
+.l.clickable:hover {
+  outline: 1px solid var(--ink);
+  outline-offset: -1px;
+}
+
+/* A row inside a row (Check, Radio, Readout used inline) flows as an inline item: one line,
+ * no number of its own. */
+.l .l {
+  counter-increment: none;
+  display: inline-flex;
+  min-height: 0;
+}
+
+/* Gutter numbers: only inside a numbered panel. Hidden from assistive tech. */
+.l::before {
+  content: none;
+}
+
+.numbered .l::before {
+  content: counter(ln);
+  content: counter(ln) / '';
+  position: absolute;
+  right: 100%;
+  top: 0;
+  padding-right: 2.2ch;
+  font-size: 10px;
+  line-height: var(--line);
+  color: var(--gutter);
+  white-space: pre;
+  text-align: right;
+  pointer-events: none;
+  user-select: none;
+}
+
+.numbered .l[data-ln]::before {
+  content: attr(data-ln);
+  content: attr(data-ln) / '';
+}
+
+.numbered .l .l::before,
+.numbered .panel:not(.numbered) .l::before,
+.numbered .bsheet .l::before {
+  content: none;
+}
+
+/* Heading: centred uppercase line. */
+.heading {
+  justify-content: center;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* Divider: far more "=" than any width needs, clipped to the column. */
+.divider > span {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+/* Key / value grids inside a line, in ch. */
+.kv {
+  display: grid;
+  grid-template-columns: 20ch 1fr;
+  column-gap: 2ch;
+  justify-content: start;
+}
+
+/* ---- Chip ------------------------------------------------------------------------------- */
+
+.chip {
+  display: inline-block;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  padding: 0 1.5ch;
+  margin: -1px 0; /* takes back the border: the chip spans exactly one line */
+  background: transparent;
+  color: inherit;
+  line-height: var(--line);
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+  vertical-align: baseline;
+}
+
+button.chip,
+a.chip {
+  cursor: pointer;
+}
+
+.chip.inv,
+.chip[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+button.chip:hover,
+a.chip:hover,
+button.chip:focus-visible,
+a.chip:focus-visible {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.chip.inv:hover,
+.chip[aria-pressed='true']:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---- Text button: [LIKE THIS] ----------------------------------------------------------- */
+
+button.t {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0 0.5ch;
+  margin: 0;
+  cursor: pointer;
+  line-height: inherit;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+button.t:hover {
+  outline: 1px solid var(--ink);
+  outline-offset: -1px;
+}
+
+button.t:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+button.t[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+button.t[aria-disabled='true'] {
+  color: var(--muted);
+  cursor: default;
+}
+
+button.t[aria-disabled='true']:hover {
+  outline: none;
+}
+
+/* ---- Bracket choices: [ ] [X] ( ) (X), real inputs underneath --------------------------- */
+
+.opt {
+  position: relative;
+  cursor: pointer;
+}
+
+.opt > label {
+  display: inline-flex;
+  column-gap: 1ch;
+  min-width: 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.opt input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  margin: 0;
+  pointer-events: none;
+}
+
+.opt .box {
+  flex: none;
+}
+
+.opt .box::before {
+  content: '( )';
+  white-space: pre;
+}
+
+.opt input:checked + .box::before {
+  content: '(X)';
+}
+
+.opt.cb .box::before {
+  content: '[ ]';
+}
+
+.opt.cb input:checked + .box::before {
+  content: '[X]';
+}
+
+.opt .txt {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.opt > label:hover .txt {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.opt input:focus-visible + .box {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.opt.disabled,
+.opt.disabled > label {
+  color: var(--muted);
+  cursor: default;
+}
+
+.opt.disabled > label:hover .txt {
+  text-decoration: none;
+}
+
+.l.opt {
+  flex-wrap: nowrap;
+}
+
+.l.opt > label {
+  flex: 1 1 auto;
+}
+
+.l .l + .l {
+  margin-left: 2ch; /* inline choices side by side */
+}
+
+.opts {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 3ch;
+}
+
+/* ---- Readouts and live numbers ---------------------------------------------------------- */
+
+.ro {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  column-gap: 1ch;
+}
+
+.ro > .ro-k {
+  flex: none;
+  min-width: var(--ro-k, 10ch);
+  text-transform: uppercase;
+}
+
+.ro > .ro-v {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ro > .ro-r {
+  flex: none;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.num {
+  display: inline-block;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.num.right {
+  text-align: right;
+}
+
+/* ---- Banner: a band behind words -------------------------------------------------------- */
+
+.banner {
+  padding: 0 1.5ch;
+  text-transform: uppercase;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.banner.warn {
+  background: var(--warn);
+  color: var(--on-warn);
+}
+
+.banner.amber {
+  background: var(--amber);
+  color: var(--on-amber);
+}
+
+.banner.green {
+  background: var(--green);
+  color: var(--on-green);
+}
+
+/* ---- Swatch (the one place data colour appears in the chrome) --------------------------- */
+
+.swatch {
+  display: inline-block;
+  flex: none;
+  width: 4ch; /* 27 × 15 box at 36 × 20 px: fits inside one 27 px line */
+  height: calc(4em * 0.6 / 1.8);
+  vertical-align: -0.3em;
+  overflow: visible;
+  forced-color-adjust: none; /* the colour is the meaning */
+}
+
+.swatch .sw-ink {
+  stroke: var(--ink);
+}
+
+.swatch .sw-paper {
+  fill: var(--paper);
+}
+
+/* ---- FreshDot: shape-coded freshness ---------------------------------------------------- */
+
+.fresh {
+  display: inline-block;
+  flex: none;
+  width: 1.2ch;
+  height: 1.2ch;
+  vertical-align: -0.05em;
+  color: var(--ink);
+  overflow: visible;
+}
+
+.fresh.off {
+  color: var(--faint);
+}
+
+/* ---- Spark ------------------------------------------------------------------------------ */
+
+.spark {
+  display: inline-block;
+  flex: none;
+  height: 13px;
+  vertical-align: -1px;
+  overflow: visible;
+}
+
+.spark .sp-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.spark .sp-dot {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 3;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.spark .sp-empty {
+  fill: none;
+  stroke: var(--faint);
+  stroke-width: 1;
+  stroke-dasharray: 1 2;
+  vector-effect: non-scaling-stroke;
+}
+
+/* ---- Sheet (phone bottom sheet) --------------------------------------------------------- */
+
+.bsheet-root {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-sheet);
+  pointer-events: none;
+  /* Detent heights. Override --sheet-gap on an ancestor to keep a top bar visible. */
+  --sheet-peek: calc(var(--line) * 2 + 1px);
+  --sheet-half: 50%;
+  --sheet-full: calc(100% - var(--sheet-gap, calc(var(--line) * 2)));
+}
+
+.bsheet-root[data-open='false'] {
+  visibility: hidden;
+}
+
+.bsheet-probe {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  visibility: hidden;
+}
+
+.bsheet {
+  counter-reset: ln; /* a sheet is its own numbering scope; put a numbered Panel inside for numbers */
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  height: var(--sheet-half);
+  background: var(--paper);
+  color: var(--ink);
+  border-top: 1px solid var(--ink);
+  box-shadow: 0 -3px 0 var(--ink);
+  pointer-events: auto;
+  overflow: hidden;
+}
+
+.bsheet[data-detent='peek'] {
+  height: var(--sheet-peek);
+}
+
+.bsheet[data-detent='full'] {
+  height: var(--sheet-full);
+}
+
+.bsheet-grip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: var(--line);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: grab;
+  touch-action: none;
+}
+
+.bsheet-grip > i {
+  display: block;
+  width: 6ch;
+  height: 5px;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+}
+
+.bsheet.dragging .bsheet-grip {
+  cursor: grabbing;
+}
+
+.bsheet-head {
+  flex: none;
+  padding: 0 var(--pad-x);
+  touch-action: none;
+}
+
+.bsheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  overflow-anchor: none;
+}
+
+.bsheet[data-detent='peek'] .bsheet-body {
+  overflow: hidden;
+}
+
+/* ---- Breakpoints: 860 px (mid) and 680 px (phone) -------------------------------------- */
+
+@media (max-width: 860px) {
+  .hide-mid {
+    display: none !important;
+  }
+}
+
+@media (max-width: 680px) {
+  html {
+    font-size: 14px;
+  }
+
+  .panel.numbered {
+    --gw: 4ch;
+  }
+
+  .numbered .l::before {
+    padding-right: 1.6ch;
+  }
+
+  .kv {
+    grid-template-columns: 14ch 1fr;
+    column-gap: 1ch;
+  }
+
+  .ro > .ro-k {
+    min-width: var(--ro-k-phone, var(--ro-k, 8ch));
+  }
+
+  .full {
+    display: none;
+  }
+
+  .short {
+    display: inline;
+  }
+
+  .hide-phone {
+    display: none !important;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px; /* iOS Safari does not zoom on focus */
+  }
+}
+
+/* ---- Forced colours (Windows high contrast) -------------------------------------------- */
+
+@media (forced-colors: active) {
+  .chip.inv,
+  .chip[aria-pressed='true'],
+  .panel-title,
+  button.t[aria-pressed='true'],
+  ::selection {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+    border-color: Highlight;
+  }
+
+  button.chip:hover,
+  a.chip:hover,
+  button.chip:focus-visible,
+  a.chip:focus-visible {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .chip,
+  .boxed,
+  .float,
+  .bsheet {
+    border-color: CanvasText;
+  }
+
+  .banner {
+    border: 1px solid CanvasText;
+  }
+
+  .banner.warn {
+    forced-color-adjust: none;
+    background: Mark;
+    color: MarkText;
+  }
+
+  .spark .sp-line,
+  .spark .sp-dot {
+    stroke: CanvasText;
+  }
+
+  .spark .sp-empty {
+    stroke: GrayText;
+  }
+
+  .swatch .sw-ink {
+    stroke: CanvasText;
+  }
+
+  .swatch .sw-paper {
+    fill: Canvas;
+  }
+
+  .float,
+  .bsheet {
+    box-shadow: none;
+  }
+
+  .bsheet-grip > i {
+    border-color: CanvasText;
+  }
+
+  .l.clickable:hover,
+  button.t:hover {
+    outline-color: Highlight;
+  }
+}
+
+/* ---- Print ------------------------------------------------------------------------------ */
+
+@media print {
+  html,
+  body,
+  #root {
+    height: auto;
+  }
+
+  .float,
+  .bsheet {
+    box-shadow: none;
+  }
+
+  .panel,
+  .panel-body {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .bsheet-root {
+    position: static;
+    visibility: visible;
+  }
+
+  .bsheet {
+    position: static;
+    height: auto !important;
+  }
+
+  .bsheet-grip,
+  .no-print {
+    display: none !important;
+  }
+
+  .banner {
+    border: 1px solid var(--ink);
+  }
+
+  a[href^='http']::after {
+    content: ' <' attr(href) '>';
+    color: var(--muted);
+  }
+}

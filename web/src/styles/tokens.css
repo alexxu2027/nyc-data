@@ -1,0 +1,100 @@
+/* Design tokens (U2). Transcript chrome: ink on paper, one face, one weight.
+ *
+ * Every theme scope declares the same token names, so a dark theme or an inverted panel
+ * changes the look of everything inside it without extra selectors. A scope also declares
+ * the `--inv-*` set (its own inverse); `.screen` reads those, so an inverted panel inverts
+ * relative to the nearest theme: black on a paper page, light on a dark page.
+ *
+ * Public (plan §6): --ink --paper --gutter --faint --muted --amber --green --warn --mono --lh
+ * and the --z-* stack. Extras: --on-amber/--on-green/--on-warn (text on a band), --line (one
+ * line in px), --pad-x, --gw (gutter width), --col-panel, --col-drawer.
+ */
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+  --ink: #111111;
+  --paper: #ffffff;
+  --gutter: #8a8a8a; /* line numbers */
+  --faint: #c9c9c9; /* empty slots, rules, off states */
+  --muted: #595959; /* hints and secondary readouts: 7:1 on paper */
+
+  --inv-ink: #f2f2f2;
+  --inv-paper: #0a0a0a;
+  --inv-gutter: #747474;
+  --inv-faint: #3d3d3d;
+  --inv-muted: #a6a6a6; /* 8:1 on #0a0a0a */
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --ink: #f2f2f2;
+  --paper: #0a0a0a;
+  --gutter: #747474;
+  --faint: #3d3d3d;
+  --muted: #a6a6a6;
+
+  /* Inverted panels on a dark page are a soft paper, not pure white, to keep glare down. */
+  --inv-ink: #111111;
+  --inv-paper: #ececec;
+  --inv-gutter: #767676;
+  --inv-faint: #c2c2c2;
+  --inv-muted: #525252; /* 6.6:1 on #ececec */
+}
+
+:root {
+  /* Bands sit behind words. They are the same in every theme and carry their own text colour. */
+  --amber: #b06300; /* --on-amber (white) on it: 4.6:1 */
+  --green: #0cab2c; /* --on-green (#111) on it: 6.4:1 */
+  --warn: #ffc400; /* highlighter: only ever behind #111 */
+  --on-amber: #ffffff;
+  --on-green: #111111;
+  --on-warn: #111111;
+
+  --mono: 'Source Code Pro', ui-monospace, Menlo, Consolas, monospace;
+  --lh: 1.8;
+  --line: calc(var(--lh) * 1rem); /* one printed line: 27px desktop, 25.2px phone */
+
+  --pad-x: 1.5ch; /* panel side padding */
+  --gw: var(--pad-x); /* left padding; numbered panels widen it to hold the gutter */
+  --col-panel: 44ch; /* layer panel column (plan §7.2) */
+  --col-drawer: 46ch; /* detail drawer overlay (plan §7.2) */
+
+  --z-map: 0;
+  --z-panel: 10;
+  --z-drawer: 20;
+  --z-sheet: 30;
+  --z-modal: 40;
+}
+
+.screen {
+  color-scheme: dark;
+  --ink: var(--inv-ink);
+  --paper: var(--inv-paper);
+  --gutter: var(--inv-gutter);
+  --faint: var(--inv-faint);
+  --muted: var(--inv-muted);
+}
+
+[data-theme='dark'] .screen {
+  color-scheme: light;
+}
+
+@media print {
+  :root,
+  [data-theme='light'],
+  [data-theme='dark'],
+  .screen {
+    color-scheme: light;
+    --ink: #111111;
+    --paper: #ffffff;
+    --gutter: #8a8a8a;
+    --faint: #c9c9c9;
+    --muted: #595959;
+    --inv-ink: #111111;
+    --inv-paper: #ffffff;
+    --inv-gutter: #8a8a8a;
+    --inv-faint: #c9c9c9;
+    --inv-muted: #595959;
+  }
+}

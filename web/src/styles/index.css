@@ -1,7 +1,4 @@
-/* STUB (wave 0). Owned by U2: imports tokens.css, base.css, motion.css. */
-html,
-body,
-#root {
-  height: 100%;
-  margin: 0;
-}
+/* UI kit styles (U2): tokens, base and components, motion. Imported once from main.tsx. */
+@import './tokens.css';
+@import './base.css';
+@import './motion.css';

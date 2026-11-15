@@ -1,0 +1,169 @@
+/* Motion (U2). Stepped and caused: a line prints, a chip is dealt, a sheet clicks to a
+ * detent, an alert pulses. Every rest state below is the finished frame, so reduced motion
+ * (animation: none) shows a meaningful still, never a blank.
+ *
+ * Classes: .print-in (8-band print wipe with a dotted head), .type-in (a typed line),
+ * .deal (4px drop in 3 steps), .pulse-ring (HTML ring for map chips), .paused.
+ */
+
+/* ---- Print-in: top-to-bottom wipe in 8 bands, a dotted print head riding the edge ------- */
+
+.print-in {
+  position: relative;
+  animation: nl-print 0.48s steps(8, end) both;
+}
+
+.print-in::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -2px;
+  height: 2px;
+  opacity: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(90deg, var(--ink) 0 1.5px, transparent 1.5px 3px);
+  animation: nl-print-head 0.48s steps(8, end);
+}
+
+@keyframes nl-print {
+  from {
+    clip-path: inset(-4px -4px 100% -4px);
+  }
+  to {
+    clip-path: inset(-4px -4px 0 -4px);
+  }
+}
+
+@keyframes nl-print-head {
+  from {
+    top: -2px;
+    opacity: 1;
+  }
+  to {
+    top: calc(100% - 2px);
+    opacity: 1;
+  }
+}
+
+/* ---- Typed line: left-to-right reveal ---------------------------------------------------- */
+
+.type-in {
+  animation: nl-type 0.2s steps(12, end) both;
+}
+
+@keyframes nl-type {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* ---- Deal: a 4px drop in three steps. Only a `from`, so it lands at rest. --------------- */
+
+.deal {
+  animation: nl-deal 0.15s steps(3, end);
+}
+
+@keyframes nl-deal {
+  from {
+    transform: translateY(-4px);
+    opacity: 0;
+  }
+}
+
+/* ---- Sheet detents: height clicks over in four steps ------------------------------------ */
+
+.bsheet {
+  transition: height 0.2s steps(4, end);
+}
+
+.bsheet.dragging {
+  transition: none;
+}
+
+.bsheet-root[data-open='true'] .bsheet {
+  animation: nl-sheet-in 0.2s steps(4, end);
+}
+
+@keyframes nl-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+/* ---- Pulse: an expanding ring redrawn in 8 steps per 2.4 s ------------------------------
+ * Rest state (the reduced-motion still) is a ring half-way out. */
+
+.sw-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(2);
+  opacity: 0.6;
+  vector-effect: non-scaling-stroke;
+  animation: nl-pulse 2.4s steps(8, end) infinite;
+}
+
+.pulse-ring {
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: scale(2);
+  opacity: 0.6;
+  animation: nl-pulse 2.4s steps(8, end) infinite;
+}
+
+@keyframes nl-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(3.2);
+    opacity: 0;
+  }
+}
+
+/* ---- FreshDot loading: a quarter arc stepping round ------------------------------------- */
+
+.fd-spin {
+  transform-box: view-box;
+  transform-origin: 6px 6px;
+  animation: nl-spin 0.8s steps(4, end) infinite;
+}
+
+@keyframes nl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.paused,
+.paused * {
+  animation-play-state: paused !important;
+}
+
+/* ---- Reduced motion: every animation and transition stops on its rest frame ------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
