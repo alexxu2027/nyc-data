@@ -1,0 +1,14 @@
+{
+  "source_id": "openmeteo_current",
+  "captured_at": "2026-11-15T03:20:28.191763+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "body",
+      "url": "https://api.open-meteo.com/v1/forecast?latitude=40.7831,40.6782,40.7282,40.8448,40.5795&longitude=-73.9712,-73.9442,-73.7949,-73.8648,-74.1502&current=temperature_2m,precipitation,rain,wind_speed_10m&timeformat=unixtime",
+      "file": "body.json",
+      "fetched_at": "2026-11-15T03:20:28.191763+00:00"
+    }
+  ],
+  "note": "BK current.precipitation=null; BX current lacks wind_speed_10m; SI has no current block"
+}
