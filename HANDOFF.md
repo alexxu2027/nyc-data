@@ -61,27 +61,38 @@ project from Tandem (ADR-001). Hardware: CPU-only Windows-on-ARM laptop now, an 
 `uv run python scripts/gate_a.py` → PASS: noaa 16/16, Citi Bike gbfs 3/3, status 77/77 runs ok over
 1.27 h (none missed); an as-of snapshot at 21:59 NY time had all 2,519 stations in 0.27 s; no
 duplicate keys after a real kill/restart at 02:19 UTC. Hourly open-day compaction verified live
-at 03:07 (77 part files → 1; archive 92 files → 4, 0.3 MB), and the gate still passed after it. Adapter contract v1 is now
-**frozen**.
+at 03:07 (77 part files → 1; archive 92 files → 4, 0.3 MB), and the gate still passed after it.
+Adapter contract v1 is now **frozen**.
 
-**The collector is still running** (detached, hidden, `--keep-awake`) for the three 1A sources,
-so history is accumulating. Log: `data/logs/collect.log`. It does not restart after a reboot;
-start it again with `uv run nyclive collect --keep-awake`. To stop it: Task Manager → end the
-`python.exe` running `nyclive collect`, or in PowerShell:
+(The Gate A collector covered only the three 1A sources; it now runs on all 14. Start/stop:
+see "Collector: start / stop" below.)
+
+## Gate B passed (2026-11-15 03:39 UTC): all 14 Phase 1 sources collected
+- Built: `_socrata.py` + fixtures (conductor), B2 `dot_cameras` (conductor), B1 `openmeteo` +
+  `nws_alerts` (pilot builder), then B3 MTA, B4 FloodNet, B5 311 + collisions, B6 DOT speeds
+  (4 parallel Opus builders in worktrees, merged without conflicts). Conformance: 42/42.
+- **The collector runs detached on all 14 sources** (`--keep-awake`), restarted 03:38 UTC on the
+  fixed code. Same start/stop instructions as below.
+- Fixed after merge (conductor):
+  - FloodNet event times are **UTC** (checked against NOAA tides);
+  - DOT speeds first-run lookback 1 h → 4 h (the feed lags ~2 h);
+  - state v2 `events.last_seen`: prune by last seen, not by `ends_at` (old re-sent collisions and
+    FloodNet events were being re-written every run).
+- 311's first run hit its page cap (50,000 rows); the cursor catches up at up to 25k new rows per
+  6-hour run, well above ~10k complaints/day.
+- A Fable review of 1B is the last orchestrate step (findings get fixed and logged here).
+
+## Next: ROADMAP 1C (hardening), then Phase 2 (live map)
+- 1C: `compact` is done (hourly open-day + daily closed-day). Left: the FloodNet live spike
+  (2 h, ADR-010) and the soak test (48 h total, incl. one unbroken 24 h). The collector is
+  already running, so the soak has started: check `uv run nyclive status` and the `runs` table.
+- Phase 2 scaffolding (FastAPI + MapLibre) may start while the soak runs.
+
+## Collector: start / stop
+`uv run nyclive collect --keep-awake` starts it (it doesn't survive a reboot). To stop it: Task
+Manager → end the `python.exe` running `nyclive collect`, or in PowerShell:
 `Get-CimInstance Win32_Process | ? CommandLine -like '*nyclive*collect*' | % { Stop-Process -Id $_.ProcessId }`.
-Restart it after adding adapters so it picks up new sources.
-
-## ROADMAP 1B in progress (2026-11-15)
-- ✅ Step 8 (conductor): `sources/_socrata.py`; `real` fixtures for all 11 remaining sources;
-  `parse_fixture(module=)` so builders test before the registry names the adapter.
-- ✅ B2 `dot_cameras` (conductor inline; 974 cameras live, no problems).
-- ✅ B1 pilot `openmeteo` + `nws_alerts` (Opus builder in a worktree, merged; live OK). NWS
-  expiration statements (onset > ends) are skipped by design.
-- ⏳ Wave 2 running in parallel worktrees: B3 MTA (stations, alerts, elevators), B4 FloodNet,
-  B5 311 + collisions, B6 DOT speeds. Briefs: `.orchestrate/1b/context.md` and `plan.md`
-  (gitignored, local only).
-- Then step 10 (conductor): merge, set `adapter:` in sources.yaml, `nyclive collect --once --only
-  <id>` live for each, restart the collector, update DATA_SOURCES; one Fable review; Gate B.
+Restart it after adding or changing adapters. Logs: `data/logs/collect.log`.
 
 ## Open decisions
 - ADR-009 hosting (decide in Phase 3).
