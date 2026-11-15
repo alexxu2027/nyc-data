@@ -1,0 +1,14 @@
+{
+  "source_id": "floodnet_sensors",
+  "captured_at": "2026-11-15T03:20:34.579991+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "page-000",
+      "url": "https://data.cityofnewyork.us/resource/kb2e-tjy3.json?$limit=5000&$order=sensor_id,:id",
+      "file": "page-000.json",
+      "fetched_at": "2026-11-15T03:20:34.579991+00:00"
+    }
+  ],
+  "note": "rows 0-4 of real plus a duplicate of row 4: [0] tidally_influenced Yes, borough Queens; [1] latitude '' and no longitude, height delta 'n/a'; [2] no sensor_id (skipped); [3] borough Narnia, no nta; [5] repeats [4]'s sensor_id (dropped)"
+}
