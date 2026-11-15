@@ -1,0 +1,288 @@
+# Source registry: the single list of every external feed NYC Live knows about.
+# Collectors, the probe command, the health page and docs/DATA_SOURCES.md all key off `id`.
+#
+# Fields
+#   name        human label
+#   phase       roadmap phase that first uses it (see docs/ROADMAP.md)
+#   shape       entities | observations | events   (see docs/DATA_MODEL.md)
+#   cadence_s   polling interval in seconds (null = on demand)
+#   auth        none | key:<ENV_VAR>
+#   probe       URL used by `nyclive probe` to check reachability (may use ${ENV_VAR})
+#   expect      substring the probe response must contain to count as healthy
+#   status      verified | partial | unverified   (last manual check in `verified_on`)
+#
+# Times: every source timestamp is stored in UTC; the UI renders America/New_York.
+
+user_agent_env: NYCLIVE_USER_AGENT
+default_user_agent: "nyc-live/0.1 (personal portfolio project)"
+
+sources:
+
+  # ---------------------------------------------------------------- cameras
+  dot_cameras:
+    name: NYC DOT traffic cameras (list)
+    phase: 1
+    shape: entities
+    cadence_s: 86400
+    auth: none
+    probe: https://webcams.nyctmc.org/api/cameras
+    expect: '"imageUrl"'
+    status: verified
+    verified_on: 2026-11-14
+    notes: >
+      974 cameras (874 online) at probe time. Fields: id, name, latitude, longitude,
+      area (borough), isOnline ("true"/"false" strings), imageUrl.
+
+  dot_camera_image:
+    name: NYC DOT camera snapshot (per camera)
+    phase: 1
+    shape: observations
+    cadence_s: null          # UI loads on demand; CV worker polls a watchlist (Phase 4)
+    auth: none
+    probe: https://webcams.nyctmc.org/api/cameras/1b3248f9-f26e-4f36-943f-b7a7731595fb/image
+    status: verified
+    verified_on: 2026-11-14
+    notes: 352x240 JPEG, ~17 KB, Cache-Control no-store, new frame roughly every 2 s.
+
+  # --------------------------------------------------------------- citi bike
+  citibike_gbfs:
+    name: Citi Bike GBFS manifest
+    phase: 1
+    shape: entities
+    cadence_s: 86400
+    auth: none
+    probe: https://gbfs.citibikenyc.com/gbfs/2.3/gbfs.json
+    expect: station_status
+    status: verified
+    verified_on: 2026-11-14
+    notes: Manifest points at gbfs.lyft.com/gbfs/2.3/bkn/... Always discover feed URLs from it.
+
+  citibike_station_status:
+    name: Citi Bike station status
+    phase: 1
+    shape: observations
+    cadence_s: 60            # feed ttl is 60
+    auth: none
+    probe: https://gbfs.citibikenyc.com/gbfs/en/station_status.json
+    expect: num_bikes_available
+    status: verified
+    verified_on: 2026-11-14
+    notes: >
+      2,519 stations at probe time, ~1 MB per fetch. Inactive stations report
+      last_reported=86400 (a sentinel, not a real time). Store only changed rows.
+
+  # --------------------------------------------------------------------- MTA
+  mta_subway_alerts:
+    name: MTA subway service alerts (GTFS-rt as JSON)
+    phase: 1
+    shape: events
+    cadence_s: 60
+    auth: none
+    probe: https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/camsys%2Fsubway-alerts.json
+    expect: informed_entity
+    status: verified
+    verified_on: 2026-11-14
+    notes: ~1 MB per fetch. Dedupe on alert id + payload hash. No API key needed.
+
+  mta_elevator_outages:
+    name: MTA elevator & escalator outages
+    phase: 1
+    shape: events
+    cadence_s: 300
+    auth: none
+    probe: https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fnyct_ene.json
+    expect: equipment
+    status: verified
+    verified_on: 2026-11-14
+    notes: Includes planned future outages (outagedate in the future). Dates are local-time strings.
+
+  mta_subway_realtime:
+    name: MTA subway trip updates & vehicles (GTFS-rt protobuf)
+    phase: 5
+    shape: observations
+    cadence_s: 30
+    auth: none
+    probe: https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-ace
+    status: verified
+    verified_on: 2026-11-14
+    notes: >
+      Binary protobuf; parse with gtfs-realtime-bindings. One feed per line group:
+      gtfs (1-7,S), gtfs-ace, gtfs-bdfm, gtfs-g, gtfs-jz, gtfs-nqrw, gtfs-l, gtfs-si.
+
+  # ----------------------------------------------------- water & weather
+  noaa_tide_battery:
+    name: NOAA water level, The Battery (8518750)
+    phase: 1
+    shape: observations
+    cadence_s: 360           # station reports every 6 minutes
+    auth: none
+    probe: https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=8518750&product=water_level&date=latest&datum=MLLW&units=english&time_zone=gmt&format=json
+    expect: The Battery
+    status: verified
+    verified_on: 2026-11-14
+    notes: Also fetch product=predictions daily so the UI can show surge = observed - predicted.
+
+  openmeteo_current:
+    name: Open-Meteo current weather (borough points)
+    phase: 1
+    shape: observations
+    cadence_s: 900
+    auth: none
+    probe: https://api.open-meteo.com/v1/forecast?latitude=40.78&longitude=-73.97&current=temperature_2m,precipitation,rain&timezone=America/New_York
+    expect: current_units
+    status: verified
+    verified_on: 2026-11-14
+    notes: Free for non-commercial use. Request several points in one call (comma-separated lat/lon).
+
+  nws_alerts:
+    name: National Weather Service active alerts (NY)
+    phase: 1
+    shape: events
+    cadence_s: 120
+    auth: none
+    probe: https://api.weather.gov/alerts/active?area=NY
+    expect: FeatureCollection
+    status: verified
+    verified_on: 2026-11-14
+    notes: >
+      Filter to NYC by SAME geocodes 036005 (Bronx), 036047 (Kings), 036061 (New York),
+      036081 (Queens), 036085 (Richmond). NWS asks for a contact in the User-Agent; set
+      NYCLIVE_USER_AGENT yourself if you want to add one.
+
+  floodnet_sensors:
+    name: FloodNet sensor deployments (NYC Open Data kb2e-tjy3)
+    phase: 1
+    shape: entities
+    cadence_s: 86400
+    auth: none
+    probe: https://data.cityofnewyork.us/resource/kb2e-tjy3.json?$limit=1
+    expect: sensor_id
+    status: verified
+    verified_on: 2026-11-14
+    notes: Location, borough, NTA, tidally_influenced, install date. Joins to events on sensor_id.
+
+  floodnet_events:
+    name: FloodNet flood events (NYC Open Data aq7i-eu5q)
+    phase: 1
+    shape: events
+    cadence_s: 86400
+    auth: none
+    probe: https://data.cityofnewyork.us/resource/aq7i-eu5q.json?$limit=1&$order=flood_start_time%20DESC
+    expect: max_depth_inches
+    status: verified
+    verified_on: 2026-11-14
+    notes: >
+      One row per flood event with depth profile. Not live: dataset last updated
+      2026-11-02 at probe time (about two weeks behind).
+
+  floodnet_live:
+    name: FloodNet live depth (FieldKit project 174)
+    phase: 1
+    shape: observations
+    cadence_s: 300
+    auth: none
+    probe: https://api.fieldkit.org/projects
+    expect: NYC FloodNet
+    status: partial
+    verified_on: 2026-11-14
+    notes: >
+      Powers dataviz.floodnet.nyc. Project list is public (NYC FloodNet = id 174) but the
+      per-sensor reading endpoints are undocumented. Phase 1 spike decides whether we use
+      it; fallback is events-only flooding. Poll gently and attribute FloodNet.
+
+  # ------------------------------------------------------- NYC Open Data
+  nyc_311:
+    name: 311 service requests (erm2-nwe9)
+    phase: 1
+    shape: events
+    cadence_s: 3600
+    auth: none                # optional SOCRATA_APP_TOKEN raises rate limits
+    probe: https://data.cityofnewyork.us/resource/erm2-nwe9.json?$limit=1&$order=created_date%20DESC
+    expect: complaint_type
+    status: verified
+    verified_on: 2026-11-14
+    notes: Lags about a day. Pull incrementally by created_date and upsert on unique_key (rows get updated when closed).
+
+  nyc_collisions:
+    name: Motor vehicle collisions (h9gi-nx95)
+    phase: 1
+    shape: events
+    cadence_s: 86400
+    auth: none
+    probe: https://data.cityofnewyork.us/resource/h9gi-nx95.json?$limit=1&$order=crash_date%20DESC
+    expect: crash_date
+    status: verified
+    verified_on: 2026-11-14
+    notes: Lags several days. Some rows have no coordinates.
+
+  dot_traffic_speeds:
+    name: DOT real-time traffic speeds (i4gi-tjb9)
+    phase: 1
+    shape: observations
+    cadence_s: 300
+    auth: none
+    probe: https://data.cityofnewyork.us/resource/i4gi-tjb9.json?$limit=1&$order=data_as_of%20DESC
+    expect: link_points
+    status: verified
+    verified_on: 2026-11-14
+    notes: >
+      Road segments with speed + travel time; geometry is a space-separated "lat,lon" list
+      in link_points. Newest row was ~2 h old at probe time, so it's near-live, not live.
+
+  # --------------------------------------------------------------- extras
+  opensky_nyc:
+    name: OpenSky aircraft over NYC
+    phase: 5
+    shape: observations
+    cadence_s: 300
+    auth: none
+    probe: https://opensky-network.org/api/states/all?lamin=40.4&lomin=-74.3&lamax=41.0&lomax=-73.6
+    expect: states
+    status: verified
+    verified_on: 2026-11-14
+    notes: Anonymous access has a small daily credit allowance; check current limits before raising cadence.
+
+  kalshi_nyc_high:
+    name: Kalshi "NYC daily high temperature" markets (KXHIGHNY)
+    phase: 5
+    shape: observations
+    cadence_s: 300
+    auth: none
+    probe: https://api.elections.kalshi.com/trade-api/v2/markets?series_ticker=KXHIGHNY&limit=2&status=open
+    expect: markets
+    status: verified
+    verified_on: 2026-11-14
+    notes: Public market data needs no key. Display only; no trading code in this project.
+
+  openaq_nyc:
+    name: OpenAQ air quality
+    phase: 5
+    shape: observations
+    cadence_s: 1800
+    auth: key:OPENAQ_API_KEY
+    probe: https://api.openaq.org/v3/locations?bbox=-74.3,40.4,-73.6,41.0&limit=1
+    status: unverified
+    verified_on: 2026-11-14
+    notes: Returned 401 without a key. Free key required (X-API-Key header).
+
+  mta_bus_time:
+    name: MTA Bus Time vehicle positions
+    phase: 5
+    shape: observations
+    cadence_s: 60
+    auth: key:MTA_BUSTIME_KEY
+    probe: https://gtfsrt.prod.obanyc.com/vehiclePositions?key=${MTA_BUSTIME_KEY}
+    status: unverified
+    notes: Needs a free Bus Time developer key.
+
+  basemap_openfreemap:
+    name: OpenFreeMap vector basemap style
+    phase: 2
+    shape: entities
+    cadence_s: null
+    auth: none
+    probe: https://tiles.openfreemap.org/styles/positron
+    expect: sources
+    status: verified
+    verified_on: 2026-11-14
+    notes: Free, no key. Fallback is CARTO basemaps or a Protomaps PMTiles file.

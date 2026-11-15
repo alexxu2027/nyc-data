@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Secrets
+.env
+
+# Collected data, images, models (never commit; see docs/ARCHITECTURE.md "Storage")
+data/
+models/
+*.pt
+*.onnx
+
+# Web
+web/node_modules/
+web/dist/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Orchestrate scratch
+.orchestrate/
