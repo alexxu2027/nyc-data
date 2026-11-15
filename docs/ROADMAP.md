@@ -36,7 +36,7 @@ the soak test is wall-clock time, so Phase 2 scaffolding may start while it runs
    `sources/base.py`, exactly as DATA_MODEL "Adapter contract v1".
 4. ✅ (2026-11-14) `nyclive capture <source> [--part name=url ...] [--case real]` and `tests/helpers.py`
    (`load_fixture`, `assert_valid_batch`).
-5. Reference adapters, written by hand: `noaa_tides` (cursor, entity + observations) and
+5. ✅ (2026-11-14) Reference adapters, written by hand: `noaa_tides` (cursor, entity + observations) and
    `citibike` (multi-part, change-only, sentinel).
 6. `storage/state.py`, `storage/archive.py`, `collect/pipeline.py` (`run_once`: fetch → parse →
    write, per ADR-011).

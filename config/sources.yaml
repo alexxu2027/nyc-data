@@ -11,6 +11,8 @@
 #   probe       URL used by `nyclive probe` to check reachability (may use ${ENV_VAR})
 #   expect      substring the probe response must contain to count as healthy
 #   status      verified | partial | unverified   (last manual check in `verified_on`)
+#   adapter     module in src/nyclive/sources that collects it (omit = not collected)
+#   max_lag_s   optional: data older than this is "stale" in `nyclive status`
 #
 # Times: every source timestamp is stored in UTC; the UI renders America/New_York.
 
@@ -48,6 +50,7 @@ sources:
   # --------------------------------------------------------------- citi bike
   citibike_gbfs:
     name: Citi Bike GBFS manifest
+    adapter: citibike
     phase: 1
     shape: entities
     cadence_s: 86400
@@ -60,6 +63,7 @@ sources:
 
   citibike_station_status:
     name: Citi Bike station status
+    adapter: citibike
     phase: 1
     shape: observations
     cadence_s: 60            # feed ttl is 60
@@ -131,6 +135,7 @@ sources:
   # ----------------------------------------------------- water & weather
   noaa_tide_battery:
     name: NOAA water level, The Battery (8518750)
+    adapter: noaa_tides
     phase: 1
     shape: observations
     cadence_s: 360           # station reports every 6 minutes

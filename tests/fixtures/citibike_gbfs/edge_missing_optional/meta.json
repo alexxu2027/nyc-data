@@ -1,0 +1,20 @@
+{
+  "source_id": "citibike_gbfs",
+  "captured_at": "2026-11-15T01:38:29.605306+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "manifest",
+      "url": "https://gbfs.citibikenyc.com/gbfs/2.3/gbfs.json",
+      "file": "manifest.json",
+      "fetched_at": "2026-11-15T01:38:29.605306+00:00"
+    },
+    {
+      "name": "station_information",
+      "url": "https://gbfs.lyft.com/gbfs/2.3/bkn/en/station_information.json",
+      "file": "station_information.json",
+      "fetched_at": "2026-11-15T01:38:29.605306+00:00"
+    }
+  ],
+  "note": "stations[0] has no region_id and an empty name"
+}

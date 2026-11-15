@@ -1,0 +1,20 @@
+{
+  "source_id": "citibike_station_status",
+  "captured_at": "2026-11-15T01:38:30.431128+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "manifest",
+      "url": "https://gbfs.citibikenyc.com/gbfs/2.3/gbfs.json",
+      "file": "manifest.json",
+      "fetched_at": "2026-11-15T01:38:30.431128+00:00"
+    },
+    {
+      "name": "station_status",
+      "url": "https://gbfs.lyft.com/gbfs/2.3/bkn/en/station_status.json",
+      "file": "station_status.json",
+      "fetched_at": "2026-11-15T01:38:30.431128+00:00"
+    }
+  ],
+  "note": "station_status: trimmed data/stations from 2519 to 30"
+}

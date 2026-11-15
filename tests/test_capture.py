@@ -5,7 +5,7 @@ import pytest
 
 from nyclive.capture import _trim_payload, capture, parse_part_args
 from nyclive.http import Http
-from nyclive.registry import load_registry
+from nyclive.registry import Registry, Source, load_registry
 from nyclive.settings import load_settings
 from nyclive.sources.base import RawPayload
 
@@ -16,22 +16,25 @@ def fake_http(body: bytes):
     )
 
 
+# A registry with one probe-only source, so these tests don't depend on which sources have
+# adapters yet.
+PROBE_ONLY = Registry(
+    {"probe_only": Source("probe_only", "P", 1, "events", 60, "none", probe="https://p/x")}
+)
+
+
 def test_capture_probe_url_with_trim(tmp_path):
     body = json.dumps({"data": {"stations": [{"i": i} for i in range(500)]}}).encode()
-    reg, st = load_registry(), load_settings(env={}, dotenv=None)
-    d = capture(
-        reg, st, "citibike_station_status", trim=3, fixtures_dir=tmp_path, http=fake_http(body)
-    )
+    reg, st = PROBE_ONLY, load_settings(env={}, dotenv=None)
+    d = capture(reg, st, "probe_only", trim=3, fixtures_dir=tmp_path, http=fake_http(body))
     raw = RawPayload.load(d)
     assert len(raw.json()["data"]["stations"]) == 3
     meta = json.loads((d / "meta.json").read_text())
     assert "from 500 to 3" in meta["note"]
 
     with pytest.raises(SystemExit, match="--force"):
-        capture(reg, st, "citibike_station_status", fixtures_dir=tmp_path, http=fake_http(body))
-    capture(
-        reg, st, "citibike_station_status", fixtures_dir=tmp_path, http=fake_http(b"[]"), force=True
-    )
+        capture(reg, st, "probe_only", fixtures_dir=tmp_path, http=fake_http(body))
+    capture(reg, st, "probe_only", fixtures_dir=tmp_path, http=fake_http(b"[]"), force=True)
     assert RawPayload.load(d).json() == []
 
 
