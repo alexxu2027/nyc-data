@@ -42,7 +42,8 @@ the soak test is wall-clock time, so Phase 2 scaffolding may start while it runs
    write, per ADR-011).
 7. ✅ (2026-11-14) `collect/scheduler.py`, `nyclive collect [--only ids] [--once] [--keep-awake]`, `nyclive status`.
 
-**Gate A:** `nyclive collect --only noaa_tide_battery citibike_gbfs citibike_station_status` runs
+**Gate A ✅ passed 2026-11-15 03:04 UTC** (`scripts/gate_a.py`: 77/77 runs, 1.27 h, 2,519
+stations as-of in 0.27 s, keys unique after a real kill/restart). Criteria: `nyclive collect --only noaa_tide_battery citibike_gbfs citibike_station_status` runs
 1 h, the restart test passes, and an as-of DuckDB query returns ≥ 2,000 Citi Bike stations for a
 chosen minute. Leave it running from here. The adapter contract is now frozen as v1.
 

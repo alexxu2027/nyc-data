@@ -57,25 +57,29 @@ learned the hard way. Read it first, then `docs/ROADMAP.md`.
 Portfolio piece. All layers are in scope, replay comes after the live map, and it is a separate
 project from Tandem (ADR-001). Hardware: CPU-only Windows-on-ARM laptop now, an RTX 3050 PC later.
 
-## Gate A in progress (started 2026-11-15 01:49 UTC)
-- The collector runs **detached** (hidden window) for noaa + Citi Bike with `--keep-awake`; log in
-  `data/logs/collect.log`. The first 30 min were clean. It was killed and restarted at 02:19 UTC (a
-  real restart test that also loaded hourly open-day compaction); runs resumed immediately.
-- **To finish Gate A:** after 02:50 UTC run `uv run python scripts/gate_a.py`. It checks all runs
-  ok, ≥ 1 h collected, as-of ≥ 2,000 stations in < 2 s, and unique keys. If it passes, tick Gate A
-  in ROADMAP and leave the collector running.
-- **To stop the collector:** Task Manager → end the `python.exe` running `nyclive collect`, or in
-  PowerShell: `Get-CimInstance Win32_Process | ? CommandLine -like '*nyclive*collect*' |
-  % { Stop-Process -Id $_.ProcessId }`. It does not restart after a reboot.
+## Gate A passed (2026-11-15 03:04 UTC)
+`uv run python scripts/gate_a.py` → PASS: noaa 16/16, Citi Bike gbfs 3/3, status 77/77 runs ok over
+1.27 h (none missed); an as-of snapshot at 21:59 NY time had all 2,519 stations in 0.27 s; no
+duplicate keys after a real kill/restart at 02:19 UTC. Hourly open-day compaction verified live
+at 03:07 (77 part files → 1; archive 92 files → 4, 0.3 MB), and the gate still passed after it. Adapter contract v1 is now
+**frozen**.
 
-## Then: ROADMAP 1B
-Finish Gate A in order, by hand, and stop at **Gate A** (noaa + Citi Bike collecting for 1 h,
-restart test green, as-of query works). Leave that collector running.
+**The collector is still running** (detached, hidden, `--keep-awake`) for the three 1A sources,
+so history is accumulating. Log: `data/logs/collect.log`. It does not restart after a reboot;
+start it again with `uv run nyclive collect --keep-awake`. To stop it: Task Manager → end the
+`python.exe` running `nyclive collect`, or in PowerShell:
+`Get-CimInstance Win32_Process | ? CommandLine -like '*nyclive*collect*' | % { Stop-Process -Id $_.ProcessId }`.
+Restart it after adding adapters so it picks up new sources.
 
-After Gate A, the remaining adapters form 6 packages (ROADMAP 1B). They fit `/orchestrate` Tier 2
-(one planner, parallel builders, one reviewer). Pilot package B1 alone before running the rest in
-parallel. Before fan-out, the conductor writes `_socrata.py` and captures every `real` fixture so
-builders stay offline.
+## Next: ROADMAP 1B (remaining adapters)
+1. Conductor first (step 8): write `sources/_socrata.py` (paging, `$select`, lookback, page cap)
+   and capture `real` fixtures for every remaining source, so builders stay offline.
+2. Then 6 packages (step 9), each owning only its module(s), fixtures and test file: B1
+   openmeteo + nws_alerts, B2 dot_cameras, B3 mta_stations/alerts/elevators, B4 floodnet, B5
+   nyc_311 + nyc_collisions, B6 dot_speeds. This fits `/orchestrate` Tier 2. Pilot B1 alone,
+   then run the rest in parallel.
+3. Step 10: set `adapter:` in the registry, run `nyclive collect --once --only <id>` live for
+   each, restart the collector, update DATA_SOURCES. Gate B = conformance test green for all.
 
 ## Open decisions
 - ADR-009 hosting (decide in Phase 3).
