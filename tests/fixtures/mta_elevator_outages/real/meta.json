@@ -1,0 +1,20 @@
+{
+  "source_id": "mta_elevator_outages",
+  "captured_at": "2026-11-15T03:20:33.665422+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "outages",
+      "url": "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fnyct_ene.json",
+      "file": "outages.json",
+      "fetched_at": "2026-11-15T03:20:31.579339+00:00"
+    },
+    {
+      "name": "equipments",
+      "url": "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fnyct_ene_equipments.json",
+      "file": "equipments.json",
+      "fetched_at": "2026-11-15T03:20:33.665422+00:00"
+    }
+  ],
+  "note": "outages: trimmed <root> from 171 to 60; equipments: trimmed <root> from 707 to 60; equipments filtered to the outages in this case"
+}

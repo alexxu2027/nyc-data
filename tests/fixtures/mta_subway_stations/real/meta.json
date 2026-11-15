@@ -1,0 +1,14 @@
+{
+  "source_id": "mta_subway_stations",
+  "captured_at": "2026-11-15T03:20:30.355947+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "body",
+      "url": "https://data.ny.gov/resource/39hk-dx4f.json?$limit=5000",
+      "file": "body.json",
+      "fetched_at": "2026-11-15T03:20:30.355947+00:00"
+    }
+  ],
+  "note": "body: trimmed <root> from 496 to 40"
+}

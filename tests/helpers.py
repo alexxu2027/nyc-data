@@ -26,11 +26,16 @@ def assert_valid_batch(batch: Batch, source_id: str) -> None:
     assert not problems, f"{source_id}: {len(problems)} problem(s):\n" + "\n".join(problems[:25])
 
 
-def parse_fixture(source_id: str, case: str = "real") -> Batch:
-    """Load a fixture, parse it with the registry's adapter twice, check it, return the batch."""
+def parse_fixture(source_id: str, case: str = "real", module: str | None = None) -> Batch:
+    """Load a fixture, parse it twice with the source's adapter, check it, return the batch.
+
+    The adapter comes from the registry's `adapter:` field, or from `module` before that field
+    is set (1B builders pass `module=`; the conductor sets `adapter:` when merging).
+    """
     src = load_registry().sources[source_id]
-    assert src.adapter, f"{source_id} has no adapter in config/sources.yaml"
-    adapter = load_adapter(src.adapter)
+    name = src.adapter or module
+    assert name, f"{source_id} has no adapter in config/sources.yaml; pass module="
+    adapter = load_adapter(name)
     assert source_id in adapter.source_ids, f"{src.adapter}.SOURCE_IDS lacks {source_id}"
     raw = load_fixture(source_id, case)
     first, second = adapter.parse(raw), adapter.parse(raw)

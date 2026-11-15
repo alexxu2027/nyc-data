@@ -1,0 +1,14 @@
+{
+  "source_id": "dot_cameras",
+  "captured_at": "2026-11-15T03:20:29.544200+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "body",
+      "url": "https://webcams.nyctmc.org/api/cameras",
+      "file": "body.json",
+      "fetched_at": "2026-11-15T03:20:29.544200+00:00"
+    }
+  ],
+  "note": "body: trimmed <root> from 974 to 40"
+}

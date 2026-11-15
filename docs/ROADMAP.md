@@ -48,7 +48,7 @@ stations as-of in 0.27 s, keys unique after a real kill/restart). Criteria: `nyc
 chosen minute. Leave it running from here. The adapter contract is now frozen as v1.
 
 ### 1B. Remaining adapters (parallel-safe; builders work offline)
-8. Conductor: `sources/_socrata.py` (paging, `$select`, lookback, page cap); capture `real` fixtures for every remaining source.
+8. ✅ (2026-11-15) Conductor: `sources/_socrata.py` (paging, `$select`, lookback, page cap); capture `real` fixtures for every remaining source.
 9. Packages, each owning only its module(s), `tests/fixtures/<id>/` and
    `tests/sources/test_<module>.py`:
    - B1 `openmeteo`, `nws_alerts`

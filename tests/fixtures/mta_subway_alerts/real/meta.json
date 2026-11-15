@@ -1,0 +1,14 @@
+{
+  "source_id": "mta_subway_alerts",
+  "captured_at": "2026-11-15T03:20:30.993324+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "body",
+      "url": "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/camsys%2Fsubway-alerts.json",
+      "file": "body.json",
+      "fetched_at": "2026-11-15T03:20:30.993324+00:00"
+    }
+  ],
+  "note": "body: trimmed entity from 218 to 25"
+}
