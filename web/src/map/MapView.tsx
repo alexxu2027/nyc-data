@@ -1,4 +1,2 @@
-// STUB (wave 0). Owned by U5.
-export function MapView() {
-  return <div data-stub="map" />;
-}
+// Gate W1: dev harness until U5 replaces this file.
+export { DevMap as MapView } from '../core';

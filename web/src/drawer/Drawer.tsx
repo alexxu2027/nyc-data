@@ -1,4 +1,2 @@
-// STUB (wave 0). Owned by U6.
-export function Drawer() {
-  return null;
-}
+// Gate W1: dev harness until U6 replaces this file.
+export { DevDrawer as Drawer } from '../core';
