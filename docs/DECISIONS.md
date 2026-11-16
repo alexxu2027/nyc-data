@@ -89,6 +89,9 @@ of". `floodnet_live` stays without an adapter.
 a day of transfer, but small to store.
 **Consequences:** flood sensors show live locations and status, but depth arrives about 2 weeks
 late until the team agrees. The owner may email the FloodNet team.
+**Update 2026-11-16: the FloodNet team OK'd polling** (the owner emailed them). The revisit
+condition is met. The plan is the "ready design" above: batches of 50 stations every 30 min,
+depth only, change-only writes, as a `floodnet_live` adapter. It is not built yet.
 
 ## ADR-011: Archive write semantics (2026-11-14)
 **Context:** Parquet is append-only, but observations are change-only and events are "upserted".

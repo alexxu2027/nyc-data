@@ -2,9 +2,11 @@
 
 _Last updated: 2026-11-16_
 
-> **NEXT SESSION:** Phase 2 is built and browser-verified (2026-11-16). Still to do: commit the
-> docs, push, and clean up the wave-2 worktrees and branches (see "Phase 2 wrap-up" below). The
-> collector soak is still running; don't restart it, and use `uv run --no-sync`.
+> **NEXT SESSION:** Phase 2 is done, reviewed and pushed (2026-11-16). Next:
+> 1. Close Phase 1 when `scripts/soak_report.py` says `SOAK: PASS` (earliest Nov 16, 8:50 PM ET).
+> 2. Then the `floodnet_live` adapter (FloodNet OK'd polling).
+> 3. Then Phase 3, starting with the ADR-009 hosting decision.
+> Don't restart the collector before the soak passes. Use `uv run --no-sync`.
 
 This file is the session-to-session log: where the project stands, what to do next, and gotchas
 learned the hard way. Read it first, then `docs/ROADMAP.md`.
@@ -135,16 +137,12 @@ see "Collector: start / stop" below.)
     - the NWS empty state, the tide surge, and health 14/14 all show.
   - Docs done (uncommitted at handoff): ARCHITECTURE §6 and §7, the DATA_MODEL borough note,
     ADR-012 (layer catalog), DEV_SETUP web section, and the ROADMAP Phase 2 acceptance boxes ticked.
-  - **No independent review.** The Fable review hit the usage limit, and Alex then dropped Fable
-    from /orchestrate. Untested by hand: reduced-motion pulse, keyboard-only traversal, and the
-    flood event / 311 / collision / NWS detail views in a browser. An Opus review of
-    `git diff 55cc569..HEAD -- web/src/shell web/src/map web/src/drawer` is optional.
+  - **Opus review (2026-11-16):** 1 real bug (a feature-state crash during a theme swap), 1 camera
+  remount and 1 missing test, all fixed in `352840f`. Untested helpers were left as is. Untested by
+  hand: the reduced-motion pulse, keyboard-only traversal, and the flood event / 311 / collision /
+  NWS detail views.
 
-### Phase 2 wrap-up (needs Alex's OK)
-1. Commit the docs + HANDOFF, and push main.
-2. Remove the wave-2 worktrees under `.claude/worktrees/` (`git worktree remove -f -f`; they are
-   locked) and their local branches (`worktree-agent-*`).
-3. Delete the remote branches `wip/p2-u4-shell`, `wip/p2-u5-map`, `wip/p2-u6-drawer`.
+### Phase 2 wrap-up: ✅ done (docs committed and pushed, worktrees and wip branches deleted)
 - Run it: `cd web && npm run build`, then `uv run --no-sync nyclive serve`, then open
   http://127.0.0.1:8000/. Dev: `nyclive serve` + `cd web && npm run dev` (port 5173).
 - Main checkout: use `uv run --no-sync` until the soak ends.
@@ -157,8 +155,9 @@ Restart it after adding or changing adapters. Logs: `data/logs/collect.log`.
 
 ## Open decisions
 - ADR-009 hosting (decide in Phase 3).
-- ADR-010 FloodNet live via FieldKit: 2 h spike any time after Gate A. Emailing the FloodNet team
-  early would help, since their reply takes time. Until then: events only.
+- ADR-010 FloodNet live: **the FloodNet team OK'd polling (2026-11-16).** Building the
+  `floodnet_live` adapter (ADR-010 "ready design": 50 stations per batch every 30 min, depth only,
+  change-only) is open work. Adding it means restarting the collector, so do it after the soak passes.
 - Soak test: the laptop may not manage 48 h straight, so the criterion is 48 h total including one
   unbroken 24 h run.
 
