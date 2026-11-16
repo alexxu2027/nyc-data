@@ -593,9 +593,10 @@ layers:
       stale_s: 1800
     legend:
       - {label: Light, shape: fill, color: "#88ddee"}
-      - {label: Moderate, shape: fill, color: "#00a000"}
-      - {label: Heavy, shape: fill, color: "#f0c000"}
-      - {label: Very heavy, shape: fill, color: "#d00000"}
+      - {label: Moderate, shape: fill, color: "#005588"}
+      - {label: Heavy, shape: fill, color: "#ffaa00"}
+      - {label: Very heavy, shape: fill, color: "#c10000"}
+      - {label: Snow, shape: fill, color: "#9fdfff"}
 
   - id: weather
     label: Weather now (Open-Meteo)
