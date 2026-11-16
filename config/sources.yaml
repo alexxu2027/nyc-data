@@ -125,7 +125,7 @@ sources:
 
   mta_subway_realtime:
     name: MTA subway trip updates & vehicles (GTFS-rt protobuf)
-    # adapter: mta_trains   # U2 sets this when mta_trains.py exists (ADR-013)
+    adapter: mta_trains
     phase: 2
     shape: events
     cadence_s: 30
