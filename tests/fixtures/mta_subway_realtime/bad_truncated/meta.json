@@ -1,0 +1,56 @@
+{
+  "source_id": "mta_subway_realtime",
+  "captured_at": "2026-11-16T07:13:20.354175+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "gtfs",
+      "url": "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs",
+      "file": "gtfs.bin",
+      "fetched_at": "2026-11-16T07:13:20.354175+00:00"
+    },
+    {
+      "name": "gtfs-ace",
+      "url": "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-ace",
+      "file": "gtfs-ace.bin",
+      "fetched_at": "2026-11-16T07:13:20.354175+00:00"
+    },
+    {
+      "name": "gtfs-bdfm",
+      "url": "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-bdfm",
+      "file": "gtfs-bdfm.bin",
+      "fetched_at": "2026-11-16T07:13:20.354175+00:00"
+    },
+    {
+      "name": "gtfs-g",
+      "url": "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-g",
+      "file": "gtfs-g.bin",
+      "fetched_at": "2026-11-16T07:13:20.354175+00:00"
+    },
+    {
+      "name": "gtfs-jz",
+      "url": "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-jz",
+      "file": "gtfs-jz.bin",
+      "fetched_at": "2026-11-16T07:13:20.354175+00:00"
+    },
+    {
+      "name": "gtfs-nqrw",
+      "url": "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-nqrw",
+      "file": "gtfs-nqrw.bin",
+      "fetched_at": "2026-11-16T07:13:20.354175+00:00"
+    },
+    {
+      "name": "gtfs-l",
+      "url": "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-l",
+      "file": "gtfs-l.bin",
+      "fetched_at": "2026-11-16T07:13:20.354175+00:00"
+    },
+    {
+      "name": "gtfs-si",
+      "url": "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-si",
+      "file": "gtfs-si.bin",
+      "fetched_at": "2026-11-16T07:13:20.354175+00:00"
+    }
+  ],
+  "note": "gtfs-jz cut mid-way through its third entity"
+}
