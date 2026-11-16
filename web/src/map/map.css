@@ -1,0 +1,189 @@
+/* Map chrome (U5): the canvas is a rich data map; everything HTML on top of it is printed
+ * transcript chrome: mono, one weight, 1px ink borders, hard offset shadows, no blur. */
+
+.nl-map {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--paper);
+  z-index: var(--z-map);
+}
+
+.nl-map-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.nl-map .maplibregl-canvas:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+}
+
+/* ---- Controls ------------------------------------------------------------------------- */
+
+.nl-ctrls {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.nl-ctrl-group {
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  pointer-events: auto;
+}
+
+.nl-ctrl-group .chip {
+  margin: 0;
+  border: 0;
+  width: 4.5ch;
+  padding: 0;
+  text-align: center;
+  font-family: var(--mono);
+}
+
+.nl-ctrl-group .chip + .chip {
+  border-top: 1px solid var(--ink);
+}
+
+.nl-compass {
+  display: inline-block;
+  transition: transform 0.2s steps(4, end);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nl-compass {
+    transition: none;
+  }
+}
+
+/* ---- Tooltip -------------------------------------------------------------------------- */
+
+.nl-tip {
+  position: absolute;
+  z-index: 3;
+  max-width: 34ch;
+  padding: 2px 1.25ch 3px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 18px;
+  pointer-events: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.nl-tip-k {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+}
+
+.nl-tip-t {
+  text-transform: uppercase;
+}
+
+.nl-tip-l {
+  color: var(--ink);
+}
+
+/* ---- Chip markers (weather, tide) ------------------------------------------------------ */
+
+.nl-chip-anchor {
+  /* MapLibre positions this; the chip sits above a 9px tick that ends at the point. */
+  padding-bottom: 9px;
+  cursor: pointer;
+}
+
+.nl-chip-anchor::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 1px;
+  height: 9px;
+  background: var(--ink);
+}
+
+.nl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6ch;
+  padding: 0 0.9ch;
+  height: 22px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.nl-chip:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.nl-chip.is-hover {
+  box-shadow: 3px 3px 0 var(--ink);
+  transform: translate(-1px, -1px);
+}
+
+.nl-chip.is-sel {
+  background: var(--ink);
+  color: var(--paper);
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.nl-chip-g {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+  flex: none;
+}
+
+.nl-chip-s {
+  color: var(--muted);
+}
+
+.nl-chip.is-sel .nl-chip-s {
+  color: var(--paper);
+}
+
+/* ---- Attribution (OpenFreeMap / OpenMapTiles / OSM stays visible) ----------------------- */
+
+.nl-map .maplibregl-ctrl-bottom-right {
+  transition: none;
+}
+
+.nl-map .maplibregl-ctrl-attrib {
+  margin: 0 !important;
+  padding: 0 1ch;
+  background: var(--paper);
+  color: var(--muted);
+  border-top: 1px solid var(--ink);
+  border-left: 1px solid var(--ink);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 18px;
+}
+
+.nl-map .maplibregl-ctrl-attrib a {
+  color: var(--ink);
+}

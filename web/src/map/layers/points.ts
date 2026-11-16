@@ -3,7 +3,7 @@
 import type { ExpressionSpecification } from 'maplibre-gl';
 import { isGlyph } from '../../ui';
 import { glyphImageId, iconSizeFor } from '../icons';
-import { HOVER, ZOOM_FACTOR, zoomRadius, type Value } from '../styleToPaint';
+import { HOVER, ZOOM_FACTOR, resolveColor, zoomRadius, type Value } from '../styleToPaint';
 import { L, circle, emptyRendered, glyphInCircle, label, lid, pointHalo, pulseCircle, type RenderCtx, type Rendered } from './common';
 
 type Expr = ExpressionSpecification;
@@ -15,6 +15,8 @@ export interface PointOpts {
   sortKey?: Value | null;
   /** Label text offset (ems) and anchor. */
   labelOffset?: [number, number];
+  /** Overrides the marker colour (fill, or the ring when hollow). */
+  color?: Value;
 }
 
 export function points(ctx: RenderCtx, o: PointOpts = {}): Rendered {
@@ -25,7 +27,7 @@ export function points(ctx: RenderCtx, o: PointOpts = {}): Rendered {
     r.layers.push(pc.layer);
     r.pulse.push(pc.target);
   }
-  r.layers.push(circle(ctx, { sortKey: o.sortKey }));
+  r.layers.push(circle(ctx, { sortKey: o.sortKey, color: o.color }));
   r.hit.push(lid(ctx.def, 'circle'));
   const icon = ctx.def.style.icon;
   if (isGlyph(icon)) r.layers.push(glyphInCircle(ctx, icon, p.radius, o.glyphMinZoom ?? 12));
@@ -48,7 +50,11 @@ export function points(ctx: RenderCtx, o: PointOpts = {}): Rendered {
 /** Citi Bike: viridis on pct, radius on capacity; the emptiest stations draw on top. */
 export function bikeStations(ctx: RenderCtx): Rendered {
   const sort: Expr = ['-', 1, ['to-number', ['coalesce', ['get', 'pct'], 1]]];
-  return points(ctx, { sortKey: sort });
+  // Not renting: a gray ring (the scale's default colour), whatever the last pct was.
+  const gray = resolveColor(ctx.def.style.color.default as string | undefined, ctx.t);
+  const p = ctx.paint;
+  const color: Value = p.hasHollow ? (['case', p.hollow, gray, p.color] as Expr) : p.color;
+  return points(ctx, { sortKey: sort, color });
 }
 
 /** Zoom where the camera dot becomes a badge with a glyph. */

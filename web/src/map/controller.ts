@@ -1,13 +1,20 @@
 // MapController: owns the MapLibre map. React feeds it per-layer data (from useLayerView); the
 // rest (theme, selection, hover, borough mask, view, fly, insets) it reads from the store.
-import maplibregl, {
+import {
+  AttributionControl,
+  Map as MlMap,
+  type ErrorEvent,
   type GeoJSONSource,
+  type GeoJSONSourceSpecification,
   type LayerSpecification,
-  type Map as MlMap,
   type MapGeoJSONFeature,
   type MapMouseEvent,
   type StyleSpecification,
+  setWorkerUrl,
 } from 'maplibre-gl';
+// MapLibre 6 finds its worker next to its own module, which Vite's dependency pre-bundling
+// moves; point it at the packaged worker file explicitly (served in dev, emitted in build).
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import type { FeatureCollection } from 'geojson';
 import { useApp, type AppState } from '../core';
 import type { Catalog, LayerDef, LayerFeature, Theme, ViewState } from '../types';
@@ -16,6 +23,8 @@ import { installIcons } from './icons';
 import { renderLayer, sourceId, type Rendered } from './layers';
 import { Pulse } from './pulse';
 import { readTokens, type ThemeTokens } from './styleToPaint';
+
+setWorkerUrl(workerUrl);
 
 export interface HoverInfo {
   layer: string;
@@ -89,6 +98,8 @@ export class MapController {
   private hitToLayer = new Map<string, string>();
   private hitLayers: string[] = [];
   private triedOffline = false;
+  /** Data layers are on the current style. */
+  private isInstalled = false;
 
   // What feature-state currently reflects.
   private appliedSel: { layer: string; id: string } | null = null;
@@ -106,7 +117,7 @@ export class MapController {
     this.theme = s.theme;
     this.tokens = readTokens(s.theme);
     const v = s.view;
-    this.map = new maplibregl.Map({
+    this.map = new MlMap({
       container,
       style: offlineStyle(this.tokens),
       center: [v.lng, v.lat],
@@ -120,13 +131,16 @@ export class MapController {
       maxPitch: 60,
       cancelPendingTileRequestsWhileZooming: true,
     });
-    this.map.addControl(new maplibregl.AttributionControl({ compact: false }), 'bottom-right');
+    this.map.addControl(new AttributionControl({ compact: false }), 'bottom-right');
     this.lastView = v;
     this.pulse = new Pulse(this.map);
 
     this.map.on('style.load', this.onStyleLoad);
     this.map.on('error', this.onError);
-    this.map.on('styleimagemissing', () => installIcons(this.map));
+    this.map.on('styleimagemissing', (e: { id: string }) => {
+      // Only our own glyphs: the basemap's missing sprites are hidden on purpose.
+      if (e.id.startsWith('nl-') && !this.map.hasImage(e.id)) installIcons(this.map);
+    });
     this.map.on('mousemove', this.onMove);
     this.map.on('mouseout', this.clearHover);
     this.map.on('movestart', this.onMoveStart);
@@ -160,7 +174,7 @@ export class MapController {
   private applyLayer(id: string): void {
     const inst = this.installed.get(id);
     const w = this.want.get(id);
-    if (!inst || !w) return;
+    if (!inst || !w || inst.rendered.chips) return;
     if (w.visible && inst.features !== w.features) {
       inst.features = w.features;
       const src = this.map.getSource(sourceId(id)) as GeoJSONSource | undefined;
@@ -197,7 +211,7 @@ export class MapController {
     });
   }
 
-  private readonly onError = (e: { error?: Error }) => {
+  private readonly onError = (e: ErrorEvent) => {
     // The basemap could not be fetched: fall back to a paper background so data still draws.
     if (this.styleReady || this.triedOffline) return;
     const msg = String(e.error?.message ?? '');
@@ -213,18 +227,39 @@ export class MapController {
     if (layers.length <= 1 && !this.triedOffline && this.basemapUrl) return;
     this.styleReady = true;
     this.tokens = readTokens(this.theme);
+    // setStyle(diff: false) dropped every source and layer of ours, and their feature-state.
+    this.resetInstall();
+    this.install();
+  };
+
+  private resetInstall(): void {
     this.installed.clear();
     this.hitToLayer.clear();
     this.hitLayers = [];
     this.appliedSel = null;
     this.appliedHover = null;
     this.appliedMask = null;
-    this.install();
-  };
+    this.isInstalled = false;
+  }
+
+  /** Remove our layers and sources from the current style (the catalog changed). */
+  private uninstall(): void {
+    const map = this.map;
+    for (const inst of this.installed.values()) {
+      for (const id of inst.ids) if (map.getLayer(id)) map.removeLayer(id);
+    }
+    for (const [id, inst] of this.installed) {
+      for (const x of inst.rendered.extra ?? []) if (map.getSource(x.id)) map.removeSource(x.id);
+      if (map.getSource(sourceId(id))) map.removeSource(sourceId(id));
+    }
+    this.pulse.setTargets([]);
+    this.resetInstall();
+  }
 
   private install(): void {
     const cat = this.catalog;
-    if (!cat || !this.styleReady || this.installed.size) return;
+    if (!cat || !this.styleReady || this.isInstalled) return;
+    this.isInstalled = true;
     const map = this.map;
     installIcons(map);
     const before = firstPlaceLayer((map.getStyle().layers ?? []) as Array<{ id: string; type: string; 'source-layer'?: string }>);
@@ -237,6 +272,11 @@ export class MapController {
       const visible = w?.visible ?? false;
       const features = visible && w ? w.features : null;
       const src = sourceId(def.id);
+      if (rendered.chips) {
+        // HTML chip markers (MapView) draw this layer; nothing goes on the canvas.
+        this.installed.set(def.id, { rendered, ids: [], features, visible });
+        continue;
+      }
       if (!map.getSource(src)) {
         map.addSource(src, {
           type: 'geojson',
@@ -244,7 +284,7 @@ export class MapController {
           promoteId: 'id',
           buffer: 64,
           ...rendered.source,
-        } as maplibregl.GeoJSONSourceSpecification);
+        } as GeoJSONSourceSpecification);
       }
       for (const x of rendered.extra ?? []) {
         if (!map.getSource(x.id)) map.addSource(x.id, { type: 'geojson', data: features ? x.build(features) : EMPTY });
@@ -283,16 +323,16 @@ export class MapController {
         this.map.setMaxBounds(v.bounds);
         this.boundsApplied = true;
       }
-      this.installed.clear();
+      if (this.isInstalled) this.uninstall();
     }
     const url = (s.catalog?.basemaps ?? FALLBACK_BASEMAPS)[s.theme];
     if (s.theme !== this.theme || url !== this.basemapUrl) this.loadBasemap(s);
-    if (this.styleReady && this.catalog && !this.installed.size) {
-      this.install();
+    if (this.styleReady && this.catalog && !this.isInstalled) {
+      this.install(); // ends with a sync of its own
       return;
     }
 
-    if (this.installed.size) {
+    if (this.isInstalled) {
       this.applySelection(s);
       this.applyHover(s);
       this.applyMask(s);
@@ -302,7 +342,8 @@ export class MapController {
   }
 
   private setState(layer: string, id: string, state: Record<string, boolean>): void {
-    if (!this.installed.has(layer)) return;
+    const inst = this.installed.get(layer);
+    if (!inst || inst.rendered.chips) return;
     this.map.setFeatureState({ source: sourceId(layer), id }, state);
   }
 
@@ -389,6 +430,8 @@ export class MapController {
   }
 
   private readonly onMove = (e: MapMouseEvent) => {
+    // Chip markers handle their own hover; the canvas under them must not clear it.
+    if (onMarker(e)) return;
     this.pending = e;
     if (this.moveRaf) return;
     this.moveRaf = requestAnimationFrame(() => {
@@ -427,8 +470,7 @@ export class MapController {
   };
 
   private readonly onClick = (e: MapMouseEvent) => {
-    const target = e.originalEvent?.target as Element | null;
-    if (target && typeof target.closest === 'function' && target.closest('.maplibregl-marker')) return;
+    if (onMarker(e)) return;
     const f = this.pick(e);
     const layer = f ? this.hitToLayer.get(f.layer.id) : undefined;
     const st = useApp.getState();
@@ -469,6 +511,28 @@ export class MapController {
   resetNorth(): void {
     this.map.easeTo({ bearing: 0, pitch: 0, duration: 300 });
   }
+
+  /** Bearing in whole degrees, for the compass chip (read with useSyncExternalStore). */
+  readonly bearing = {
+    get: (): number => Math.round(this.map.getBearing()),
+    subscribe: (l: () => void): (() => void) => {
+      this.map.on('rotate', l);
+      return () => {
+        this.map.off('rotate', l);
+      };
+    },
+  };
+
+  /** Screen position (px from the map container's top left) of a coordinate. */
+  project(lng: number, lat: number): { x: number; y: number } {
+    const p = this.map.project([lng, lat]);
+    return { x: p.x, y: p.y };
+  }
+}
+
+function onMarker(e: MapMouseEvent): boolean {
+  const target = e.originalEvent?.target as Element | null;
+  return !!target && typeof target.closest === 'function' && !!target.closest('.maplibregl-marker');
 }
 
 function withVisibility(layer: LayerSpecification, vis: 'visible' | 'none'): LayerSpecification {

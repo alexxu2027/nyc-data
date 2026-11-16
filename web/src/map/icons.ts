@@ -20,9 +20,10 @@ function edt1d(grid: Float64Array, offset: number, stride: number, length: numbe
   z[0] = -INF;
   z[1] = INF;
   f[0] = grid[offset];
-  for (let q = 1, k = 0, s = 0; q < length; q++) {
+  for (let q = 1, k = 0; q < length; q++) {
     f[q] = grid[offset + q * stride];
     const q2 = q * q;
+    let s: number;
     do {
       const r = v[k];
       s = (f[q] - f[r] + q2 - r * r) / (q - r) / 2;

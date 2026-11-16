@@ -2,6 +2,9 @@
 // second). Only zoom-or-constant paint values change per step, so MapLibre never re-tiles a
 // source. Paused while the tab is hidden; reduced motion shows the rest frame (a still ring).
 import type { Map as MlMap } from 'maplibre-gl';
+
+type PaintKey = Parameters<MlMap['setPaintProperty']>[1];
+type PaintValue = Parameters<MlMap['setPaintProperty']>[2];
 import { zoomRadius } from './styleToPaint';
 
 export const PULSE_STEPS = 8;
@@ -69,8 +72,7 @@ export class Pulse {
   private apply(p: number, targets: PulseTarget[]): void {
     for (const t of targets) {
       for (const [k, v] of Object.entries(pulsePaint(t.kind, p))) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        this.map.setPaintProperty(t.id, k, v as any);
+        this.map.setPaintProperty(t.id, k as PaintKey, v as PaintValue);
       }
     }
   }

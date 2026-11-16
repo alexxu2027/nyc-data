@@ -1,0 +1,1662 @@
+{
+ "version": 1,
+ "basemaps": {
+  "light": "https://tiles.openfreemap.org/styles/positron",
+  "dark": "https://tiles.openfreemap.org/styles/dark"
+ },
+ "view": {
+  "center": [
+   -73.955,
+   40.725
+  ],
+  "zoom": 10.6,
+  "min_zoom": 8.5,
+  "max_zoom": 18.5,
+  "bounds": [
+   -74.75,
+   40.2,
+   -73.2,
+   41.2
+  ]
+ },
+ "boroughs": [
+  {
+   "id": "MN",
+   "label": "Manhattan"
+  },
+  {
+   "id": "BK",
+   "label": "Brooklyn"
+  },
+  {
+   "id": "QN",
+   "label": "Queens"
+  },
+  {
+   "id": "BX",
+   "label": "Bronx"
+  },
+  {
+   "id": "SI",
+   "label": "Staten Island"
+  }
+ ],
+ "groups": [
+  {
+   "id": "transit",
+   "label": "Transit"
+  },
+  {
+   "id": "streets",
+   "label": "Streets & safety"
+  },
+  {
+   "id": "water",
+   "label": "Water & weather"
+  },
+  {
+   "id": "city",
+   "label": "City services"
+  },
+  {
+   "id": "reference",
+   "label": "Reference"
+  }
+ ],
+ "layers": [
+  {
+   "default": true,
+   "borough_filter": false,
+   "list": false,
+   "detail": {
+    "type": "none"
+   },
+   "lag_note": null,
+   "empty_text": null,
+   "filters": [],
+   "id": "boroughs",
+   "label": "Borough boundaries",
+   "short": "Boroughs",
+   "group": "reference",
+   "kind": "polygon",
+   "sources": [],
+   "poll_s": 0,
+   "z": 5,
+   "attribution": {
+    "text": "NYC Dept. of City Planning, Borough Boundaries (NYC Open Data gthc-hcne)",
+    "url": "https://data.cityofnewyork.us/d/gthc-hcne"
+   },
+   "legend_title": "Boroughs",
+   "style": {
+    "color": {
+     "value": "ink"
+    },
+    "width": {
+     "zoom": [
+      [
+       8,
+       0.6
+      ],
+      [
+       12,
+       1.2
+      ],
+      [
+       15,
+       2
+      ]
+     ]
+    },
+    "fill_opacity": 0,
+    "label": {
+     "prop": "name",
+     "min_zoom": 0
+    }
+   },
+   "legend": [
+    {
+     "label": "Borough outline",
+     "shape": "line",
+     "color": "ink"
+    },
+    {
+     "label": "Outside the borough filter",
+     "shape": "fill",
+     "color": "muted"
+    }
+   ]
+  },
+  {
+   "default": true,
+   "borough_filter": true,
+   "list": true,
+   "detail": {
+    "type": "event",
+    "source": "nws_alerts"
+   },
+   "lag_note": null,
+   "empty_text": "NO ACTIVE ALERTS FOR NYC",
+   "filters": [
+    {
+     "key": "status",
+     "label": "Status",
+     "type": "enum",
+     "apply": "client",
+     "prop": "status",
+     "options": [
+      {
+       "value": "active",
+       "label": "In effect"
+      },
+      {
+       "value": "upcoming",
+       "label": "Upcoming"
+      }
+     ],
+     "default": [
+      "active",
+      "upcoming"
+     ]
+    }
+   ],
+   "id": "nws_alerts",
+   "label": "Weather alerts (NWS)",
+   "short": "NWS alerts",
+   "group": "water",
+   "kind": "polygon",
+   "sources": [
+    "nws_alerts"
+   ],
+   "poll_s": 120,
+   "z": 10,
+   "attribution": {
+    "text": "National Weather Service",
+    "url": "https://www.weather.gov/okx/"
+   },
+   "legend_title": "Alert severity",
+   "style": {
+    "color": {
+     "prop": "severity",
+     "scale": "match",
+     "stops": [
+      [
+       0,
+       "#9e9e9e"
+      ],
+      [
+       1,
+       "#f0e442"
+      ],
+      [
+       2,
+       "#e69f00"
+      ],
+      [
+       3,
+       "#d55e00"
+      ]
+     ],
+     "default": "#9e9e9e"
+    },
+    "fill_opacity": 0.22,
+    "width": {
+     "value": 2
+    },
+    "pulse": {
+     "prop": "severity",
+     "op": "gte",
+     "value": 3
+    },
+    "dash": {
+     "prop": "status",
+     "op": "eq",
+     "value": "upcoming"
+    },
+    "label": {
+     "prop": "event",
+     "min_zoom": 9
+    }
+   },
+   "legend": [
+    {
+     "label": "Severe / Extreme",
+     "shape": "fill",
+     "color": "#d55e00"
+    },
+    {
+     "label": "Moderate",
+     "shape": "fill",
+     "color": "#e69f00"
+    },
+    {
+     "label": "Minor",
+     "shape": "fill",
+     "color": "#f0e442"
+    },
+    {
+     "label": "Info",
+     "shape": "fill",
+     "color": "#9e9e9e"
+    },
+    {
+     "label": "Upcoming",
+     "shape": "dash",
+     "color": "ink"
+    }
+   ]
+  },
+  {
+   "default": true,
+   "borough_filter": true,
+   "list": false,
+   "detail": {
+    "type": "entity",
+    "kind": "road_segment"
+   },
+   "lag_note": "Feed runs 2 to 4 hours behind",
+   "empty_text": null,
+   "filters": [
+    {
+     "key": "band",
+     "label": "Speed band",
+     "type": "enum",
+     "apply": "client",
+     "prop": "band",
+     "options": [
+      {
+       "value": "lt10",
+       "label": "Under 10 mph"
+      },
+      {
+       "value": "10_20",
+       "label": "10\u00e2\u20ac\u201c20"
+      },
+      {
+       "value": "20_35",
+       "label": "20\u00e2\u20ac\u201c35"
+      },
+      {
+       "value": "35_50",
+       "label": "35\u00e2\u20ac\u201c50"
+      },
+      {
+       "value": "gte50",
+       "label": "50+"
+      },
+      {
+       "value": "none",
+       "label": "No reading"
+      }
+     ],
+     "default": [
+      "lt10",
+      "10_20",
+      "20_35",
+      "35_50",
+      "gte50",
+      "none"
+     ]
+    }
+   ],
+   "id": "road_speeds",
+   "label": "Road speeds (DOT)",
+   "short": "Speeds",
+   "group": "streets",
+   "kind": "line",
+   "sources": [
+    "dot_traffic_speeds"
+   ],
+   "poll_s": 300,
+   "z": 20,
+   "attribution": {
+    "text": "NYC DOT Real-Time Traffic Speed Data (i4gi-tjb9)",
+    "url": "https://data.cityofnewyork.us/d/i4gi-tjb9"
+   },
+   "legend_title": "Speed",
+   "style": {
+    "color": {
+     "prop": "speed_mph",
+     "scale": "step",
+     "base": "#d73027",
+     "stops": [
+      [
+       10,
+       "#fc8d59"
+      ],
+      [
+       20,
+       "#fee090"
+      ],
+      [
+       35,
+       "#91bfdb"
+      ],
+      [
+       50,
+       "#4575b4"
+      ]
+     ],
+     "default": "#9a9a9a"
+    },
+    "width": {
+     "zoom": [
+      [
+       9,
+       1.5
+      ],
+      [
+       12,
+       3.5
+      ],
+      [
+       15,
+       7
+      ]
+     ]
+    },
+    "dash": {
+     "prop": "band",
+     "op": "eq",
+     "value": "none"
+    },
+    "fade": {
+     "prop": "stale",
+     "op": "eq",
+     "value": true
+    }
+   },
+   "legend": [
+    {
+     "label": "Under 10 mph",
+     "shape": "line",
+     "color": "#d73027"
+    },
+    {
+     "label": "10\u00e2\u20ac\u201c20 mph",
+     "shape": "line",
+     "color": "#fc8d59"
+    },
+    {
+     "label": "20\u00e2\u20ac\u201c35 mph",
+     "shape": "line",
+     "color": "#fee090"
+    },
+    {
+     "label": "35\u00e2\u20ac\u201c50 mph",
+     "shape": "line",
+     "color": "#91bfdb"
+    },
+    {
+     "label": "50+ mph",
+     "shape": "line",
+     "color": "#4575b4"
+    },
+    {
+     "label": "No reading",
+     "shape": "dash",
+     "color": "#9a9a9a"
+    },
+    {
+     "label": "Faded: reading older than 3 h",
+     "shape": "text"
+    }
+   ]
+  },
+  {
+   "default": false,
+   "borough_filter": true,
+   "list": false,
+   "detail": {
+    "type": "event",
+    "source": "nyc_311"
+   },
+   "lag_note": "311 data arrives 1 to 2 days late; the window ends at the newest record",
+   "empty_text": null,
+   "filters": [
+    {
+     "key": "window",
+     "label": "Window",
+     "type": "select",
+     "apply": "server",
+     "options": [
+      {
+       "value": "24h",
+       "label": "Last 24 h"
+      },
+      {
+       "value": "48h",
+       "label": "Last 48 h"
+      },
+      {
+       "value": "7d",
+       "label": "Last 7 days"
+      }
+     ],
+     "default": "24h"
+    },
+    {
+     "key": "group",
+     "label": "Type",
+     "type": "enum",
+     "apply": "client",
+     "prop": "group",
+     "options": [
+      {
+       "value": "noise",
+       "label": "Noise"
+      },
+      {
+       "value": "housing",
+       "label": "Heat & housing"
+      },
+      {
+       "value": "sanitation",
+       "label": "Sanitation"
+      },
+      {
+       "value": "streets",
+       "label": "Streets & sidewalks"
+      },
+      {
+       "value": "water",
+       "label": "Water & sewer"
+      },
+      {
+       "value": "social",
+       "label": "People & assistance"
+      },
+      {
+       "value": "vehicles",
+       "label": "Parking & vehicles"
+      },
+      {
+       "value": "other",
+       "label": "Other"
+      }
+     ],
+     "default": [
+      "noise",
+      "housing",
+      "sanitation",
+      "streets",
+      "water",
+      "social",
+      "vehicles",
+      "other"
+     ]
+    },
+    {
+     "key": "status",
+     "label": "Status",
+     "type": "enum",
+     "apply": "client",
+     "prop": "status",
+     "options": [
+      {
+       "value": "open",
+       "label": "Open"
+      },
+      {
+       "value": "closed",
+       "label": "Closed"
+      }
+     ],
+     "default": [
+      "open",
+      "closed"
+     ]
+    }
+   ],
+   "id": "complaints_311",
+   "label": "311 service requests",
+   "short": "311",
+   "group": "city",
+   "kind": "cluster",
+   "sources": [
+    "nyc_311"
+   ],
+   "poll_s": 3600,
+   "z": 30,
+   "attribution": {
+    "text": "NYC 311 Service Requests (erm2-nwe9)",
+    "url": "https://data.cityofnewyork.us/d/erm2-nwe9"
+   },
+   "legend_title": "Request type",
+   "style": {
+    "color": {
+     "prop": "group",
+     "scale": "match",
+     "stops": [
+      [
+       "noise",
+       "#e69f00"
+      ],
+      [
+       "housing",
+       "#d55e00"
+      ],
+      [
+       "sanitation",
+       "#009e73"
+      ],
+      [
+       "streets",
+       "#f0e442"
+      ],
+      [
+       "water",
+       "#0072b2"
+      ],
+      [
+       "social",
+       "#cc79a7"
+      ],
+      [
+       "vehicles",
+       "#56b4e9"
+      ],
+      [
+       "other",
+       "#999999"
+      ]
+     ],
+     "default": "#999999"
+    },
+    "radius": {
+     "value": 3.5
+    },
+    "cluster": {
+     "radius": 46,
+     "max_zoom": 13
+    },
+    "hollow": {
+     "prop": "status",
+     "op": "eq",
+     "value": "closed"
+    }
+   },
+   "legend": [
+    {
+     "label": "Noise",
+     "shape": "circle",
+     "color": "#e69f00"
+    },
+    {
+     "label": "Heat & housing",
+     "shape": "circle",
+     "color": "#d55e00"
+    },
+    {
+     "label": "Sanitation",
+     "shape": "circle",
+     "color": "#009e73"
+    },
+    {
+     "label": "Streets & sidewalks",
+     "shape": "circle",
+     "color": "#f0e442"
+    },
+    {
+     "label": "Water & sewer",
+     "shape": "circle",
+     "color": "#0072b2"
+    },
+    {
+     "label": "People & assistance",
+     "shape": "circle",
+     "color": "#cc79a7"
+    },
+    {
+     "label": "Parking & vehicles",
+     "shape": "circle",
+     "color": "#56b4e9"
+    },
+    {
+     "label": "Other",
+     "shape": "circle",
+     "color": "#999999"
+    },
+    {
+     "label": "Closed",
+     "shape": "ring",
+     "color": "muted"
+    },
+    {
+     "label": "Cluster: count of requests",
+     "shape": "text"
+    }
+   ]
+  },
+  {
+   "default": false,
+   "borough_filter": true,
+   "list": false,
+   "detail": {
+    "type": "entity",
+    "kind": "subway_station"
+   },
+   "lag_note": null,
+   "empty_text": null,
+   "filters": [
+    {
+     "key": "ada",
+     "label": "Accessible only",
+     "type": "toggle",
+     "apply": "client",
+     "where": {
+      "prop": "ada",
+      "op": "gt",
+      "value": 0
+     },
+     "default": false
+    }
+   ],
+   "id": "subway_stations",
+   "label": "Subway stations",
+   "short": "Stations",
+   "group": "transit",
+   "kind": "point",
+   "sources": [
+    "mta_subway_stations"
+   ],
+   "poll_s": 3600,
+   "z": 35,
+   "attribution": {
+    "text": "MTA Subway Stations (data.ny.gov 39hk-dx4f)",
+    "url": "https://data.ny.gov/d/39hk-dx4f"
+   },
+   "legend_title": "Stations",
+   "style": {
+    "color": {
+     "value": "ink"
+    },
+    "radius": {
+     "value": 3
+    },
+    "hollow": {
+     "prop": "ada",
+     "op": "eq",
+     "value": 0
+    },
+    "label": {
+     "prop": "name",
+     "min_zoom": 13.5
+    }
+   },
+   "legend": [
+    {
+     "label": "Accessible",
+     "shape": "circle",
+     "color": "ink"
+    },
+    {
+     "label": "Not accessible",
+     "shape": "ring",
+     "color": "ink"
+    }
+   ]
+  },
+  {
+   "default": false,
+   "borough_filter": true,
+   "list": false,
+   "detail": {
+    "type": "entity",
+    "kind": "flood_sensor"
+   },
+   "lag_note": null,
+   "empty_text": null,
+   "filters": [
+    {
+     "key": "tidal",
+     "label": "Tidally influenced",
+     "type": "toggle",
+     "apply": "client",
+     "where": {
+      "prop": "tidal",
+      "op": "eq",
+      "value": true
+     },
+     "default": false
+    },
+    {
+     "key": "flooded",
+     "label": "Flooded recently",
+     "type": "toggle",
+     "apply": "client",
+     "where": {
+      "prop": "events_30d",
+      "op": "gt",
+      "value": 0
+     },
+     "default": false
+    }
+   ],
+   "id": "flood_sensors",
+   "label": "Flood sensors (FloodNet)",
+   "short": "Sensors",
+   "group": "water",
+   "kind": "point",
+   "sources": [
+    "floodnet_sensors",
+    "floodnet_events"
+   ],
+   "poll_s": 3600,
+   "z": 40,
+   "attribution": {
+    "text": "FloodNet NYC sensor deployments (kb2e-tjy3)",
+    "url": "https://www.floodnet.nyc/"
+   },
+   "legend_title": "Sensors",
+   "style": {
+    "color": {
+     "value": "#0072b2"
+    },
+    "radius": {
+     "value": 3.5
+    },
+    "hollow": {
+     "prop": "events_30d",
+     "op": "eq",
+     "value": 0
+    }
+   },
+   "legend": [
+    {
+     "label": "Flooded in the last 30 days of data",
+     "shape": "circle",
+     "color": "#0072b2"
+    },
+    {
+     "label": "No recent flood",
+     "shape": "ring",
+     "color": "#0072b2"
+    }
+   ]
+  },
+  {
+   "default": true,
+   "borough_filter": true,
+   "list": false,
+   "detail": {
+    "type": "entity",
+    "kind": "bike_station"
+   },
+   "lag_note": null,
+   "empty_text": null,
+   "filters": [
+    {
+     "key": "state",
+     "label": "Availability",
+     "type": "enum",
+     "apply": "client",
+     "prop": "state",
+     "options": [
+      {
+       "value": "empty",
+       "label": "No bikes"
+      },
+      {
+       "value": "low",
+       "label": "1\u00e2\u20ac\u201c3 bikes"
+      },
+      {
+       "value": "ok",
+       "label": "Bikes and docks"
+      },
+      {
+       "value": "full",
+       "label": "No docks"
+      },
+      {
+       "value": "offline",
+       "label": "Not renting"
+      }
+     ],
+     "default": [
+      "empty",
+      "low",
+      "ok",
+      "full",
+      "offline"
+     ]
+    },
+    {
+     "key": "ebikes",
+     "label": "Has e-bikes",
+     "type": "toggle",
+     "apply": "client",
+     "where": {
+      "prop": "ebikes",
+      "op": "gt",
+      "value": 0
+     },
+     "default": false
+    }
+   ],
+   "id": "citibike",
+   "label": "Citi Bike stations",
+   "short": "Citi Bike",
+   "group": "transit",
+   "kind": "point",
+   "sources": [
+    "citibike_gbfs",
+    "citibike_station_status"
+   ],
+   "poll_s": 60,
+   "z": 45,
+   "attribution": {
+    "text": "Citi Bike / Lyft GBFS",
+    "url": "https://citibikenyc.com/system-data"
+   },
+   "legend_title": "Bikes as a share of working docks",
+   "style": {
+    "color": {
+     "prop": "pct",
+     "scale": "interpolate",
+     "stops": [
+      [
+       0,
+       "#440154"
+      ],
+      [
+       0.15,
+       "#3b528b"
+      ],
+      [
+       0.4,
+       "#21918c"
+      ],
+      [
+       0.7,
+       "#5ec962"
+      ],
+      [
+       1,
+       "#fde725"
+      ]
+     ],
+     "default": "#8a8a8a"
+    },
+    "radius": {
+     "prop": "capacity",
+     "scale": "interpolate",
+     "stops": [
+      [
+       0,
+       3
+      ],
+      [
+       20,
+       4.5
+      ],
+      [
+       40,
+       6.5
+      ],
+      [
+       80,
+       9.5
+      ]
+     ],
+     "default": 4.5
+    },
+    "hollow": {
+     "prop": "state",
+     "op": "eq",
+     "value": "offline"
+    }
+   },
+   "legend": [
+    {
+     "label": "Empty",
+     "shape": "circle",
+     "color": "#440154"
+    },
+    {
+     "label": "Low",
+     "shape": "circle",
+     "color": "#3b528b"
+    },
+    {
+     "label": "Half",
+     "shape": "circle",
+     "color": "#21918c"
+    },
+    {
+     "label": "Plenty",
+     "shape": "circle",
+     "color": "#5ec962"
+    },
+    {
+     "label": "Full",
+     "shape": "circle",
+     "color": "#fde725"
+    },
+    {
+     "label": "Not renting",
+     "shape": "ring",
+     "color": "#8a8a8a"
+    },
+    {
+     "label": "Size: dock capacity",
+     "shape": "size"
+    }
+   ]
+  },
+  {
+   "default": true,
+   "borough_filter": true,
+   "list": false,
+   "detail": {
+    "type": "entity",
+    "kind": "camera"
+   },
+   "lag_note": null,
+   "empty_text": null,
+   "filters": [
+    {
+     "key": "status",
+     "label": "Status",
+     "type": "enum",
+     "apply": "client",
+     "prop": "status",
+     "options": [
+      {
+       "value": "online",
+       "label": "Online"
+      },
+      {
+       "value": "offline",
+       "label": "Offline"
+      }
+     ],
+     "default": [
+      "online",
+      "offline"
+     ]
+    }
+   ],
+   "id": "cameras",
+   "label": "Traffic cameras (DOT)",
+   "short": "Cameras",
+   "group": "streets",
+   "kind": "point",
+   "sources": [
+    "dot_cameras"
+   ],
+   "poll_s": 3600,
+   "z": 50,
+   "attribution": {
+    "text": "NYC DOT Traffic Management Center",
+    "url": "https://webcams.nyctmc.org/"
+   },
+   "legend_title": "Cameras",
+   "style": {
+    "color": {
+     "value": "ink"
+    },
+    "radius": {
+     "value": 5
+    },
+    "icon": "camera",
+    "hollow": {
+     "prop": "status",
+     "op": "eq",
+     "value": "offline"
+    }
+   },
+   "legend": [
+    {
+     "label": "Online",
+     "shape": "glyph",
+     "color": "ink",
+     "glyph": "camera"
+    },
+    {
+     "label": "Offline",
+     "shape": "ring",
+     "color": "muted"
+    }
+   ]
+  },
+  {
+   "default": false,
+   "borough_filter": true,
+   "list": false,
+   "detail": {
+    "type": "event",
+    "source": "nyc_collisions"
+   },
+   "lag_note": "Published several days late",
+   "empty_text": null,
+   "filters": [
+    {
+     "key": "window",
+     "label": "Window",
+     "type": "select",
+     "apply": "server",
+     "options": [
+      {
+       "value": "7d",
+       "label": "Last 7 days"
+      },
+      {
+       "value": "14d",
+       "label": "Last 14 days"
+      }
+     ],
+     "default": "7d"
+    },
+    {
+     "key": "severity",
+     "label": "Severity",
+     "type": "enum",
+     "apply": "client",
+     "prop": "severity",
+     "options": [
+      {
+       "value": "1",
+       "label": "Property damage"
+      },
+      {
+       "value": "2",
+       "label": "Injury"
+      },
+      {
+       "value": "3",
+       "label": "Fatal"
+      }
+     ],
+     "default": [
+      "1",
+      "2",
+      "3"
+     ]
+    },
+    {
+     "key": "ped",
+     "label": "Pedestrian involved",
+     "type": "toggle",
+     "apply": "client",
+     "where": {
+      "prop": "ped",
+      "op": "eq",
+      "value": true
+     },
+     "default": false
+    },
+    {
+     "key": "cyc",
+     "label": "Cyclist involved",
+     "type": "toggle",
+     "apply": "client",
+     "where": {
+      "prop": "cyc",
+      "op": "eq",
+      "value": true
+     },
+     "default": false
+    }
+   ],
+   "id": "collisions",
+   "label": "Motor vehicle collisions",
+   "short": "Collisions",
+   "group": "streets",
+   "kind": "point",
+   "sources": [
+    "nyc_collisions"
+   ],
+   "poll_s": 3600,
+   "z": 55,
+   "attribution": {
+    "text": "NYPD Motor Vehicle Collisions (h9gi-nx95)",
+    "url": "https://data.cityofnewyork.us/d/h9gi-nx95"
+   },
+   "legend_title": "Severity",
+   "style": {
+    "color": {
+     "prop": "severity",
+     "scale": "match",
+     "stops": [
+      [
+       1,
+       "#7a7a7a"
+      ],
+      [
+       2,
+       "#e66101"
+      ],
+      [
+       3,
+       "#5e3c99"
+      ]
+     ],
+     "default": "#7a7a7a"
+    },
+    "radius": {
+     "prop": "severity",
+     "scale": "match",
+     "stops": [
+      [
+       1,
+       3
+      ],
+      [
+       2,
+       5
+      ],
+      [
+       3,
+       8
+      ]
+     ],
+     "default": 3
+    },
+    "sort": {
+     "prop": "severity",
+     "order": "asc"
+    }
+   },
+   "legend": [
+    {
+     "label": "Property damage",
+     "shape": "circle",
+     "color": "#7a7a7a"
+    },
+    {
+     "label": "Injury",
+     "shape": "circle",
+     "color": "#e66101"
+    },
+    {
+     "label": "Fatal",
+     "shape": "circle",
+     "color": "#5e3c99"
+    }
+   ]
+  },
+  {
+   "default": false,
+   "borough_filter": true,
+   "list": true,
+   "detail": {
+    "type": "entity",
+    "kind": "subway_station"
+   },
+   "lag_note": null,
+   "empty_text": null,
+   "filters": [
+    {
+     "key": "status",
+     "label": "Status",
+     "type": "enum",
+     "apply": "client",
+     "prop": "status",
+     "options": [
+      {
+       "value": "current",
+       "label": "Out now"
+      },
+      {
+       "value": "upcoming",
+       "label": "Planned"
+      }
+     ],
+     "default": [
+      "current"
+     ]
+    },
+    {
+     "key": "ada",
+     "label": "Affects accessibility",
+     "type": "toggle",
+     "apply": "client",
+     "where": {
+      "prop": "ada",
+      "op": "eq",
+      "value": true
+     },
+     "default": false
+    }
+   ],
+   "id": "elevator_outages",
+   "label": "Elevator & escalator outages",
+   "short": "Elevators",
+   "group": "transit",
+   "kind": "point",
+   "sources": [
+    "mta_elevator_outages",
+    "mta_subway_stations"
+   ],
+   "poll_s": 300,
+   "z": 60,
+   "attribution": {
+    "text": "MTA Elevator & Escalator Status",
+    "url": "https://new.mta.info/elevator-escalator-status"
+   },
+   "legend_title": "Outages",
+   "style": {
+    "color": {
+     "value": "#cc79a7"
+    },
+    "radius": {
+     "prop": "n",
+     "scale": "interpolate",
+     "stops": [
+      [
+       1,
+       5
+      ],
+      [
+       3,
+       8
+      ]
+     ],
+     "default": 5
+    },
+    "icon": "elevator",
+    "hollow": {
+     "prop": "status",
+     "op": "eq",
+     "value": "upcoming"
+    }
+   },
+   "legend": [
+    {
+     "label": "Out now",
+     "shape": "circle",
+     "color": "#cc79a7"
+    },
+    {
+     "label": "Planned",
+     "shape": "ring",
+     "color": "#cc79a7"
+    },
+    {
+     "label": "Size: units out",
+     "shape": "size"
+    }
+   ]
+  },
+  {
+   "default": true,
+   "borough_filter": true,
+   "list": true,
+   "detail": {
+    "type": "entity",
+    "kind": "subway_station"
+   },
+   "lag_note": null,
+   "empty_text": null,
+   "filters": [
+    {
+     "key": "status",
+     "label": "Status",
+     "type": "enum",
+     "apply": "client",
+     "prop": "status",
+     "options": [
+      {
+       "value": "active",
+       "label": "In effect"
+      },
+      {
+       "value": "upcoming",
+       "label": "Next 7 days"
+      }
+     ],
+     "default": [
+      "active"
+     ]
+    },
+    {
+     "key": "unplanned",
+     "label": "Unplanned only",
+     "type": "toggle",
+     "apply": "client",
+     "where": {
+      "prop": "unplanned",
+      "op": "gt",
+      "value": 0
+     },
+     "default": false
+    }
+   ],
+   "id": "subway_alerts",
+   "label": "Subway service alerts",
+   "short": "Alerts",
+   "group": "transit",
+   "kind": "point",
+   "sources": [
+    "mta_subway_alerts",
+    "mta_subway_stations"
+   ],
+   "poll_s": 60,
+   "z": 65,
+   "attribution": {
+    "text": "MTA Subway Service Alerts",
+    "url": "https://new.mta.info/alerts"
+   },
+   "legend_title": "Alerts at a station",
+   "style": {
+    "color": {
+     "prop": "severity",
+     "scale": "step",
+     "base": "#999999",
+     "stops": [
+      [
+       1,
+       "#e69f00"
+      ],
+      [
+       2,
+       "#d55e00"
+      ]
+     ]
+    },
+    "radius": {
+     "prop": "n",
+     "scale": "interpolate",
+     "stops": [
+      [
+       1,
+       5
+      ],
+      [
+       3,
+       7
+      ],
+      [
+       6,
+       10
+      ]
+     ],
+     "default": 5
+    },
+    "icon": "alert",
+    "hollow": {
+     "prop": "status",
+     "op": "eq",
+     "value": "upcoming"
+    },
+    "pulse": {
+     "prop": "unplanned",
+     "op": "gt",
+     "value": 0
+    }
+   },
+   "legend": [
+    {
+     "label": "Service change or delay",
+     "shape": "circle",
+     "color": "#e69f00"
+    },
+    {
+     "label": "Suspension",
+     "shape": "circle",
+     "color": "#d55e00"
+    },
+    {
+     "label": "Unplanned, in effect",
+     "shape": "pulse",
+     "color": "#d55e00"
+    },
+    {
+     "label": "Upcoming",
+     "shape": "ring",
+     "color": "#e69f00"
+    },
+    {
+     "label": "Size: alerts at station",
+     "shape": "size"
+    }
+   ]
+  },
+  {
+   "default": true,
+   "borough_filter": true,
+   "list": false,
+   "detail": {
+    "type": "event",
+    "source": "floodnet_events"
+   },
+   "lag_note": "FloodNet open data lags about two weeks",
+   "empty_text": null,
+   "filters": [
+    {
+     "key": "window",
+     "label": "Window",
+     "type": "select",
+     "apply": "server",
+     "options": [
+      {
+       "value": "7d",
+       "label": "Last 7 days of data"
+      },
+      {
+       "value": "30d",
+       "label": "Last 30 days of data"
+      }
+     ],
+     "default": "30d"
+    },
+    {
+     "key": "depth",
+     "label": "Depth",
+     "type": "select",
+     "apply": "client",
+     "options": [
+      {
+       "value": "any",
+       "label": "Any depth"
+      },
+      {
+       "value": "4",
+       "label": "4 in or deeper",
+       "where": {
+        "prop": "max_depth_in",
+        "op": "gte",
+        "value": 4
+       }
+      },
+      {
+       "value": "12",
+       "label": "12 in or deeper",
+       "where": {
+        "prop": "max_depth_in",
+        "op": "gte",
+        "value": 12
+       }
+      }
+     ],
+     "default": "any"
+    }
+   ],
+   "id": "flood_events",
+   "label": "Street flooding (FloodNet)",
+   "short": "Floods",
+   "group": "water",
+   "kind": "point",
+   "sources": [
+    "floodnet_events",
+    "floodnet_sensors"
+   ],
+   "poll_s": 3600,
+   "z": 70,
+   "attribution": {
+    "text": "FloodNet NYC flood events (aq7i-eu5q)",
+    "url": "https://www.floodnet.nyc/"
+   },
+   "legend_title": "Peak depth",
+   "style": {
+    "color": {
+     "prop": "max_depth_in",
+     "scale": "step",
+     "base": "#9ecae1",
+     "stops": [
+      [
+       4,
+       "#4292c6"
+      ],
+      [
+       12,
+       "#084594"
+      ]
+     ]
+    },
+    "radius": {
+     "prop": "max_depth_in",
+     "scale": "interpolate",
+     "stops": [
+      [
+       0,
+       4
+      ],
+      [
+       4,
+       6
+      ],
+      [
+       12,
+       9
+      ],
+      [
+       24,
+       13
+      ]
+     ],
+     "default": 4
+    },
+    "pulse": {
+     "prop": "recent",
+     "op": "eq",
+     "value": true
+    },
+    "sort": {
+     "prop": "max_depth_in",
+     "order": "asc"
+    }
+   },
+   "legend": [
+    {
+     "label": "Under 4 in",
+     "shape": "circle",
+     "color": "#9ecae1"
+    },
+    {
+     "label": "4\u00e2\u20ac\u201c12 in",
+     "shape": "circle",
+     "color": "#4292c6"
+    },
+    {
+     "label": "12 in or more",
+     "shape": "circle",
+     "color": "#084594"
+    },
+    {
+     "label": "Within 48 h of the newest data",
+     "shape": "pulse",
+     "color": "#4292c6"
+    },
+    {
+     "label": "Size: peak depth",
+     "shape": "size"
+    }
+   ]
+  },
+  {
+   "default": true,
+   "borough_filter": true,
+   "list": false,
+   "detail": {
+    "type": "entity",
+    "kind": "weather_point"
+   },
+   "lag_note": null,
+   "empty_text": null,
+   "filters": [],
+   "id": "weather",
+   "label": "Weather now (Open-Meteo)",
+   "short": "Weather",
+   "group": "water",
+   "kind": "point",
+   "sources": [
+    "openmeteo_current"
+   ],
+   "poll_s": 900,
+   "z": 80,
+   "attribution": {
+    "text": "Open-Meteo",
+    "url": "https://open-meteo.com/"
+   },
+   "legend_title": "Weather",
+   "style": {
+    "color": {
+     "value": "ink"
+    },
+    "marker": "chip"
+   },
+   "legend": [
+    {
+     "label": "Temperature, \u00c2\u00b0F",
+     "shape": "text"
+    },
+    {
+     "label": "Precipitation now",
+     "shape": "glyph",
+     "color": "ink",
+     "glyph": "drop"
+    }
+   ]
+  },
+  {
+   "default": true,
+   "borough_filter": true,
+   "list": false,
+   "detail": {
+    "type": "entity",
+    "kind": "tide_gauge"
+   },
+   "lag_note": null,
+   "empty_text": null,
+   "filters": [],
+   "id": "tide_gauge",
+   "label": "Tide at the Battery (NOAA)",
+   "short": "Tide",
+   "group": "water",
+   "kind": "point",
+   "sources": [
+    "noaa_tide_battery"
+   ],
+   "poll_s": 360,
+   "z": 85,
+   "attribution": {
+    "text": "NOAA CO-OPS station 8518750, The Battery",
+    "url": "https://tidesandcurrents.noaa.gov/stationhome.html?id=8518750"
+   },
+   "legend_title": "Tide",
+   "style": {
+    "color": {
+     "value": "ink"
+    },
+    "marker": "chip",
+    "icon": "wave"
+   },
+   "legend": [
+    {
+     "label": "Water level, ft above MLLW",
+     "shape": "text"
+    },
+    {
+     "label": "Surge: observed minus predicted",
+     "shape": "text"
+    },
+    {
+     "label": "Rising / falling",
+     "shape": "text"
+    }
+   ]
+  }
+ ]
+}
