@@ -1,23 +1,16 @@
 // A hand-drawn SVG time chart on the line grid: its height is a whole number of lines (so the
 // gutter keeps counting), strokes read --ink / --muted / --faint, and nothing here hard-codes a
 // colour. No chart library.
-import { useLayoutEffect, useRef, useState, type PointerEvent } from "react";
-import { fmtTime } from "../../core";
-import {
-  niceExtent,
-  seriesPath,
-  xScale,
-  yScale,
-  type Point,
-  type Tick,
-} from "./path";
+import { useLayoutEffect, useRef, useState, type PointerEvent } from 'react';
+import { fmtTime } from '../../core';
+import { niceExtent, seriesPath, xScale, yScale, type Point, type Tick } from './path';
 
 export interface ChartSeries {
   key: string;
   label: string;
   points: Point[];
   /** solid = primary, dash = reference (prediction, docks), dot = subset (e-bikes). */
-  style?: "solid" | "dash" | "dot";
+  style?: 'solid' | 'dash' | 'dot';
   step?: boolean;
   /** Break the line across gaps longer than this many seconds. */
   gap?: number;
@@ -58,15 +51,14 @@ function valueAtX(points: Point[], x: number): number | null {
   return v;
 }
 
-const GLYPH: Record<string, string> = { solid: "━", dash: "┅", dot: "┈" };
+const GLYPH: Record<string, string> = { solid: '──', dash: '╌╌', dot: '··' };
 
 const FALLBACK_W = 360;
 const FALLBACK_LINE = 27;
 const PAD_T = 7;
 const PAD_B = 4;
 
-const defaultFmt = (v: number) =>
-  Math.abs(v) >= 100 ? v.toFixed(0) : String(Number(v.toFixed(2)));
+const defaultFmt = (v: number) => (Math.abs(v) >= 100 ? v.toFixed(0) : String(Number(v.toFixed(2))));
 
 export function SeriesChart({
   series,
@@ -79,7 +71,7 @@ export function SeriesChart({
   ticks,
   fmtY = defaultFmt,
   label,
-  fmtX = (t) => fmtTime(t, "time"),
+  fmtX = (t) => fmtTime(t, 'time'),
   fmtV = (_k, v) => defaultFmt(v),
 }: SeriesChartProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -92,12 +84,10 @@ export function SeriesChart({
 
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
+    if (!el || typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(([entry]) => {
       const r = entry.contentRect;
-      setSize((s) =>
-        s.w === r.width && s.h === r.height ? s : { w: r.width, h: r.height },
-      );
+      setSize((s) => (s.w === r.width && s.h === r.height ? s : { w: r.width, h: r.height }));
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -113,10 +103,8 @@ export function SeriesChart({
   const sy = yScale(d, ph);
   const showNow = now != null && now > from && now < to - 60;
   const empty = values.length === 0;
-  const ht =
-    hx != null && !empty && to > from ? from + (hx / w) * (to - from) : null;
-  const hv =
-    ht == null ? [] : series.map((s) => ({ s, v: valueAtX(s.points, ht) }));
+  const ht = hx != null && !empty && to > from ? from + (hx / w) * (to - from) : null;
+  const hv = ht == null ? [] : series.map((s) => ({ s, v: valueAtX(s.points, ht) }));
 
   return (
     <>
@@ -131,97 +119,37 @@ export function SeriesChart({
           onPointerMove={onMove}
           onPointerLeave={() => setHx(null)}
         >
-          <svg
-            width={w}
-            height={h}
-            viewBox={`0 0 ${w} ${h}`}
-            aria-hidden="true"
-          >
+          <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
             <g transform={`translate(0 ${PAD_T})`}>
               <line className="sc-grid" x1={0} x2={w} y1={0.5} y2={0.5} />
-              <line
-                className="sc-grid"
-                x1={0}
-                x2={w}
-                y1={Math.round(ph / 2) + 0.5}
-                y2={Math.round(ph / 2) + 0.5}
-              />
+              <line className="sc-grid" x1={0} x2={w} y1={Math.round(ph / 2) + 0.5} y2={Math.round(ph / 2) + 0.5} />
               {ticks?.map((t) => {
                 const x = Math.round(sx(t.at)) + 0.5;
-                return (
-                  <line
-                    key={t.at}
-                    className="sc-tick"
-                    x1={x}
-                    x2={x}
-                    y1={ph - 4}
-                    y2={ph}
-                  />
-                );
+                return <line key={t.at} className="sc-tick" x1={x} x2={x} y1={ph - 4} y2={ph} />;
               })}
               {showNow && (
-                <line
-                  className="sc-now"
-                  x1={Math.round(sx(now)) + 0.5}
-                  x2={Math.round(sx(now)) + 0.5}
-                  y1={0}
-                  y2={ph}
-                />
+                <line className="sc-now" x1={Math.round(sx(now)) + 0.5} x2={Math.round(sx(now)) + 0.5} y1={0} y2={ph} />
               )}
               {series.map((s) => (
                 <path
                   key={s.key}
-                  className={`sc-line ${s.style ?? "solid"}`}
-                  d={seriesPath(s.points, d, w, ph, {
-                    step: s.step,
-                    gap: s.gap,
-                  })}
+                  className={`sc-line ${s.style ?? 'solid'}`}
+                  d={seriesPath(s.points, d, w, ph, { step: s.step, gap: s.gap })}
                   data-series={s.key}
                 />
               ))}
               {series
-                .filter(
-                  (s) =>
-                    (s.style ?? "solid") === "solid" && s.points.length > 0,
-                )
+                .filter((s) => (s.style ?? 'solid') === 'solid' && s.points.length > 0)
                 .map((s) => {
                   const [x, y] = s.points[s.points.length - 1];
-                  return (
-                    <circle
-                      key={s.key}
-                      className="sc-end"
-                      cx={sx(x)}
-                      cy={sy(y)}
-                      r={2.5}
-                    />
-                  );
+                  return <circle key={s.key} className="sc-end" cx={sx(x)} cy={sy(y)} r={2.5} />;
                 })}
-              <line
-                className="sc-base"
-                x1={0}
-                x2={w}
-                y1={ph + 0.5}
-                y2={ph + 0.5}
-              />
+              <line className="sc-base" x1={0} x2={w} y1={ph + 0.5} y2={ph + 0.5} />
               {ht != null && hx != null && (
                 <>
-                  <line
-                    className="sc-hover"
-                    x1={Math.round(hx) + 0.5}
-                    x2={Math.round(hx) + 0.5}
-                    y1={0}
-                    y2={ph}
-                  />
+                  <line className="sc-hover" x1={Math.round(hx) + 0.5} x2={Math.round(hx) + 0.5} y1={0} y2={ph} />
                   {hv.map(({ s, v }) =>
-                    v == null ? null : (
-                      <circle
-                        key={s.key}
-                        className="sc-hdot"
-                        cx={hx}
-                        cy={sy(v)}
-                        r={3}
-                      />
-                    ),
+                    v == null ? null : <circle key={s.key} className="sc-hdot" cx={hx} cy={sy(v)} r={3} />,
                   )}
                 </>
               )}
@@ -236,12 +164,7 @@ export function SeriesChart({
                 </>
               )}
               {empty && (
-                <text
-                  className="sc-y"
-                  x={w / 2}
-                  y={ph / 2 + 3}
-                  textAnchor="middle"
-                >
+                <text className="sc-y" x={w / 2} y={ph / 2 + 3} textAnchor="middle">
                   NO READINGS IN RANGE
                 </text>
               )}
@@ -253,20 +176,9 @@ export function SeriesChart({
         <div className="l sc-axis" aria-hidden="true">
           {ticks.map((t, i) => {
             const pct = to === from ? 0 : ((t.at - from) / (to - from)) * 100;
-            const edge =
-              pct <= 2
-                ? "start"
-                : pct >= 98
-                  ? "end"
-                  : i === 0 && pct < 8
-                    ? "start"
-                    : "mid";
+            const edge = pct <= 2 ? 'start' : pct >= 98 ? 'end' : i === 0 && pct < 8 ? 'start' : 'mid';
             return (
-              <span
-                key={t.at}
-                className={`sc-t ${edge}`}
-                style={{ left: `${pct}%` }}
-              >
+              <span key={t.at} className={`sc-t ${edge}`} style={{ left: `${pct}%` }}>
                 {t.label}
               </span>
             );
@@ -283,8 +195,7 @@ export function SeriesChart({
                 <span className="sc-rx">{fmtX(ht)}</span>
                 {hv.map(({ s, v }) => (
                   <span key={s.key} className="sc-rv">
-                    {GLYPH[s.style ?? "solid"]} {s.label}{" "}
-                    {v == null ? "--" : fmtV(s.key, v)}
+                    {GLYPH[s.style ?? 'solid']} {s.label} {v == null ? '--' : fmtV(s.key, v)}
                   </span>
                 ))}
               </>
