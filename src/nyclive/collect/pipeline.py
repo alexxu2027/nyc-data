@@ -224,7 +224,15 @@ def _write(
         )  # fmt: skip
 
     # Events: a version per payload change; close open events that left a complete feed.
-    known_ev = store.events_for(sid)
+    # Load only what this run needs: the batch's own ids (payload-hash compare) and, for a
+    # complete feed, the still-active events that may have to be closed. Loading every stored
+    # event cost ~1 s per mta_trains run once ~60k trips had piled up.
+    complete_events = "events" in batch.complete
+    known_ev = store.events_for_run(
+        sid,
+        (ev.event_id for ev in batch.events),
+        active_at=ts(fetched_at) if complete_events else None,
+    )
     ev_rows = []
     in_batch = set()
     for ev in batch.events:
@@ -237,13 +245,17 @@ def _write(
         row = archive.event_row(ev, h, fetched_at)
         ev_rows.append(row)
         out.event_state.append(_event_state(row, prev, fetched_at))
-    if "events" in batch.complete:
+    if complete_events:
         for eid, prev in known_ev.items():
             if eid in in_batch:
                 continue
             # Close anything still "active" that left the feed, including events with a
             # scheduled end that was cancelled or superseded (review finding 2026-11-15).
             if prev["ends_at"] is not None and prev["ends_at"] <= ts(fetched_at):
+                continue
+            # Already closed by us (left the feed before it started, so ends_at is still in the
+            # future): close once, or every run writes a new version (review 2026-11-16, #1).
+            if "closed_reason" in json.loads(prev["props"] or "{}"):
                 continue
             closed = _closed_version(prev, fetched_at)
             ev_rows.append(closed)

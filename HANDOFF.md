@@ -2,20 +2,15 @@
 
 _Last updated: 2026-11-16_
 
-> **NEXT SESSION:** Phase 2.5 (liveness) is built and merged on main (2026-11-16); it is NOT live
-> yet. Next, in order:
+> **NEXT SESSION:** Phase 2.5 is built, reviewed and fixed (2026-11-16 morning; see "Pre-go-live
+> fixes" below). It is NOT live yet. Next, in order:
 > 1. When `scripts/soak_report.py` says `SOAK: PASS` (earliest Nov 16 ~8:50 PM ET), close Phase 1.
-> 2. Before restarting the collector, fix the trains load in `collect/pipeline.py`: `events_for`
->    loads ~60k trip rows (~1 s per 30 s run); load only open events for complete feeds.
-> 3. Restart the collector. Watch the first `floodnet_live` run (~2.3 min, 18 requests) and the
->    trains; after 24 h, measure the trains archive (budget ~6 MB/day).
-> 4. Then the Phase 2.5 browser acceptance on live data, and an Opus review (persistence + new
->    external feeds) if usage allows.
-> Use `uv run --no-sync` while the soak runs.
-> **Scheduled work:** Alex wants work to resume at **10:05 AM ET on 2026-11-16**. A new session
-> should create a one-shot CronCreate job for that time (`5 10 16 11 *`), unless it is already past.
-> The job does step 2 (the pipeline open-events fix) in code and tests only, without restarting the
-> collector. Ask before committing.
+> 2. Restart the collector (the trains open-events fix is done). Watch the first `floodnet_live`
+>    run (~2.3 min, 18 requests): with the #6 fix, its 48 h backfill must NOT fill the feed panel.
+>    Watch the trains; after 24 h, measure the trains archive (budget ~6 MB/day).
+> 3. Then the Phase 2.5 browser acceptance on live data. While doing it, watch review findings
+>    #8 and #10 (below): they need live MTA behaviour to judge.
+> Use `uv run --no-sync` while the soak runs. Also restart `nyclive serve` to pick up the API fixes.
 
 This file is the session-to-session log: where the project stands, what to do next, and gotchas
 learned the hard way. Read it first, then `docs/ROADMAP.md`.
@@ -177,6 +172,37 @@ see "Collector: start / stop" below.)
   - FloodNet depth lag is up to ~45 min.
 - No independent review yet (usage).
 
+### Pre-go-live fixes (2026-11-16 morning, uncommitted until Alex OKs)
+Working notes: `.orchestrate/p25/progress.md` and the review in `.orchestrate/p25/review.md`
+(both local).
+- **Trains load fix:** `StateStore.events_for_run` loads the batch's own ids plus, for
+  complete feeds, the still-active events. 60k stored trips: 666 ms → 23 ms per run.
+- **Small gaps closed:**
+  - The `/api/changes` ETag now covers items only (`etag_basis`), so polls get 304s again.
+  - The feed's seen mark is kept in localStorage (`web/src/feed/seen.ts`).
+  - The change ring was checked live in a browser: a real Citi Bike poll rang 1 dot over 12
+    steps, then cleared.
+- **Independent Opus review: 10 findings, 8 fixed with tests** (the tests for #4, #7 and #9 were
+  run against the old code and fail there):
+  1. A trip that left the feed before its start was re-closed every run. It is now closed once.
+  2. After-midnight trips started a day late: NYCT dates them by calendar day. Starts more than
+     6 h ahead of the header move back a day.
+  3. Ghost trains: 53 of 260 fixture vehicles had positions 30 min to 25 h old. Vehicles more
+     than 30 min older than their feed header are dropped.
+  4. A merged FloodNet flood came back about 48 h later as a new episode. Runs within
+     MAX_DRY_GAP + 1 buckets of the oldest bucket are skipped.
+  5. FloodNet episodes could stay open forever. The batch is now complete for events (only when
+     some sensor answered).
+  6. `/api/changes`: FloodNet items must have started inside the window, so the first run's 48 h
+     backfill isn't "new".
+  7. A server-filter change rang every dot. The next 200 after a filter change, or after the
+     layer comes back on, is treated as a first load.
+  9. Under reduced motion, trains never turned hollow when stale. The stale check now still runs.
+- **Deferred (PLAUSIBLE; watch on live data after the restart):**
+  - #8: one legitimately empty line feed (e.g. a weekend G shutdown) fails the whole trains run.
+  - #10: a trip missing for one poll is closed and reopened (2 rows, and its dot jumps back).
+- Checks: 386 pytest, 233 vitest, ruff, typecheck, lint, build all pass.
+
 ## Collector: start / stop
 `uv run nyclive collect --keep-awake` starts it (it doesn't survive a reboot). To stop it: Task
 Manager → end the `python.exe` running `nyclive collect`, or in PowerShell:
@@ -212,4 +238,6 @@ Restart it after adding or changing adapters. Logs: `data/logs/collect.log`.
   field otherwise.
 - DuckDB is 2.x: use `con.sql(...).to_arrow_table()` (`fetch_arrow_table` is gone). Fetch
   TIMESTAMPTZ as Arrow, not Python objects (that path needs pytz).
+- MTA GTFS-rt: `start_date` on after-midnight trips (origin code 24:xx+) is the calendar day, not
+  the service day. The feeds also keep finished vehicles for hours: check `VehiclePosition.timestamp`.
 - `core.autocrlf` is on; `.gitattributes` keeps fixtures byte-exact. Don't remove it.

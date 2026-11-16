@@ -259,6 +259,32 @@ describe('layer polling', () => {
     expect(useApp.getState().data.complaints_311.rev).toBe(2);
   });
 
+  it('a server-filter change is a first load for change detection (review 2026-11-16, #7)', async () => {
+    const withChanges = {
+      ...catalog,
+      layers: catalog.layers.map((l) => (l.id === 'complaints_311' ? { ...l, changes: { props: [], new: true } } : l)),
+    };
+    useApp.setState({ catalog: withChanges });
+    replies.complaints_311 = [
+      ok('complaints_311', ['a'], 'W/"1"'),
+      ok('complaints_311', ['a', 'b'], 'W/"2"'),
+      ok('complaints_311', ['c', 'd', 'e'], 'W/"3"'),
+      ok('complaints_311', ['c', 'd', 'e', 'f'], 'W/"4"'),
+    ];
+    dispose = startPolling();
+    useApp.getState().setLayerVisible('complaints_311', true);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(useApp.getState().data.complaints_311.changed).toEqual([]); // first load
+    const every = Math.max(withChanges.layers.find((l) => l.id === 'complaints_311')!.poll_s, 30) * 1000;
+    await vi.advanceTimersByTimeAsync(every);
+    expect(useApp.getState().data.complaints_311.changed).toEqual(['b']); // a real change
+    useApp.getState().setFilter('complaints_311', 'window', '7d');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(useApp.getState().data.complaints_311.changed).toEqual([]); // other filter: no mass ring
+    await vi.advanceTimersByTimeAsync(every);
+    expect(useApp.getState().data.complaints_311.changed).toEqual(['f']); // and changes resume
+  });
+
   it('a server-filter change aborts the in-flight request', async () => {
     replies.complaints_311 = ['pending', ok('complaints_311', ['b'], 'W/"2"')];
     dispose = startPolling();

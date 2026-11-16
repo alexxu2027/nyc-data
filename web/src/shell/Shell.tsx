@@ -3,7 +3,7 @@
 // Talks to the map and the drawer only through the store.
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useApp } from '../core';
-import { FeedBody, startFeedPolling } from '../feed';
+import { FeedBody, persistFeedSeen, startFeedPolling } from '../feed';
 import type { Selection } from '../types';
 import { Banner, Line, Panel, Sheet, TextButton, useIsPhone, FreshDot, type Detent } from '../ui';
 import { AboutBody } from './AboutPanel';
@@ -86,6 +86,8 @@ export function Shell({ map, drawer }: ShellProps) {
 
   // The "what changed" feed polls for the whole session (it waits for the map's first answer).
   useEffect(() => startFeedPolling(), []);
+  // Its "seen up to" mark survives reloads, so a reload doesn't mark the last 12 h NEW again.
+  useEffect(() => persistFeedSeen(), []);
 
   const closePanel = useCallback(() => setPanel(null), [setPanel]);
   const dialog =

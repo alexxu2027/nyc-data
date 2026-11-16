@@ -22,11 +22,18 @@ from nyclive.timeutil import NY
 SID = "mta_subway_realtime"
 
 
-def vehicles_with_stop(raw) -> set[str]:
+def vehicles_with_stop(raw, ghosts: bool = False) -> set[str]:
+    """Vehicles naming a trip and a stop; without `ghosts`, only those with a fresh position."""
     ids = set()
     for name in mta_trains.FEEDS:
-        for v in _gtfsrt.decode_feed(raw.part(name).content).vehicles:
-            if v.trip.trip_id and v.stop_id:
+        feed = _gtfsrt.decode_feed(raw.part(name).content)
+        cutoff = feed.header.timestamp - mta_trains.MAX_VEHICLE_AGE.total_seconds()
+        for v in feed.vehicles:
+            if (
+                v.trip.trip_id
+                and v.stop_id
+                and (ghosts or not v.timestamp or v.timestamp >= cutoff)
+            ):
                 ids.add(f"{v.trip.start_date}:{v.trip.trip_id}")
     return ids
 
@@ -35,8 +42,9 @@ def test_real_one_event_per_vehicle_with_a_stop():
     raw = load_fixture(SID)
     batch = parse_fixture(SID)
     ids = [e.event_id for e in batch.events]
-    assert len(ids) == len(set(ids)) == 260
+    assert len(ids) == len(set(ids)) == 207  # 260 with a stop, less 53 ghosts (review #3)
     assert set(ids) == vehicles_with_stop(raw)
+    assert len(vehicles_with_stop(raw, ghosts=True)) == 260
     assert batch.complete == {"events"}
     assert not batch.entities and not batch.observations
     for e in batch.events:
@@ -69,8 +77,10 @@ def test_starts_at_from_origin_code_past_midnight():
     batch = parse_fixture(SID, "edge_synthetic")
     ev = {e.event_id: e for e in batch.events}
     late = ev["20261116:148500_1..N03R"]
-    assert late.starts_at == datetime(2026, 11, 17, 0, 45, tzinfo=NY).astimezone(UTC)
-    assert late.starts_at == datetime(2026, 11, 17, 5, 45, tzinfo=UTC)
+    # NYCT dates after-midnight trips by the calendar day (review 2026-11-16, #2): "24:45" on
+    # 20261116 seen at 02:13 ET on Nov 16 left at 00:45 that morning, not tomorrow night.
+    assert late.starts_at == datetime(2026, 11, 16, 0, 45, tzinfo=NY).astimezone(UTC)
+    assert late.starts_at == datetime(2026, 11, 16, 5, 45, tzinfo=UTC)
     assert late.props == {"route": "1", "dir": "N", "stop": "103"}
 
 
@@ -245,5 +255,61 @@ def test_events_for_timing_report(tmp_path):
         open_t0 = time.perf_counter()
         open_only = store.events_for(SID, open_only=True)
         open_ms = (time.perf_counter() - open_t0) * 1000
-    assert len(got) == 60_000 and len(open_only) == 600
-    print(f"\nevents_for over 60k rows: {best * 1000:.0f} ms (open_only: {open_ms:.0f} ms)")
+        batch_ids = list(open_only)[:250]  # about one live batch of trains
+        run_t0 = time.perf_counter()
+        for_run = store.events_for_run(SID, batch_ids, active_at=ts(now))
+        run_ms = (time.perf_counter() - run_t0) * 1000
+    assert len(got) == 60_000 and len(open_only) == 600 and len(for_run) == 600
+    print(
+        f"\nevents_for over 60k rows: {best * 1000:.0f} ms (open_only: {open_ms:.0f} ms,"
+        f" events_for_run as the pipeline calls it: {run_ms:.0f} ms)"
+    )
+
+
+def test_real_no_start_far_ahead_and_no_ghosts():
+    """Review 2026-11-16 #2/#3: overnight trips were ~24 h late; day-old vehicles were drawn."""
+    raw = load_fixture(SID)
+    header_at = max(
+        _gtfsrt.decode_feed(raw.part(n).content).header.timestamp for n in mta_trains.FEEDS
+    )
+    hdr = datetime.fromtimestamp(header_at, UTC)
+    batch = parse_fixture(SID)
+    ahead = [e.event_id for e in batch.events if e.starts_at - hdr > mta_trains.MAX_START_AHEAD]
+    assert ahead == []
+    ev = {e.event_id: e for e in batch.events}
+    assert ev["20261116:147350_2..N08R"].starts_at == datetime(2026, 11, 16, 0, 33, 30, tzinfo=NY)
+    assert "20261115:002750_7..S" not in ev  # its position is ~25 h old
+
+
+def test_trip_leaving_before_its_start_is_closed_once(tmp_path):
+    """Review 2026-11-16 #1: a before-start close kept a future ends_at and re-closed every run."""
+    from nyclive.collect.pipeline import run_once
+    from nyclive.registry import load_registry
+    from nyclive.sources.base import Adapter, Batch
+
+    src = load_registry().sources[SID]
+    t0 = datetime(2026, 11, 16, 7, 0, tzinfo=UTC)
+    waiting = Event(SID, "20261116:030000_1..N03R", "train", "1 train northbound",
+                    t0 + timedelta(minutes=45), subtype="1", props={"route": "1", "dir": "N",
+                    "stop": "101"})  # fmt: skip
+    other = Event(SID, "20261116:025000_1..S03R", "train", "1 train southbound", t0,
+                  subtype="1", props={"route": "1", "dir": "S", "stop": "142"})  # fmt: skip
+    batches = iter([[waiting, other]] + [[other]] * 5)
+
+    def parse(raw):
+        return Batch(events=list(next(batches)), complete=frozenset({"events"}))
+
+    with StateStore(tmp_path / "state.db") as store:
+        written = []
+        for i in range(6):
+            t = t0 + timedelta(seconds=30 * i)
+            raw = RawPayload(SID, (RawPart("gtfs", "u", b"", t),))
+            a = Adapter("x", (SID,), lambda ctx, raw=raw: raw, parse)
+            written.append(
+                run_once(src, a, None, store, tmp_path / "a", now=lambda t=t: t).rows_written
+            )
+        closed = store.events_for(SID)[waiting.event_id]
+    assert written == [2, 1, 0, 0, 0, 0]  # opened, closed once, then nothing
+    assert (
+        closed["ends_at"] == ts(waiting.starts_at) and "left_feed_before_start" in closed["props"]
+    )

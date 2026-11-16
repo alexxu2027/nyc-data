@@ -54,6 +54,10 @@ def _events(sid: str, station: str, sensor: str) -> list[Event]:
         return [
             Event(sid, f"{sensor}:wet", "flood", "Flooding, 3 in", NOW - H, severity=2,
                   entity_refs=(f"flood_sensor:{sensor}",), props={"live": True}),
+            # Backfilled from the 48 h tail on the first run: first seen now, began 30 h ago.
+            Event(sid, f"{sensor}:old", "flood", "Flooding, 2 in", NOW - 30 * H,
+                  ends_at=NOW - 29 * H, severity=1, entity_refs=(f"flood_sensor:{sensor}",),
+                  props={"live": True}),
         ]  # fmt: skip
     return []
 
@@ -169,3 +173,29 @@ def test_read_only(feed):
     for q in ("", "?hours=48&limit=100", "?hours=1"):
         assert client.get(f"/api/changes{q}").status_code == 200
     assert hashlib.sha256(settings.state_db.read_bytes()).hexdigest() == before
+
+
+def test_etag_survives_clock_only_rebuilds(feed):
+    """Known gap (2026-11-16): `now` in the body changed the ETag on every 30 s rebuild."""
+    from datetime import timedelta
+
+    _, settings, *_ = feed
+    clock = {"t": NOW}
+    client = TestClient(create_app(settings, now=lambda: clock["t"], web_dist=None))
+    r = client.get("/api/changes")
+    tag = r.headers["etag"]
+    clock["t"] = NOW + timedelta(seconds=45)  # past MAX_AGE_S: the body is rebuilt
+    again = client.get("/api/changes", headers={"If-None-Match": tag})
+    assert again.status_code == 304 and again.headers["etag"] == tag
+    fresh = client.get("/api/changes")
+    assert fresh.json()["now"] != r.json()["now"]  # the body itself still has the new clock
+
+
+def test_backfilled_old_flood_is_not_a_change(feed):
+    """Review 2026-11-16 #6: a flood that began before the window isn't new on the first run."""
+    client, _, _, sensor = feed
+    ids = [i["id"] for i in _items(client, "?limit=100")["items"]]  # the default 12 h
+    assert any(i.endswith(f"{sensor}:wet") for i in ids)
+    assert not any(i.endswith(f"{sensor}:old") for i in ids)
+    wide = [i["id"] for i in _items(client, "?hours=48&limit=100")["items"]]
+    assert any(i.endswith(f"{sensor}:old") for i in wide)  # inside a 48 h window it counts

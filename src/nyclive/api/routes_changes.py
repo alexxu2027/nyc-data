@@ -34,5 +34,9 @@ def changes(
             return {"now": iso(now), "since": iso(now - timedelta(hours=hours)), "items": items}
 
         key = ("changes", hours, limit)
-        entry = services.cache.get_or_build(key, stamp, now.timestamp(), MAX_AGE_S, build)
+        # The ETag covers the items only: `now`/`since` move every rebuild, and the client
+        # doesn't read them, so including them turned every 30 s poll into a 200.
+        entry = services.cache.get_or_build(
+            key, stamp, now.timestamp(), MAX_AGE_S, build, etag_basis=lambda b: b["items"]
+        )
     return conditional(request, entry)

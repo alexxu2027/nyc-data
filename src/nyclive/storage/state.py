@@ -158,6 +158,26 @@ class StateStore:
             sql += " AND ends_at IS NULL"
         return {r["event_id"]: dict(r) for r in self._all(sql, (source,))}
 
+    def events_for_run(
+        self, source: str, ids: Iterable[str], active_at: str | None = None
+    ) -> dict[str, dict[str, Any]]:
+        """Only the stored events one pipeline run needs, not the whole history.
+
+        Returns the events whose ids are in `ids` (this batch) and, when `active_at` is given
+        (a complete feed), every event still active then: `ends_at` NULL or after `active_at`.
+        """
+        out: dict[str, dict[str, Any]] = {}
+        ids = list(dict.fromkeys(ids))
+        for i in range(0, len(ids), 500):  # stay under SQLite's bound-parameter limit
+            chunk = ids[i : i + 500]
+            marks = ",".join("?" * len(chunk))
+            sql = f"SELECT * FROM events WHERE source = ? AND event_id IN ({marks})"
+            out.update((r["event_id"], dict(r)) for r in self._all(sql, (source, *chunk)))
+        if active_at is not None:
+            sql = "SELECT * FROM events WHERE source = ? AND (ends_at IS NULL OR ends_at > ?)"
+            out.update((r["event_id"], dict(r)) for r in self._all(sql, (source, active_at)))
+        return out
+
     def runs_between(self, start: str, end: str) -> list[dict[str, Any]]:
         rows = self._all(
             "SELECT * FROM runs WHERE started_at >= ? AND started_at < ? ORDER BY started_at",

@@ -31,6 +31,10 @@ interface Ctl {
   done: boolean; // poll_s 0 and fetched successfully
   dueAt: number; // when the next fetch is due (ms)
   token: number;
+  /** The next 200 is a first load for change detection: the features in the store came from
+   * another filter (or an earlier visit), so diffing against them would ring every dot (review
+   * 2026-11-16, #7). */
+  fresh: boolean;
 }
 
 function patchLayer(id: string, patch: Partial<LayerData>): void {
@@ -105,9 +109,10 @@ export function startPolling(opts: PollOptions = {}): () => void {
           fetchedAt: t,
           nextAt,
           error: null,
-          changed: changedIds(c.def, prev.features, res.body.features, prev.rev === 0),
+          changed: changedIds(c.def, prev.features, res.body.features, prev.rev === 0 || c.fresh),
           changedAt: t,
         });
+        c.fresh = false;
       }
       if (!c.done) schedule(c, intervalFor(c));
     } catch (e) {
@@ -166,10 +171,11 @@ export function startPolling(opts: PollOptions = {}): () => void {
         c.def = def;
         c.failures = 0;
         c.done = false;
+        c.fresh = true;
         patchLayer(id, { etag: null });
         schedule(c, 0);
       } else {
-        const n: Ctl = { def, key, params, timer: null, abort: null, failures: 0, done: false, dueAt: 0, token: 0 };
+        const n: Ctl = { def, key, params, timer: null, abort: null, failures: 0, done: false, dueAt: 0, token: 0, fresh: true };
         ctls.set(id, n);
         schedule(n, 0);
       }

@@ -46,9 +46,17 @@ class Entry:
             return self._gz
 
 
-def entry_for(body_obj: Any, stamp: Hashable = None, built_at: float = 0.0) -> Entry:
+def entry_for(
+    body_obj: Any,
+    stamp: Hashable = None,
+    built_at: float = 0.0,
+    etag_basis: Callable[[Any], Any] | None = None,
+) -> Entry:
+    """`etag_basis` picks the part of the body the ETag covers (default: all of it), so a
+    clock-only field such as `now` doesn't change the ETag and defeat 304s."""
     body = dumps(body_obj)
-    return Entry(body=body, etag=etag_of(body), stamp=stamp, built_at=built_at)
+    etag = etag_of(dumps(etag_basis(body_obj)) if etag_basis else body)
+    return Entry(body=body, etag=etag, stamp=stamp, built_at=built_at)
 
 
 class BodyCache:
@@ -65,6 +73,7 @@ class BodyCache:
         now_s: float,
         max_age: float,
         build: Callable[[], Any],
+        etag_basis: Callable[[Any], Any] | None = None,
     ) -> Entry:
         def fresh() -> Entry | None:
             with self._lock:
@@ -83,7 +92,7 @@ class BodyCache:
             hit = fresh()
             if hit:
                 return hit
-            entry = entry_for(build(), stamp, now_s)
+            entry = entry_for(build(), stamp, now_s, etag_basis)
             with self._lock:
                 self._items[key] = entry
                 self._items.move_to_end(key)

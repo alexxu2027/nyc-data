@@ -292,7 +292,7 @@ class TrainAnimator implements LiveHandle {
   private schedule(): void {
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
-    if (this.disposed || !this.visible || document.hidden || this.ctx.reducedMotion()) return;
+    if (this.disposed || !this.visible || document.hidden) return;
     const now = Date.now();
     if (!this.frozen && this.isStale(now)) {
       this.frozen = true;
@@ -301,6 +301,15 @@ class TrainAnimator implements LiveHandle {
       return;
     }
     if (this.frozen) return;
+    if (this.ctx.reducedMotion()) {
+      // No motion ticks, but still watch for the data going stale so the dots turn hollow
+      // (review 2026-11-16, #9: they stayed solid forever under reduced motion).
+      this.timer = setTimeout(() => {
+        this.timer = null;
+        this.schedule();
+      }, IDLE_CHECK_MS);
+      return;
+    }
     // Nothing moving (every train at its stop): just watch for the data going stale.
     this.timer = setTimeout(this.tick, this.moving(now) ? tickMs(this.map.getZoom()) : IDLE_CHECK_MS);
   }

@@ -199,7 +199,10 @@ def parse(raw: RawPayload) -> Batch:
             continue
         series.setdefault(sid, {})[when] = round(max(depth, 0.0), 1)
 
-    batch = Batch()
+    # Complete for events once any sensor answered: an open episode that is no longer emitted
+    # (it outgrew the window, or its station stopped being polled) is closed instead of staying
+    # "flooding" for up to 45 days (review 2026-11-16, #5). An all-empty answer closes nothing.
+    batch = Batch(complete=frozenset({"events"}) if series else frozenset())
     for sid in sorted(series):
         buckets = sorted(series[sid].items())
         for when, depth in buckets:
@@ -217,7 +220,10 @@ def _episodes(
 
     wet = max >= 1 in; up to 2 dry buckets merge two wet runs; an episode needs a 2 in peak or
     2+ wet buckets. It is open (ends_at None) while the newest bucket is wet and recent, else it
-    ends one bucket after the last wet one. Episodes that touch the window start are skipped.
+    ends one bucket after the last wet one. Episodes that may have begun before the oldest
+    bucket seen are skipped: that is anything within MAX_DRY_GAP + 1 buckets of it, since the
+    wet run before the gap may have slid out of the window (review 2026-11-16, #4: the tail of
+    a merged flood came back two days later as a "new" episode with a new id).
     """
     step = timedelta(seconds=BUCKET_S)
     wet = [i for i, (_, d) in enumerate(buckets) if d >= WET_IN]
@@ -234,8 +240,9 @@ def _episodes(
     events = []
     for run in runs:
         first, last = buckets[run[0]][0], buckets[run[-1]][0]
-        if run[0] == 0 or first <= window_start:
-            continue  # started before the window: its true start (and id) is unknown
+        lookback = first - (MAX_DRY_GAP + 1) * step  # the earliest bucket that could merge in
+        if run[0] == 0 or first <= window_start or lookback < buckets[0][0]:
+            continue  # may have started before the window: its true start (and id) is unknown
         peak = max(buckets[i][1] for i in run)
         if peak < PEAK_IN and len(run) < 2:
             continue  # one shallow reading is noise

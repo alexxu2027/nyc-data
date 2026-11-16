@@ -1,8 +1,8 @@
 import { validateStyleMin, type StyleSpecification } from '@maplibre/maplibre-gl-style-spec';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LayerDef, LayerFeature } from '../../types';
 import { LIGHT_TOKENS, styleToPaint } from '../styleToPaint';
-import { dataAsOf, ease, positionAt, positions, progressAt, tickMs, trains, tween, TWEEN_MS } from './trains';
+import { dataAsOf, ease, FREEZE_AFTER_MS, positionAt, positions, progressAt, tickMs, trains, tween, TWEEN_MS } from './trains';
 
 const T0 = '2026-11-16T08:00:00Z';
 const T1 = '2026-11-16T08:02:00Z';
@@ -152,5 +152,32 @@ describe('trains renderer', () => {
   it('extra build gives Point features', () => {
     const fc = r.extra![0].build([line(TRACK)]);
     expect(fc.features[0].geometry.type).toBe('Point');
+  });
+});
+
+describe('train animator under reduced motion', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('still turns the dots hollow when the data goes stale (review 2026-11-16, #9)', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(t0 + 10_000);
+    const def = { id: 'subway_trains', kind: 'point', style: { radius: { value: 4 } } } as unknown as LayerDef;
+    const r = trains({ def, paint: styleToPaint(def, LIGHT_TOKENS), t: LIGHT_TOKENS, source: 'nl-subway_trains' });
+    const pushed: boolean[][] = [];
+    const src = {
+      setData: (fc: { features: Array<{ properties: { stale: boolean } }> }) => {
+        pushed.push(fc.features.map((f) => f.properties.stale));
+      },
+    };
+    // Anything else the hook calls on the map is a no-op.
+    const map = new Proxy({ getSource: () => src, getZoom: () => 12 } as Record<string, unknown>, {
+      get: (o, k: string) => (k in o ? o[k] : () => undefined),
+    });
+    const live = r.live!({ map, def, source: 'nl-subway_trains', beforeId: undefined, reducedMotion: () => true } as never);
+    live.update([pt(0, 0, { seen_at: T0 })], true);
+    expect(pushed.at(-1)).toEqual([false]);
+    vi.advanceTimersByTime(FREEZE_AFTER_MS + 10_000);
+    expect(pushed.at(-1)).toEqual([true]);
+    live.destroy();
   });
 });

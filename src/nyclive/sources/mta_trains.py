@@ -31,6 +31,12 @@ BASE = "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2F"
 FEEDS = ("gtfs", "gtfs-ace", "gtfs-bdfm", "gtfs-g", "gtfs-jz", "gtfs-nqrw", "gtfs-l", "gtfs-si")
 CATEGORY = "train"
 MAX_HEADER_AGE = timedelta(minutes=15)
+# A vehicle whose own position is this much older than its feed header is a ghost: MTA leaves
+# finished trips in the feed for hours (a day, once), and they would be drawn as live trains.
+MAX_VEHICLE_AGE = timedelta(minutes=30)
+# A computed start this far after the header is a day late: NYCT dates after-midnight trips
+# (origin code 24:xx+) by the calendar day, not the service day (review 2026-11-16, #2).
+MAX_START_AHEAD = timedelta(hours=6)
 DIR_WORD = {"N": "northbound", "S": "southbound"}
 _PLATFORM = re.compile(r"^(.*\d)[NS]$")  # "A27S" -> "A27"; parent ids never end in N/S
 _ORIGIN = re.compile(r"^(\d{4,6})_")  # "148500_1..N03R" -> 148500
@@ -64,6 +70,11 @@ def parse(raw: RawPayload) -> Batch:
         feed = _gtfsrt.decode_feed(part.content)
         _check_feed(name, feed, part.fetched_at)
         for v in feed.vehicles:
+            if (
+                v.timestamp
+                and v.timestamp < feed.header.timestamp - MAX_VEHICLE_AGE.total_seconds()
+            ):
+                continue  # a ghost (see MAX_VEHICLE_AGE)
             ev = _event(raw.source_id, v, feed.header.timestamp)
             if ev is None or ev.event_id in seen:
                 continue
@@ -120,8 +131,13 @@ def service_date(trip: _gtfsrt.TripDescriptor, header_ts: int) -> str:
     return to_ny(from_epoch(header_ts)).strftime("%Y%m%d")
 
 
-def starts_at(trip: _gtfsrt.TripDescriptor, day: str, fallback: datetime) -> datetime:
-    """Origin departure: service day + the trip id's origin code (or start_time), in NY time."""
+def starts_at(
+    trip: _gtfsrt.TripDescriptor, day: str, fallback: datetime, header: datetime | None = None
+) -> datetime:
+    """Origin departure: service day + the trip id's origin code (or start_time), in NY time.
+
+    With `header` (the feed time), a start more than MAX_START_AHEAD after it moves back a day
+    at a time: a train in the feed now can't start tomorrow night."""
     base = datetime.combine(date(int(day[:4]), int(day[4:6]), int(day[6:])), datetime.min.time())
     m = _ORIGIN.match(trip.trip_id)
     if m:
@@ -131,7 +147,11 @@ def starts_at(trip: _gtfsrt.TripDescriptor, day: str, fallback: datetime) -> dat
         local = base + timedelta(hours=h, minutes=mi, seconds=se)
     else:
         return fallback
-    return local_to_utc(local.strftime("%Y-%m-%dT%H:%M:%S"))
+    out = local_to_utc(local.strftime("%Y-%m-%dT%H:%M:%S"))
+    while header is not None and out - header > MAX_START_AHEAD:
+        local -= timedelta(days=1)  # by wall clock, so a DST night stays right
+        out = local_to_utc(local.strftime("%Y-%m-%dT%H:%M:%S"))
+    return out
 
 
 def _event(sid: str, v: _gtfsrt.VehiclePosition, header_ts: int) -> Event | None:
@@ -152,7 +172,7 @@ def _event(sid: str, v: _gtfsrt.VehiclePosition, header_ts: int) -> Event | None
         event_id=f"{day}:{trip_id}",
         category=CATEGORY,
         title=f"{route} train {DIR_WORD[dir_]}",
-        starts_at=starts_at(trip, day, fallback),
+        starts_at=starts_at(trip, day, fallback, from_epoch(header_ts)),
         subtype=route,
         entity_refs=(f"subway_route:{route}",),
         props=props,

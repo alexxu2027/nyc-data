@@ -29,7 +29,11 @@ ROUTES: dict[str, tuple[str, str, str | None]] = {
 }
 
 
-def _wanted(ev: dict, now_text: str) -> bool:
+def _wanted(ev: dict, now_text: str, since_text: str) -> bool:
+    if ev["source"] == "floodnet_live":
+        # It backfills 48 h, so first_seen alone would list two-day-old floods as new on its
+        # first run (review 2026-11-16, #6). Only floods that began inside the window count.
+        return ev["starts_at"] > since_text
     if ev["source"] == "mta_subway_alerts":
         return is_unplanned(ev) and ev["starts_at"] <= now_text
     if ev["source"] == "mta_elevator_outages":
@@ -95,7 +99,7 @@ def change_items(
     items = [
         _item(ev, now_text, lookup, boroughs)
         for ev in (dict(r) for r in rows)
-        if _wanted(ev, now_text)
+        if _wanted(ev, now_text, since_text)
     ]
     items.sort(key=lambda i: i["id"])
     items.sort(key=lambda i: i["at"], reverse=True)

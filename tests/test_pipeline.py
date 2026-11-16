@@ -385,3 +385,50 @@ def test_prune_drops_long_open_unseen_events(store, tmp_path):
     run_once(REG.sources[sid], a, None, store, tmp_path, now=clock(T1))
     store.prune(ts_(T1 + timedelta(days=30)), ts_(T1 + timedelta(days=30)))
     assert store.count("events", sid) == 0
+
+
+def test_events_for_run_loads_batch_ids_and_active_only(store, tmp_path):
+    """The open-events fix (2026-11-16): a run loads its own ids + still-active events only."""
+    sid = "mta_trains"
+    t_old = T1 - timedelta(hours=2)
+    rows = [
+        # (event_id, ends_at)
+        ("open", None),
+        ("future_end", ts_(T1 + timedelta(hours=1))),
+        ("closed", ts_(t_old)),
+        ("closed_in_batch", ts_(t_old)),
+    ] + [(f"bulk{i:04d}", ts_(t_old)) for i in range(1200)]
+    store._conn.executemany(
+        "INSERT INTO events (source, event_id, starts_at, ends_at, payload_hash, first_seen,"
+        " last_seen, updated_at) VALUES (?, ?, ?, ?, 'h', ?, ?, ?)",
+        [(sid, e, ts_(t_old), end, ts_(t_old), ts_(t_old), ts_(t_old)) for e, end in rows],
+    )
+    store._conn.commit()
+    batch_ids = ["closed_in_batch", "new"] + [f"bulk{i:04d}" for i in range(0, 1200, 2)]
+    got = store.events_for_run(sid, batch_ids, active_at=ts_(T1))
+    want = {"open", "future_end", "closed_in_batch"} | {f"bulk{i:04d}" for i in range(0, 1200, 2)}
+    assert set(got) == want  # chunked IN (> 500 ids) works; "closed" and "new" are absent
+    assert set(store.events_for_run(sid, ["closed"])) == {"closed"}  # incomplete feed: ids only
+
+
+def test_pipeline_does_not_load_every_stored_event(store, tmp_path, monkeypatch):
+    """A complete feed still closes events and keeps first_seen without a full events load."""
+    arch, sid = tmp_path / "archive", "nws_alerts"
+    a1 = Event(sid, "a1", "weather_alert", "Wind Advisory", T1)
+    a2 = Event(sid, "a2", "weather_alert", "Flood Watch", T1)
+    t2, t3 = T1 + timedelta(minutes=10), T1 + timedelta(minutes=20)
+    raws = iter(RawPayload(sid, (RawPart("active", "u", b"{}", t),)) for t in (T1, t2, t3))
+    parse = _events_adapter(sid, [[a1, a2], [a1], [a1]])
+    a = Adapter("x", (sid,), lambda ctx: next(raws), parse)
+    run_once(REG.sources[sid], a, None, store, arch, now=clock(T1))
+
+    def boom(*args, **kwargs):
+        raise AssertionError("pipeline must not call events_for")
+
+    monkeypatch.setattr(StateStore, "events_for", boom)
+    run_once(REG.sources[sid], a, None, store, arch, now=clock(t2))  # a2 leaves -> closed
+    assert run_once(REG.sources[sid], a, None, store, arch, now=clock(t3)).rows_written == 0
+    monkeypatch.undo()
+    ev = store.events_for(sid)
+    assert ev["a2"]["ends_at"] == ts_(t2)
+    assert ev["a1"]["ends_at"] is None and ev["a1"]["first_seen"] == ts_(T1)

@@ -39,7 +39,7 @@ def test_registry_entry_has_the_adapter():
 # ------------------------------------------------------------------------------- real
 def test_real_is_depth_observations_and_episodes_only():
     b = parse_fixture(SID)
-    assert not b.entities and b.complete == frozenset() and b.cursor is None
+    assert not b.entities and b.complete == frozenset({"events"}) and b.cursor is None
     assert len(b.observations) == 1196 and len(b.events) == 12
     assert {(o.source, o.kind, o.metric) for o in b.observations} == {
         (SID, "flood_sensor", "depth_in")
@@ -183,3 +183,44 @@ def test_fetch_batches_active_stations():
     assert len(ids) == len(set(ids)) == 8 and all(
         len(u.params["stations"].split(",")) <= 4 for u in tails
     )
+
+
+OD = {"name": "Test St", "lat": 40.7, "lon": -73.9}
+
+
+def test_merged_flood_is_not_reborn_as_the_window_slides():
+    """Review 2026-11-16 #4: the tail of a merged flood came back ~48 h later with a new id."""
+    step = timedelta(seconds=floodnet_live.BUCKET_S)
+    n = int(floodnet_live.WINDOW / step)
+    t0 = datetime(2026, 11, 14, 0, 0, tzinfo=UTC)
+    # wet at 5, 6; dry 7, 8 (merged by MAX_DRY_GAP = 2); wet at 9, 10; dry after
+    depth = {5: 1.5, 6: 1.6, 9: 2.5, 10: 1.8}
+    full = [(t0 + i * step, depth.get(i, 0.0)) for i in range(n + 40)]
+    ids = set()
+    for shift in range(20):
+        buckets = full[shift : shift + n]
+        fetched = buckets[-1][0] + timedelta(minutes=5)
+        for ev in floodnet_live._episodes("BK-x", OD, buckets, fetched):
+            ids.add(ev.event_id)
+    assert ids == {f"BK-x:{(t0 + 5 * step).isoformat()}"}
+
+
+def test_episodes_and_complete_closing_through_the_pipeline(tmp_path):
+    """Review 2026-11-16 #5: an episode no longer emitted is closed, not left open for 45 days."""
+    from nyclive.collect.pipeline import run_once
+    from nyclive.model import Event
+    from nyclive.sources.base import Adapter, Batch, RawPart, RawPayload
+    from nyclive.storage.state import StateStore
+
+    src = load_registry().sources[SID]
+    t0 = datetime(2026, 11, 16, 12, tzinfo=UTC)
+    ep = Event(SID, "BK-x:a", "flood", "Flooding at Test St, 3 in", t0 - timedelta(hours=1))
+    runs = iter([Batch(events=[ep], complete=frozenset({"events"})),
+                 Batch(complete=frozenset({"events"}))])  # fmt: skip
+    with StateStore(tmp_path / "state.db") as store:
+        for i in range(2):
+            t = t0 + timedelta(minutes=30 * i)
+            raw = RawPayload(SID, (RawPart("p", "u", b"", t),))
+            a = Adapter("x", (SID,), lambda ctx, raw=raw: raw, lambda raw: next(runs))
+            run_once(src, a, None, store, tmp_path / "a", now=lambda t=t: t)
+        assert store.events_for(SID)["BK-x:a"]["ends_at"] is not None
