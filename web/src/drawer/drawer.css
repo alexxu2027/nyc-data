@@ -1,0 +1,284 @@
+/* Detail drawer (U6). Content only: the Shell owns position, size and the outer border.
+ * Colours come from the theme tokens only. */
+
+.drawer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.drawer > .panel {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* [CLOSE] sits on the title line, flush right. */
+.drawer-close {
+  position: absolute;
+  top: 0;
+  right: var(--pad-x);
+  line-height: var(--line);
+  background: var(--paper);
+}
+
+.drawer .panel-head {
+  padding-right: calc(var(--pad-x) + 9ch); /* room for [CLOSE] */
+}
+
+.drawer .panel-head .panel-title {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  vertical-align: top;
+}
+
+.drw-title {
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.drawer .ro {
+  --ro-k: 12ch;
+  --ro-k-phone: 11ch;
+}
+
+.drawer .panel-foot a {
+  color: inherit;
+}
+
+/* Source text: the feed's own line breaks, wrapped on the grid (the gutter counts each line). */
+.drw-text > .l-main {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.drw-st {
+  display: inline-block;
+  border: 1px solid var(--ink);
+  padding: 0 0.5ch;
+  margin: -1px 0;
+  line-height: calc(var(--line) - 2px);
+}
+
+.drw-item[data-status='active'] .drw-st {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.drw-item[data-status='ended'] .drw-st {
+  border-style: dashed;
+  border-color: var(--faint);
+  color: var(--muted);
+}
+
+.drw-item > .l.clickable > .l-main {
+  overflow-wrap: anywhere;
+}
+
+button.t.drw-link {
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* ---- Camera frame: a fixed 9-line box, so refreshes never move the page --------------- */
+
+.cam-row > .l-main,
+.sc-row > .l-main {
+  flex: 1 1 100%;
+}
+
+.cam-row {
+  display: block;
+}
+
+.cam {
+  position: relative;
+  height: calc(var(--line) * 9);
+  border: 1px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  background: var(--paper);
+  overflow: hidden;
+  /* the border and shadow stay inside the 9 lines */
+  box-sizing: border-box;
+  margin-right: 2px;
+}
+
+.cam-holder {
+  position: absolute;
+  inset: 0;
+}
+
+.cam-holder > img.cam-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cam-msg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  background: var(--paper);
+}
+
+.cam[data-state='lost'] .cam-holder {
+  visibility: hidden;
+}
+
+.cam[data-state='lost'] .cam-msg {
+  background: repeating-linear-gradient(0deg, var(--paper) 0 2px, var(--faint) 2px 3px);
+}
+
+.cam-msg-chip {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0 1.5ch;
+}
+
+.cam-msg-sub {
+  background: var(--paper);
+  color: var(--muted);
+  padding: 0 1ch;
+}
+
+/* ---- SeriesChart ------------------------------------------------------------------------ */
+
+.sc-row {
+  display: block;
+}
+
+.sc {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.sc > svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: visible;
+}
+
+.sc-grid {
+  stroke: var(--faint);
+  stroke-width: 1;
+  stroke-dasharray: 1 3;
+}
+
+.sc-base {
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+
+.sc-tick {
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+
+.sc-now {
+  stroke: var(--ink);
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+}
+
+.sc-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.sc-line.dash {
+  stroke: var(--muted);
+  stroke-width: 1.25;
+  stroke-dasharray: 5 3;
+}
+
+.sc-line.dot {
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  stroke-dasharray: 1 3;
+}
+
+.sc-end {
+  fill: var(--ink);
+  stroke: var(--paper);
+  stroke-width: 1;
+}
+
+.sc-y {
+  font-family: var(--mono);
+  font-size: 10px;
+  fill: var(--muted);
+  paint-order: stroke;
+  stroke: var(--paper);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.sc-axis {
+  position: relative;
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.sc-t {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+}
+
+.sc-t.start {
+  transform: none;
+}
+
+.sc-t.end {
+  transform: translateX(-100%);
+}
+
+@media (forced-colors: active) {
+  .sc-line,
+  .sc-base,
+  .sc-tick,
+  .sc-now {
+    stroke: CanvasText;
+  }
+
+  .sc-end,
+  .sc-y {
+    fill: CanvasText;
+  }
+
+  .drw-item[data-status='active'] .drw-st,
+  .cam-msg-chip {
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+
+@media print {
+  .drawer-close {
+    display: none;
+  }
+}
