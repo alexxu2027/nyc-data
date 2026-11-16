@@ -574,3 +574,24 @@ button.sh-src[aria-expanded='true'] .fresh {
   min-height: 0;
   height: auto;
 }
+
+/* A layer's one-line colour key under its row (UX review B3). */
+.sh-minikey {
+  display: inline-flex;
+  max-width: 100%;
+  column-gap: 1.5ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sh-minikey-sw {
+  display: inline-flex;
+  flex: none;
+}
+
+.sh-minikey-t {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -170,7 +170,7 @@ export function rowState(
   if (v.meta && v.meta.unlocated > 0) {
     // A listed layer: no number here. The server's count ignores the status filter, so "9 NOT ON
     // MAP" contradicted the list's filtered "5 NOT ON MAP" (UX review B4/C9).
-    const text = def.list ? 'SOME HAVE NO MAP SPOT: SEE THE LIST' : `${n(v.meta.unlocated)} NOT ON MAP`;
+    const text = def.list ? 'SOME NOT ON MAP: SEE THE LIST' : `${n(v.meta.unlocated)} NOT ON MAP`;
     notes.push({ key: 'unlocated', tone: 'muted', text });
   }
   const dot: FreshState = health;

@@ -1,6 +1,7 @@
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetStore, useApp } from '../core/store';
+import { catalog } from '../core/test/fixtures';
 import type { Health, SourceHealth } from '../types';
 import { BOOT_HOLD_MS, BOOT_KEY, BOOT_WAIT_MS, BootLog, ROLL_MS } from './BootLog';
 
@@ -18,6 +19,7 @@ const HEALTH: Health = {
 let reduced = false;
 beforeEach(() => {
   resetStore();
+  useApp.setState({ catalog, visible: [] }); // no visible data layer: the map counts as settled
   sessionStorage.clear();
   reduced = false;
   vi.stubGlobal('matchMedia', (q: string) => ({
@@ -49,6 +51,17 @@ describe('BootLog', () => {
     expect(container.querySelector('.boot-log')).toBeNull();
   });
 
+  it("waits for the map's first data answer (UX review C11)", () => {
+    useApp.setState({ visible: ['citibike'] }); // a visible layer that hasn't answered yet
+    const { container } = render(<BootLog />);
+    act(() => useApp.setState({ health: HEALTH }));
+    expect(container.querySelector('.boot-log')).toBeNull();
+    act(() =>
+      useApp.setState((s) => ({ data: { ...s.data, citibike: { ...(s.data.citibike ?? {}), status: 'ready' } as never } })),
+    );
+    expect(container.querySelector('.boot-log')).not.toBeNull();
+  });
+
   it('shows once per visit', () => {
     sessionStorage.setItem(BOOT_KEY, '1');
     useApp.setState({ health: HEALTH });
@@ -65,6 +78,7 @@ describe('BootLog', () => {
     reduced = false;
     sessionStorage.clear();
     resetStore();
+    useApp.setState({ catalog, visible: [] });
     vi.useFakeTimers();
     const b = render(<BootLog />);
     act(() => {

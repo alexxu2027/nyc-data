@@ -222,7 +222,7 @@ reduced motion each shows its finished frame.
   gutter line numbers (found in the browser check).
 - Checked live in Chrome on the dev server; 244 vitest, typecheck, lint and build pass.
 
-### UI/UX review run (2026-11-16, in progress; plan `.orchestrate/ux/progress.md`, review `.orchestrate/ux/review.md`)
+### UI/UX review run (2026-11-16, done; plan `.orchestrate/ux/progress.md`, review `.orchestrate/ux/review.md`)
 An Opus reviewer checked the live app (desktop, phone in an iframe, dark theme) and found
 12 scroll regions to fix, 19 clarity findings and 11 bugs.
 - **Step 2, scroll bars ✅:** one treatment for every `.panel-body` and `.bsheet-body`
@@ -260,6 +260,17 @@ An Opus reviewer checked the live app (desktop, phone in an iframe, dark theme) 
   - List items fold behind `[MORE]` (486 → 206 lines), and MTA `[… icon]` text becomes `[BUS]` etc.
   - The status line says `UPDATED 10 S AGO` instead of a countdown.
   - The phone detail sheet has one header with `[CLOSE]`.
+- **Step 3c, larger clarity ✅:**
+  - Each visible layer gets a one-line colour key under its row: labels when they fit, otherwise
+    swatches plus what they mean.
+  - HEALTH rows lead with the layer names you see (`TRAINS · MTA SUBWAY TRIP UPDATES`). The
+    dataset title and id move into the expanded detail.
+  - The boot log waits for the map's first data answer, so there's no empty black slab.
+- **Steps 4–5 ✅:** all 11 review bugs are fixed (C1–C11). Each fix was checked in Chrome as it
+  went in: desktop light and dark, and phone layer and detail sheets in a 390px iframe. Checks:
+  386 pytest, ruff, 250 vitest, typecheck, lint, build.
+- **Needs a `nyclive serve` restart to show:** the `layers.yaml` copy (Past floods, the numeric
+  Citi Bike key, the alerts key title).
 
 ## Collector: start / stop
 `uv run nyclive collect --keep-awake` starts it (it doesn't survive a reboot). To stop it: Task

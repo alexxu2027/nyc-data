@@ -5,6 +5,7 @@
 // takes longer than BOOT_WAIT_MS (it would no longer read as "starting up").
 import { useEffect, useState, type CSSProperties } from 'react';
 import { useApp } from '../core';
+import { mapSettled } from '../feed';
 import type { Health } from '../types';
 import { FreshDot, Line, Panel, PRINT_MAX_STAGGER, PRINT_STAGGER_MS, useReducedMotion } from '../ui';
 import { sortSources } from './helpers';
@@ -42,6 +43,9 @@ function markBooted(): void {
 export function BootLog() {
   const reduced = useReducedMotion();
   const health = useApp((s) => s.health);
+  // Wait for the map's first data answer, so the log never sits as an empty black slab over a
+  // blank basemap (UX review C11).
+  const mapReady = useApp(mapSettled);
   const [shown, setShown] = useState<Health | null>(null);
   const [done, setDone] = useState(() => alreadyBooted());
   const [late, setLate] = useState(false);
@@ -51,7 +55,7 @@ export function BootLog() {
     return () => clearTimeout(t);
   }, []);
   // The first health answer decides, once (state adjusted during render, not in an effect).
-  if (!done && !shown && health) {
+  if (!done && !shown && health && mapReady) {
     if (reduced || late || (typeof document !== 'undefined' && document.hidden)) setDone(true);
     else setShown(health);
   }

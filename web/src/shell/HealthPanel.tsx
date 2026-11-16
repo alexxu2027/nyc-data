@@ -31,7 +31,7 @@ export function HealthBody() {
   return (
     <>
       <Readout
-        k="COLLECTOR"
+        k="DATA COLLECTOR"
         v={`${health.collector.state.toUpperCase()}${
           health.collector.last_attempt ? `, LAST RUN ${fmtAgo(health.collector.last_attempt, now).toUpperCase()}` : ''
         }`}
@@ -45,7 +45,7 @@ export function HealthBody() {
       )}
       <Blank />
       <div className="l sh-src sh-src-head" aria-hidden="true">
-        <span className="sh-src-name muted">SOURCE ({health.sources.length})</span>
+        <span className="sh-src-name muted">FEED ({health.sources.length}): LAYER · DATASET</span>
         <span className="sh-src-age muted">AGE</span>
         <span className="sh-src-runs muted">24 H</span>
       </div>
@@ -94,6 +94,9 @@ function SourceRow({
   now: number;
 }) {
   const age = src.last_success ? (now - Date.parse(src.last_success)) / 1000 : src.age_s;
+  // Lead with the layer names the user sees in the panel, not the dataset title (UX review B12).
+  const shown = src.layers.length ? src.layers.map(layerLabel).join(', ').toUpperCase() : null;
+  const dataset = src.name.replace(/\s*\(.*$/, '').toUpperCase();
   return (
     <>
       <button
@@ -104,8 +107,9 @@ function SourceRow({
         onClick={onToggle}
         data-state={src.state}
       >
-        <span className="sh-src-name">
-          <FreshDot state={src.state} /> {src.name}
+        <span className="sh-src-name" title={src.name}>
+          <FreshDot state={src.state} /> {shown ?? dataset}
+          {shown && <span className="muted"> · {dataset}</span>}
         </span>
         <span className="sh-src-age num">{fmtDuration(age)}</span>
         <span className="sh-src-runs num">
@@ -114,6 +118,7 @@ function SourceRow({
       </button>
       {open && (
         <div className="sh-ind">
+          <Readout k="DATASET" v={src.name} />
           <Readout k="ID" v={src.id} />
           <Readout k="CADENCE" v={`EVERY ${fmtDuration(src.cadence_s)}`} />
           <Readout k="LAST OK" v={src.last_success ? fmtTime(src.last_success, 'datetime').toUpperCase() : 'NEVER'} />
@@ -121,7 +126,6 @@ function SourceRow({
           <Readout k="DATA LAG" v={src.lag_s == null ? '--' : `${fmtDuration(src.lag_s)} BEHIND THE CLOCK`} />
           <Readout k="ROWS" v={src.rows_last_run == null ? '--' : `${src.rows_last_run.toLocaleString('en-US')} LAST RUN`} />
           <Readout k="FAILURES" v={`${src.consecutive_failures} IN A ROW`} />
-          <Readout k="LAYERS" v={src.layers.length ? src.layers.map(layerLabel).join(', ').toUpperCase() : '--'} />
           {src.last_error && (
             <Line>
               <Banner tone="warn">LAST ERROR</Banner> {src.last_error}

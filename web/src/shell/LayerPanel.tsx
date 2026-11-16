@@ -138,6 +138,7 @@ function LayerRow({ def, open, onExpand }: { def: LayerDef; open: boolean; onExp
         ) : (
           <RowNotes def={def} health={health} now={0} />
         ))}
+      {v.visible && !open && <MiniKey def={def} />}
       {open && <Expanded def={def} />}
     </div>
   );
@@ -491,5 +492,47 @@ function HowToPointer() {
         HOW TO READ THIS MAP
       </TextButton>
     </Line>
+  );
+}
+
+/** Room for the mini key's labels in the 44ch column, after its indent. */
+const MINIKEY_CH = 38;
+
+const KEY_SHAPES = new Set<LegendItem['shape']>(['circle', 'ring', 'square', 'line', 'dash', 'fill']);
+
+/**
+ * One line of the layer's colour key under its row, so the map's colours read without opening
+ * [+] (UX review B3). Colour items only, at most 5; the full key stays inside [+].
+ */
+function MiniKey({ def }: { def: LayerDef }) {
+  const items = (def.legend ?? []).filter((it) => KEY_SHAPES.has(it.shape) && it.color !== undefined).slice(0, 5);
+  if (def.kind === 'raster' || items.length < 2) return null;
+  // Labels when they fit the column; otherwise the swatches and what they mean, so no item is
+  // ever cut in half (the full key is one [+] away).
+  const fits = items.reduce((n, it) => n + it.label.length + 5, 0) <= MINIKEY_CH;
+  const all = items.map((it) => it.label).join(' · ');
+  return (
+    <div className="sh-ind">
+      <Line muted nowrap title={all}>
+        <span className="sh-minikey">
+          {fits ? (
+            items.map((it) => (
+              <span key={it.label}>
+                <Swatch shape={it.shape} color={it.color} glyph={it.glyph} /> {it.label}
+              </span>
+            ))
+          ) : (
+            <>
+              <span className="sh-minikey-sw">
+                {items.map((it) => (
+                  <Swatch key={it.label} shape={it.shape} color={it.color} glyph={it.glyph} />
+                ))}
+              </span>
+              <span className="sh-minikey-t">{(def.legend_title ?? 'COLOUR KEY IN [+]').toUpperCase()}</span>
+            </>
+          )}
+        </span>
+      </Line>
+    </div>
   );
 }
