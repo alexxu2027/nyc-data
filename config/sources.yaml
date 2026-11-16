@@ -245,6 +245,22 @@ sources:
       Flood episodes (wet = 1 in, peak 2 in) become `floodnet_live` events. Powers
       dataviz.floodnet.nyc. Attribute FloodNet.
 
+  notify_nyc:
+    name: Notify NYC alerts (NYC Emergency Management, CAP RSS)
+    phase: 2
+    shape: events
+    cadence_s: 120
+    auth: none
+    probe: https://feeds.everbridge.net/feeds/453003085617722/rss/rss.xml
+    expect: CAP RSS Feed
+    status: partial
+    verified_on: 2026-11-16
+    notes: >
+      Planned (no adapter yet; plan in .orchestrate/notify/plan.md, research in
+      docs/research/late-data-alternatives.md). RSS of the alerts active now, one item per
+      language (keep `NYCEM [English]`), each with a CAP 1.2 enclosure (area polygon, expires,
+      severity). Often empty: items drop out when they expire, so poll every 2 min.
+
   rainviewer_radar:
     name: RainViewer radar frame index
     phase: 2
@@ -334,6 +350,21 @@ sources:
     status: verified
     verified_on: 2026-11-14
     notes: Public market data needs no key. Display only; no trading code in this project.
+
+  ny511_events:
+    name: 511NY traffic events (NYSDOT developer API)
+    phase: 5
+    shape: events
+    cadence_s: 300
+    auth: key:NY511_API_KEY
+    probe: https://511ny.org/api/getevents?format=json
+    status: unverified
+    verified_on: 2026-11-16
+    notes: >
+      Free key after a 511NY account and approval; 10 calls per 60 s. Incidents, crashes,
+      construction and closures with lat/lon. The Developer's Access Agreement allows giving the
+      data to end users with its disclaimer. Possibly state-maintained roads only (verify).
+      Optional extra under ADR-007.
 
   openaq_nyc:
     name: OpenAQ air quality

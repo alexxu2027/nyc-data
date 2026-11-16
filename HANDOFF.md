@@ -283,6 +283,26 @@ An Opus reviewer checked the live app (desktop, phone in an iframe, dark theme) 
   "not in this soak" line. Before this, they would have kept the soak at FAIL forever. At
   ~43 h, only the 48 h total is left.
 
+### Faster sources than the city's late data (2026-11-16 afternoon)
+- Research: `docs/research/late-data-alternatives.md`.
+  - Floods are already solved by `floodnet_live`.
+  - **Notify NYC** (keyless official CAP RSS) is the one to build.
+  - **511NY** needs a key, so it's an optional Phase 5 extra.
+  - The 311 Public API and Citizen don't help.
+- Registry has `notify_nyc` (phase 2, no adapter yet) and `ny511_events` (phase 5, key).
+  DATA_SOURCES and ROADMAP (Phase 2.5 follow-up 5) are updated.
+- **Plan:** `.orchestrate/notify/plan.md` (local). It reuses the NWS alert path end to end.
+  Step 0 gates it: capture ≥ 5 real alerts with a watcher script, because the feed only holds
+  live alerts. Then the adapter, API, catalog and frontend, and ADR-014 (new change kind
+  `notice`). It rides the next collector restart.
+- **Step 0 watcher running** (started 2026-11-16 21:17 UTC, detached, separate from the
+  collector): `scripts/watch_notify.py`. It saves fixture cases to
+  `tests/fixtures/notify_nyc/live_*` when English alerts appear, and stops after 8 distinct
+  alerts or 36 h. Log: `data/logs/watch_notify.log`; each capture line says whether the alert
+  has a polygon. Stop it early:
+  `Get-CimInstance Win32_Process | ? CommandLine -like '*watch_notify*' | % { Stop-Process -Id $_.ProcessId }`.
+  `edge_empty` is already saved.
+
 ## Collector: start / stop
 `uv run nyclive collect --keep-awake` starts it (it doesn't survive a reboot). To stop it: Task
 Manager → end the `python.exe` running `nyclive collect`, or in PowerShell:

@@ -137,12 +137,20 @@ and a page cap; each dataset's cursor column is in its registry notes.
 | `nyc_collisions` | `h9gi-nx95` Motor Vehicle Collisions | `collision_id` | ~3 days | Some rows have no lat/lon. `crash_date` + `crash_time` are separate local fields |
 | `dot_traffic_speeds` | `i4gi-tjb9` | `link_id` + `data_as_of` | ~2 h | See above |
 
+**Notify NYC** (`notify_nyc`, planned, keyless): NYC Emergency Management's official alerts as a
+CAP RSS feed, `feeds.everbridge.net/feeds/453003085617722/rss/rss.xml`. Only the alerts active
+now, one item per language (keep English), each with a CAP 1.2 file (area polygon, `expires`,
+severity). Covers traffic and transit disruptions, fires, outages, water main breaks,
+police/FDNY activity and air quality, within minutes. Faster sources for the late layers:
+`docs/research/late-data-alternatives.md`.
+
 ## Phase 5 extras
 | id | Endpoint | Auth | Status |
 |---|---|---|---|
 | `kalshi_nyc_high` | `api.elections.kalshi.com/trade-api/v2/markets?series_ticker=KXHIGHNY` | none | ✅ open markets returned (e.g. NOV15) |
 | `opensky_nyc` | `opensky-network.org/api/states/all?lamin=40.4&lomin=-74.3&lamax=41.0&lomax=-73.6` | none (limited anon credits) | ✅ planes near EWR/LGA returned |
 | `openaq_nyc` | `api.openaq.org/v3/...` | free key | ❌ 401 without key |
+| `ny511_events` | `511ny.org/api/getevents?key=…&format=json` | free key (account + approval) | not yet tested; live incidents and closures (ADR-007: optional) |
 | `mta_bus_time` | Bus Time GTFS-rt | free key | not yet tested |
 | `basemap_openfreemap` | `tiles.openfreemap.org/styles/positron` | none | ✅ |
 

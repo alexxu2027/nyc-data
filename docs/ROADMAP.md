@@ -145,6 +145,12 @@ Tasks (in priority order):
    trips, new outages, NWS) that flies to each one; dots that changed on the last poll flash
    briefly (still under reduced motion).
 
+Follow-up (keyless, plan in `.orchestrate/notify/plan.md`):
+5. **Notify NYC alerts:** a `notify_nyc` adapter for the city's official CAP RSS (traffic and
+   transit disruptions, fires, outages, police/FDNY activity) as an alert layer that also feeds
+   CHANGES. The closest official match to a "Citizen"-style live layer.
+   Research: `docs/research/late-data-alternatives.md`.
+
 Later (needs weeks of archive, so with or after Phase 3):
 - "Unusual right now": hour-of-week baselines for 311 by type and area, road speeds and empty
   bike docks, flagging large deviations.
@@ -201,7 +207,8 @@ labeled set. Layer is visible in live and replay.
 - Neighborhood card (NTA polygon click): live summary plus 7-day trends.
 - Anomaly flags: robust z-score versus same hour and weekday over the trailing 4 weeks, for bikes,
   cams and speeds.
-- Extras: subway trains (GTFS-rt protobuf), OpenSky aircraft, Kalshi NYC-high panel, OpenAQ (key).
+- Extras: subway trains (GTFS-rt protobuf), OpenSky aircraft, Kalshi NYC-high panel, OpenAQ (key),
+  511NY traffic incidents (key; `ny511_events`).
 - Candidate layers from DATA_SOURCES "Candidates".
 
 **Acceptance:** each mode answers one stated question in one click. At least 2 extras are live.

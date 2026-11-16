@@ -1,0 +1,14 @@
+{
+  "source_id": "notify_nyc",
+  "captured_at": "2026-11-16T21:17:42.297869+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "rss",
+      "url": "https://feeds.everbridge.net/feeds/453003085617722/rss/rss.xml",
+      "file": "rss.bin",
+      "fetched_at": "2026-11-16T21:17:42.297869+00:00"
+    }
+  ],
+  "note": "live empty channel (watch_notify.py)"
+}
