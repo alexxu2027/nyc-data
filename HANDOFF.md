@@ -2,6 +2,9 @@
 
 _Last updated: 2026-11-14_
 
+> **NEXT SESSION:** Phase 2 wave 2 is paused mid-build. Go to "How to resume Phase 2 in a NEW
+> session" below. The collector soak is running; don't restart it, and use `uv run --no-sync`.
+
 This file is the session-to-session log: where the project stands, what to do next, and gotchas
 learned the hard way. Read it first, then `docs/ROADMAP.md`.
 
@@ -119,8 +122,28 @@ see "Collector: start / stop" below.)
   - U3 core: 66 tests.
 - ✅ Gate W1: `nyclive serve` + the built app show live counts for all 14 layers (borough=BK +
   Citi Bike filter → 180/2,519 stations, 206/974 cameras; health 14 ok).
-- ⏳ Wave 2 (parallel worktrees): U4 shell and panels, U5 map and layers, U6 drawer. Then
-  integration, the browser acceptance list, and a Fable review.
+- ⏸ **Wave 2 paused at the usage limit (2026-11-15, ~4 PM ET).** Partial work is committed
+  as WIP and pushed. None of it has been checked yet.
+
+  | Unit | Branch (local worktree branch) | GitHub | Lines | Stopped at |
+  |---|---|---|---|---|
+  | U4 shell + panels | `worktree-agent-a6e09673dd4acf504` | `wip/p2-u4-shell` | 2,204 | about to check in the browser |
+  | U5 map + layers | `worktree-agent-ae614e45a33ccd506` | `wip/p2-u5-map` | 1,746 | writing the MapLibre controller |
+  | U6 drawer | `worktree-agent-ad826f01a90f6065b` | `wip/p2-u6-drawer` | 2,323 | writing the event views |
+
+### How to resume Phase 2 in a NEW session (start here)
+1. Read this file, then `.orchestrate/p2/context.md` and `.orchestrate/p2/plan.md` (local,
+   gitignored; on another machine they are not in git, so re-plan from ROADMAP Phase 2).
+2. Use `/orchestrate` to finish wave 2. Give each builder a brief that says: "continue unit Ux
+   from branch `<branch>`: merge it into your worktree first (`git merge <branch>`), review what
+   is there, then finish per plan Ux". Give each builder only its own plan sections (Ux plus the
+   § it consumes), not the whole plan.
+   - Models: U5 map on Opus (design-heavy); U4 and U6 on Sonnet unless their WIP looks rough.
+   - Run at most 2 builders at a time.
+3. When a unit merges, delete its local worktree and branch, and the `wip/p2-*` branch on GitHub.
+4. Then U7 (conductor): the browser check list in plan "Order", the docs (ARCHITECTURE §6–7,
+   DATA_MODEL borough note, ADR-012 for the layer catalog), the ROADMAP ticks, and one Fable review.
+5. Main checkout: always use `uv run --no-sync` until the soak ends (see below).
 - Run it: `cd web && npm run build`, then `uv run --no-sync nyclive serve`, then open
   http://127.0.0.1:8000/. For dev: `nyclive serve` + `cd web && npm run dev` (port 5173).
 - **During the soak, use `uv run --no-sync` in the main checkout.** A plain `uv run` after a
