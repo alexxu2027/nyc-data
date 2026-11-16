@@ -1,0 +1,61 @@
+/* Raster layer controls (Phase 2.5 U3): transcript chrome, one weight, 1px ink, no easing. */
+
+/* "OPACITY" and "FRAME" share a narrower key column so the bar row fits the 36ch panel. */
+.rc {
+  --ro-k: 8ch;
+}
+
+.rc .rc-op {
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0;
+}
+
+.rc .rc-op > .ro-k {
+  margin-right: 0;
+}
+
+.rc-bar {
+  display: inline-flex;
+  flex: none;
+  margin: 0 0.5ch;
+  height: 12px;
+  border: 1px solid var(--ink);
+  cursor: pointer;
+}
+
+.rc-bar:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.rc-cell {
+  display: block;
+  width: 1ch;
+  height: 100%;
+  background: var(--paper);
+}
+
+.rc-cell + .rc-cell {
+  border-left: 1px solid var(--faint);
+}
+
+.rc-cell.on {
+  background: var(--ink);
+}
+
+.rc-cell.on + .rc-cell.on {
+  border-left-color: var(--paper);
+}
+
+.rc-pct {
+  min-width: 4ch;
+  text-align: right;
+  white-space: pre;
+}
+
+@media (forced-colors: active) {
+  .rc-cell.on {
+    background: CanvasText;
+  }
+}
