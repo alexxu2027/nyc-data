@@ -222,6 +222,19 @@ reduced motion each shows its finished frame.
   gutter line numbers (found in the browser check).
 - Checked live in Chrome on the dev server; 244 vitest, typecheck, lint and build pass.
 
+### UI/UX review run (2026-11-16, in progress; plan `.orchestrate/ux/progress.md`, review `.orchestrate/ux/review.md`)
+An Opus reviewer checked the live app (desktop, phone in an iframe, dark theme) and found
+12 scroll regions to fix, 19 clarity findings and 11 bugs.
+- **Step 2, scroll bars ✅:** one treatment for every `.panel-body` and `.bsheet-body`
+  (`styles/base.css`): a paper track with a 1px faint rule and a 3px square ink bar (5px on
+  hover), no arrows, `scrollbar-gutter: stable`, and the body's right padding giving back the
+  gutter so head, body and foot share one right edge. Tokens only, so dark theme and `.screen`
+  panels invert. Firefox gets `scrollbar-width/color` in an `@supports` branch (in Chrome,
+  setting those turns the webkit rules off). Also: the desktop drawer has one scroller (it had
+  two), each phone sheet has exactly one (the layer sheet showed two bars side by side), and the
+  phone detail sheet's SOURCE footer stays pinned. Checked in Chrome: desktop light and dark,
+  and phone layer and detail sheets.
+
 ## Collector: start / stop
 `uv run nyclive collect --keep-awake` starts it (it doesn't survive a reboot). To stop it: Task
 Manager → end the `python.exe` running `nyclive collect`, or in PowerShell:

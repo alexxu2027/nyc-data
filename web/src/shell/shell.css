@@ -114,14 +114,8 @@ button[aria-pressed='true'] .fresh {
   bottom: 12px;
   width: min(var(--col-drawer), calc(100% - 24px));
   z-index: var(--z-drawer);
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: hidden; /* one scroller: the drawer panel's own body (UX review A2) */
   background: var(--paper);
-}
-
-.sh-drawer-sheet {
-  min-height: 100%;
 }
 
 /* ---- Floating panels: health, about, boot error --------------------------------------- */
@@ -531,4 +525,33 @@ button.sh-src[aria-expanded='true'] .fresh {
 /* The log is short-lived and fits the map: it never scrolls. */
 .sh-bootlog .panel-body {
   overflow: hidden;
+}
+
+/* Phone sheets: exactly one scroller each, the panel body, so the SOURCE footer stays pinned and
+ * the layer sheet never shows two scroll bars side by side (UX review A2 / C1). */
+.phone .bsheet-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.phone .bsheet-body > .sh-status {
+  flex: none;
+}
+
+.phone .bsheet-body > .panel,
+.phone .bsheet-body > .sh-drawer-sheet {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+
+.phone .sh-drawer-sheet {
+  display: flex;
+  flex-direction: column;
+}
+
+.phone .sh-drawer-sheet > .drawer {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
 }

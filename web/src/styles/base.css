@@ -693,6 +693,91 @@ button.t[aria-disabled='true']:hover {
   overflow: hidden;
 }
 
+/* ---- Scrollbars: a ruled column with an ink bar ---------------------------------------- */
+/* One look for every vertical scroller: a paper track with a 1px faint rule on its left and a
+ * 3px square ink bar. Tokens only, so dark theme and .screen panels invert for free. The gutter
+ * is always reserved, so content never shifts when a panel starts to overflow. */
+
+:root {
+  --sb-w: 9px;
+}
+
+.panel-body,
+.bsheet-body {
+  scrollbar-gutter: stable;
+}
+
+/* Give the gutter back from the right padding, so head, body and foot share one right edge. */
+.panel-body {
+  padding-right: max(0px, calc(var(--pad-x) - var(--sb-w)));
+}
+
+/* Never-scrolling bodies keep the plain padding and no gutter. */
+.sh-bootlog .panel-body {
+  scrollbar-gutter: auto;
+  padding-right: var(--pad-x);
+}
+
+/* WebKit / Blink (Chrome, Edge, Safari). Leave scrollbar-width/-color unset here: in Chrome ≥ 121
+ * setting either one switches these rules off. */
+.panel-body::-webkit-scrollbar,
+.bsheet-body::-webkit-scrollbar {
+  width: var(--sb-w);
+  height: var(--sb-w);
+  background: var(--paper);
+}
+
+.panel-body::-webkit-scrollbar-track,
+.bsheet-body::-webkit-scrollbar-track {
+  background: var(--paper);
+  box-shadow: inset 1px 0 0 var(--faint); /* the rule */
+}
+
+.panel-body::-webkit-scrollbar-thumb,
+.bsheet-body::-webkit-scrollbar-thumb {
+  background-color: var(--ink);
+  background-clip: content-box; /* transparent borders inset the bar; the rule shows through */
+  border: solid transparent;
+  border-width: 2px 2px 2px 4px; /* 3px bar */
+  border-radius: 0;
+  min-height: calc(var(--line) * 2);
+}
+
+.panel-body::-webkit-scrollbar-thumb:hover,
+.panel-body::-webkit-scrollbar-thumb:active,
+.bsheet-body::-webkit-scrollbar-thumb:hover,
+.bsheet-body::-webkit-scrollbar-thumb:active {
+  border-width: 2px 1px 2px 3px; /* 5px bar under the pointer */
+}
+
+.panel-body::-webkit-scrollbar-button,
+.bsheet-body::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.panel-body::-webkit-scrollbar-corner,
+.bsheet-body::-webkit-scrollbar-corner {
+  background: var(--paper);
+}
+
+/* Firefox: no pseudo-elements, so the closest standard match. */
+@supports not selector(::-webkit-scrollbar) {
+  .panel-body,
+  .bsheet-body {
+    scrollbar-width: thin;
+    scrollbar-color: var(--ink) var(--paper);
+  }
+}
+
+@media (forced-colors: active) {
+  .panel-body,
+  .bsheet-body {
+    scrollbar-color: auto; /* let the system draw it */
+  }
+}
+
 /* ---- Breakpoints: 860 px (mid) and 680 px (phone) -------------------------------------- */
 
 @media (max-width: 860px) {
