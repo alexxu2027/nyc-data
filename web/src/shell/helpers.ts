@@ -139,8 +139,8 @@ export function rowState(
     notes.push({ key: 'truncated', tone: 'muted', text: `SHOWING NEWEST ${n(v.meta.count)} OF ${n(v.meta.total)}` });
   }
   if (v.meta && v.meta.unlocated > 0) {
-    const tail = def.list ? ', IN THE LIST' : '';
-    notes.push({ key: 'unlocated', tone: 'muted', text: `${n(v.meta.unlocated)} WITHOUT A LOCATION${tail}` });
+    const tail = def.list ? ' · IN LIST' : '';
+    notes.push({ key: 'unlocated', tone: 'muted', text: `${n(v.meta.unlocated)} NOT ON MAP${tail}` });
   }
   const dot: FreshState = health;
   return { dot, dotTitle: DOT_TITLES[dot], count: v.count, notes };

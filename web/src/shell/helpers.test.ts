@@ -167,8 +167,8 @@ describe('rowState', () => {
   it('truncated and unlocated are spelled out', () => {
     const meta = { ...META, truncated: true, count: 20000, total: 65799, unlocated: 37 };
     const r = rowState(view({ meta, count: 20000, total: 20000 }), 'ok', { empty_text: null, list: true }, 0);
-    expect(r.notes.map((n) => n.text)).toEqual(['SHOWING NEWEST 20,000 OF 65,799', '37 WITHOUT A LOCATION, IN THE LIST']);
-    expect(rowState(view({ meta: { ...META, unlocated: 3 } }), 'ok', DEF, 0).notes[0].text).toBe('3 WITHOUT A LOCATION');
+    expect(r.notes.map((n) => n.text)).toEqual(['SHOWING NEWEST 20,000 OF 65,799', '37 NOT ON MAP · IN LIST']);
+    expect(rowState(view({ meta: { ...META, unlocated: 3 } }), 'ok', DEF, 0).notes[0].text).toBe('3 NOT ON MAP');
   });
 });
 

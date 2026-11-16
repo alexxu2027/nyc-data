@@ -160,6 +160,41 @@ button.t.drw-link {
 
 /* ---- SeriesChart ------------------------------------------------------------------------ */
 
+.sc {
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
+.sc-hover {
+  stroke: var(--ink);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+
+.sc-hdot {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+/* One fixed line under the chart: the hover readout (nothing shifts when it changes). */
+.sc-read {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: top;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sc-rx {
+  margin-right: 1.5ch;
+}
+
+.sc-rv {
+  margin-right: 1.5ch;
+}
+
 .sc-row {
   display: block;
 }
@@ -227,7 +262,7 @@ button.t.drw-link {
 
 .sc-y {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;
   fill: var(--muted);
   paint-order: stroke;
   stroke: var(--paper);

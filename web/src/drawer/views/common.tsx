@@ -233,8 +233,12 @@ export function SeriesBlock({ kind, id, spec, rev }: { kind: string; id: string;
         from={from}
         to={to}
         now={ahead > 0 ? now : null}
-        lines={5}
+        lines={8}
         zero={look.zero}
+        fmtV={(k, v) => {
+          const m = series.find((x) => x.key === k)?.look;
+          return `${v.toFixed(m?.digits ?? 1)} ${m?.unit ?? unit}`.trim();
+        }}
         minSpan={look.minSpan}
         ticks={hourTicks(from, to, now)}
         label={`${spec.label}, ${rangeLabel(spec).toLowerCase()}, ${series.map((s) => s.label.toLowerCase()).join(', ')}`}

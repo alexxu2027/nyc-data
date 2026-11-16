@@ -161,9 +161,10 @@ function FloodEventView({ props, detail }: EventViewProps) {
             series={[{ key: 'depth', label: 'DEPTH', points: pts }]}
             from={from}
             to={to}
-            lines={5}
+            lines={8}
             zero
             minSpan={2}
+            fmtV={(_k, v) => `${v.toFixed(2)} IN`}
             ticks={minuteTicks(from, to)}
             label={`Flood depth profile, peak ${fixed(peak, 2)} inches over ${fmtDuration(duration)}`}
           />

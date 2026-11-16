@@ -58,7 +58,7 @@
   --pad-x: 1.5ch; /* panel side padding */
   --gw: var(--pad-x); /* left padding; numbered panels widen it to hold the gutter */
   --col-panel: 44ch; /* layer panel column (plan §7.2) */
-  --col-drawer: 46ch; /* detail drawer overlay (plan §7.2) */
+  --col-drawer: 62ch; /* detail drawer overlay (plan §7.2; widened 2026-11-16 for readability) */
 
   --z-map: 0;
   --z-panel: 10;
