@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api, applyClientFilters, fmtAgo, fmtInt, fmtTime, useApp, useLayerHealth, useLayerView } from '../core';
 import type { FilterDef, FilterValue, LayerDef, LegendItem } from '../types';
-import { Banner, Blank, Check, FreshDot, Line, Num, Radio, Readout, Swatch, TextButton } from '../ui';
+import { Banner, Blank, Check, FreshDot, Line, Num, Radio, Readout, Swatch, TextButton, type FreshState } from '../ui';
 import {
   allEnum,
   controlValue,
@@ -22,6 +22,7 @@ import {
   type RowNote,
 } from './helpers';
 import { useNow } from './hooks';
+import { RasterControls, rasterStatus, type RasterStatus } from './RasterControls';
 
 export interface LayerPanelProps {
   expanded: ReadonlySet<string>;
@@ -119,11 +120,65 @@ function LayerRow({ def, open, onExpand }: { def: LayerDef; open: boolean; onExp
             <span className="sr-only">{def.label}</span>
           </>
         }
-        right={<RowRight def={def} open={open} onExpand={onExpand} health={health} />}
+        right={
+          def.kind === 'raster' ? (
+            <RasterRowRight def={def} open={open} onExpand={onExpand} />
+          ) : (
+            <RowRight def={def} open={open} onExpand={onExpand} health={health} />
+          )
+        }
       />
-      {v.visible && (needsClock ? <RowNotesTicking def={def} health={health} /> : <RowNotes def={def} health={health} now={0} />)}
+      {v.visible &&
+        (def.kind === 'raster' ? (
+          <RasterControls def={def} />
+        ) : needsClock ? (
+          <RowNotesTicking def={def} health={health} />
+        ) : (
+          <RowNotes def={def} health={health} now={0} />
+        ))}
       {open && <Expanded def={def} />}
     </div>
+  );
+}
+
+function ExpandButton({ def, open, onExpand }: { def: LayerDef; open: boolean; onExpand: (id: string, open: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      className="t"
+      aria-expanded={open}
+      aria-controls={`sh-x-${def.id}`}
+      aria-label={`${open ? 'Hide' : 'Show'} legend and filters for ${def.label}`}
+      onClick={() => onExpand(def.id, !open)}
+    >
+      {open ? '[-]' : '[+]'}
+    </button>
+  );
+}
+
+const RASTER_DOT: Record<RasterStatus, { dot: FreshState; title: string }> = {
+  off: { dot: 'off', title: 'Layer off' },
+  loading: { dot: 'loading', title: 'Loading' },
+  ok: { dot: 'ok', title: 'Frame fresh' },
+  stale: { dot: 'stale', title: 'Frame stale' },
+  empty: { dot: 'never', title: 'No recent frame' },
+  error: { dot: 'degraded', title: 'Frame index unavailable' },
+};
+
+/** A raster row has no features: the dot follows the frame, the count column stays blank. */
+function RasterRowRight({ def, open, onExpand }: { def: LayerDef; open: boolean; onExpand: (id: string, open: boolean) => void }) {
+  const d = useApp((s) => s.data[def.id]);
+  const visible = useApp((s) => s.visible.includes(def.id));
+  const now = useNow();
+  const st = RASTER_DOT[rasterStatus(d, def, visible, now)];
+  return (
+    <>
+      <FreshDot state={st.dot} title={st.title} />
+      <span className="sh-count muted" aria-label="Map tiles, no features">
+        <Num value={null} width={6} />
+      </span>
+      <ExpandButton def={def} open={open} onExpand={onExpand} />
+    </>
   );
 }
 
@@ -146,16 +201,7 @@ function RowRight({
       <span className={v.visible ? 'sh-count' : 'sh-count muted'} aria-label={`${rs.count ?? 'no'} features`}>
         <Num value={rs.count} width={6} />
       </span>
-      <button
-        type="button"
-        className="t"
-        aria-expanded={open}
-        aria-controls={`sh-x-${def.id}`}
-        aria-label={`${open ? 'Hide' : 'Show'} legend and filters for ${def.label}`}
-        onClick={() => onExpand(def.id, !open)}
-      >
-        {open ? '[-]' : '[+]'}
-      </button>
+      <ExpandButton def={def} open={open} onExpand={onExpand} />
     </>
   );
 }
