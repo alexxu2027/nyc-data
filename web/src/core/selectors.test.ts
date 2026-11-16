@@ -7,7 +7,7 @@ import { catalog, collection, feat } from './test/fixtures';
 
 function setData(id: string, ids: Array<[string, 'MN' | 'BK' | 'XX' | null, Record<string, unknown>?]>, rev: number) {
   const c = collection(id, ids.map(([i, b, p]) => feat(i, b, p)));
-  const d: LayerData = { status: 'ready', features: c.features, meta: c.meta, etag: 'e', rev, fetchedAt: 1, nextAt: 2, error: null };
+  const d: LayerData = { status: 'ready', features: c.features, meta: c.meta, etag: 'e', rev, fetchedAt: 1, nextAt: 2, error: null, changed: [], changedAt: null };
   useApp.setState((s) => ({ data: { ...s.data, [id]: d } }));
 }
 

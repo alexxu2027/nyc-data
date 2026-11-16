@@ -22,7 +22,8 @@ def sha(path: Path) -> str:
 
 def test_every_endpoint_leaves_state_db_untouched(client, settings):
     before = sha(settings.state_db)
-    paths = ["/api/health", "/api/layers", "/api/docs", "/api/openapi.json"]
+    paths = ["/api/health", "/api/layers", "/api/docs", "/api/openapi.json", "/api/changes"]
+    paths += ["/api/layers/radar"]
     paths += [f"/api/layers/{lid}" for lid in BUILDERS]
     paths += [
         "/api/layers/complaints_311?f.window=7d&borough=BK&bbox=-74.1,40.5,-73.7,40.9&limit=3",

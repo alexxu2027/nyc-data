@@ -65,7 +65,7 @@ def _keep(feat: dict, boroughs: tuple[str, ...] | None, bbox: BBox | None) -> bo
 def layer(request: Request, layer_id: str) -> Response:
     services = request.app.state.services
     layer_def = services.catalog.layers.get(layer_id)
-    if layer_def is None:
+    if layer_def is None or layer_def["kind"] == "raster":
         raise not_found(f"no layer {layer_id!r}")
     p = _params(request, layer_id, services)
     if not layer_def["borough_filter"]:

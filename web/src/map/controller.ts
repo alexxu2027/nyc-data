@@ -21,6 +21,7 @@ import type { Catalog, LayerDef, LayerFeature, Theme, ViewState } from '../types
 import { FALLBACK_BASEMAPS, firstPlaceLayer, offlineStyle, postProcess } from './basemap';
 import { installIcons } from './icons';
 import { renderLayer, sourceId, type Rendered } from './layers';
+import type { LiveHandle } from './layers/common';
 import { Pulse } from './pulse';
 import { readTokens, type ThemeTokens } from './styleToPaint';
 
@@ -70,6 +71,7 @@ interface Installed {
   ids: string[];
   features: LayerFeature[] | null;
   visible: boolean;
+  live?: LiveHandle;
 }
 
 const sameView = (a: ViewState, b: ViewState) =>
@@ -175,16 +177,28 @@ export class MapController {
     const inst = this.installed.get(id);
     const w = this.want.get(id);
     if (!inst || !w || inst.rendered.chips) return;
+    const raster = this.catalog?.layers.find((l) => l.id === id)?.kind === 'raster';
+    if (raster) {
+      if (inst.visible !== w.visible) {
+        inst.visible = w.visible;
+        inst.live?.update([], w.visible);
+      }
+      return;
+    }
+    let pushed = false;
     if (w.visible && inst.features !== w.features) {
+      pushed = true;
       inst.features = w.features;
       const src = this.map.getSource(sourceId(id)) as GeoJSONSource | undefined;
       void src?.setData(fc(w.features));
       for (const x of inst.rendered.extra ?? []) {
         (this.map.getSource(x.id) as GeoJSONSource | undefined)?.setData(x.build(w.features));
       }
+      inst.live?.update(w.features, w.visible);
     }
     if (inst.visible !== w.visible) {
       inst.visible = w.visible;
+      if (!pushed) inst.live?.update(w.features, w.visible);
       const vis = w.visible ? 'visible' : 'none';
       for (const lid of inst.ids) if (this.map.getLayer(lid)) this.map.setLayoutProperty(lid, 'visibility', vis);
       if (!w.visible) this.tooltip.set(null);
@@ -236,7 +250,19 @@ export class MapController {
     this.install();
   };
 
+  private destroyLive(): void {
+    for (const inst of this.installed.values()) {
+      try {
+        inst.live?.destroy();
+      } catch {
+        // the style may already be gone
+      }
+      inst.live = undefined;
+    }
+  }
+
   private resetInstall(): void {
+    this.destroyLive();
     this.installed.clear();
     this.hitToLayer.clear();
     this.hitLayers = [];
@@ -249,6 +275,7 @@ export class MapController {
   /** Remove our layers and sources from the current style (the catalog changed). */
   private uninstall(): void {
     const map = this.map;
+    this.destroyLive();
     for (const inst of this.installed.values()) {
       for (const id of inst.ids) if (map.getLayer(id)) map.removeLayer(id);
     }
@@ -281,7 +308,7 @@ export class MapController {
         this.installed.set(def.id, { rendered, ids: [], features, visible });
         continue;
       }
-      if (!map.getSource(src)) {
+      if (def.kind !== 'raster' && !map.getSource(src)) {
         map.addSource(src, {
           type: 'geojson',
           data: features ? fc(features) : EMPTY,
@@ -291,7 +318,13 @@ export class MapController {
         } as GeoJSONSourceSpecification);
       }
       for (const x of rendered.extra ?? []) {
-        if (!map.getSource(x.id)) map.addSource(x.id, { type: 'geojson', data: features ? x.build(features) : EMPTY });
+        if (!map.getSource(x.id)) {
+          map.addSource(x.id, {
+            type: 'geojson',
+            data: features ? x.build(features) : EMPTY,
+            ...x.spec,
+          } as GeoJSONSourceSpecification);
+        }
       }
       const ids: string[] = [];
       const vis = visible ? 'visible' : 'none';
@@ -305,7 +338,18 @@ export class MapController {
       }
       for (const h of rendered.hit) this.hitToLayer.set(h, def.id);
       pulses.push(...rendered.pulse);
-      this.installed.set(def.id, { rendered, ids, features, visible });
+      const inst: Installed = { rendered, ids, features, visible };
+      this.installed.set(def.id, inst);
+      if (rendered.live) {
+        inst.live = rendered.live({
+          map,
+          def,
+          source: src,
+          beforeId: before,
+          reducedMotion: () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches,
+        });
+        inst.live.update(def.kind === 'raster' ? [] : (features ?? []), visible);
+      }
     }
     for (const { layer } of halos) map.addLayer(layer, before);
     // Hit order follows draw order, top first (queryRenderedFeatures sorts anyway).

@@ -5,5 +5,6 @@ export { useLayerDef, useLayerView, useLayerHealth, type LayerView } from './sel
 export { effectiveFilters, applyClientFilters, matchesWhere, serverParams } from './filters';
 export { parseUrl, serializeUrl, startUrlSync, type UrlState } from './url';
 export { api, ApiError } from './api';
+export { changedIds } from './changes';
 export { fmtTime, fmtAgo, fmtInt } from './time';
 export { DevShell, DevMap, DevDrawer } from './dev';

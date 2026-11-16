@@ -19,6 +19,8 @@ function layer(p: Partial<LayerDef> & Pick<LayerDef, 'id' | 'group' | 'kind'>): 
     filters: [],
     style: { color: { value: 'ink' } },
     legend: [],
+    raster: null,
+    changes: null,
     ...p,
   };
 }

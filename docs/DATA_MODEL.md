@@ -211,7 +211,8 @@ class Event:
 - Severity defaults: NWS Extreme/Severe 3, Moderate 2, Minor 1, Unknown 0; collisions killed 3,
   injured 2, else 1; 311 is 0.
 - Adapters may import only stdlib, `nyclive.model`, `nyclive.timeutil`, `nyclive.sources.base`,
-  `nyclive.sources._socrata`. No httpx, storage or settings.
+  `nyclive.sources._socrata`, `nyclive.sources._gtfsrt` (stdlib GTFS-realtime decoder,
+  ADR-013). No httpx, storage or settings.
 
 **Fixtures and tests**
 ```

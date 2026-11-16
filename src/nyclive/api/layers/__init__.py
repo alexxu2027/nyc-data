@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from nyclive.api.layers import city, streets, transit, water
+from nyclive.api.layers import city, streets, trains, transit, water
 from nyclive.api.layers.common import Ctx, LayerResult
 
 BUILDERS: dict[str, Callable[[Ctx], LayerResult]] = {
@@ -19,6 +19,7 @@ BUILDERS: dict[str, Callable[[Ctx], LayerResult]] = {
     "collisions": streets.collisions,
     "elevator_outages": transit.elevator_outages,
     "subway_alerts": transit.subway_alerts,
+    "subway_trains": trains.subway_trains,
     "flood_events": water.flood_events,
     "weather": water.weather,
     "tide_gauge": water.tide_gauge,

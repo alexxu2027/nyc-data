@@ -2,10 +2,10 @@
 import type { Feature, Geometry } from 'geojson';
 export type BoroughCode = 'MN' | 'BK' | 'QN' | 'BX' | 'SI';
 export type FeatureBorough = BoroughCode | 'XX' | null;
-export type LayerKind = 'point' | 'line' | 'polygon' | 'cluster';
+export type LayerKind = 'point' | 'line' | 'polygon' | 'cluster' | 'raster';
 export type SourceState = 'ok' | 'stale' | 'degraded' | 'never';
 export type Theme = 'light' | 'dark';
-export type PanelId = 'layers' | 'health' | 'about';
+export type PanelId = 'layers' | 'health' | 'about' | 'feed';
 export type ColorValue = string; // '#rrggbb' | 'ink' | 'paper' | 'muted'
 export type WhereOp = 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in';
 export interface Where { prop: string; op: WhereOp; value: string | number | boolean | Array<string | number> }
@@ -23,10 +23,13 @@ export interface StyleDef { color: Scale; radius?: Scale; width?: Scale; fill_op
 export interface LegendItem { label: string; shape: 'circle' | 'ring' | 'square' | 'line' | 'dash' | 'fill' | 'pulse' | 'glyph' | 'size' | 'text';
   color?: ColorValue; glyph?: string }
 export type DetailRef = { type: 'entity'; kind: string } | { type: 'event'; source: string } | { type: 'none' };
+export interface RasterDef { index_url: string; tiles: string; frames: string; tile_size: number; max_zoom: number;
+  opacity: number; stale_s: number }
+export interface ChangesDef { props: string[]; new: boolean }
 export interface LayerDef { id: string; label: string; short: string; group: string; kind: LayerKind; sources: string[];
   default: boolean; poll_s: number; z: number; borough_filter: boolean; list: boolean; detail: DetailRef;
   attribution: { text: string; url: string }; lag_note: string | null; empty_text: string | null; legend_title: string;
-  filters: FilterDef[]; style: StyleDef; legend: LegendItem[] }
+  filters: FilterDef[]; style: StyleDef; legend: LegendItem[]; raster: RasterDef | null; changes: ChangesDef | null }
 export interface Catalog { version: number; basemaps: { light: string; dark: string };
   view: { center: [number, number]; zoom: number; min_zoom: number; max_zoom: number; bounds: [number, number, number, number] };
   boroughs: Array<{ id: BoroughCode; label: string }>; groups: Array<{ id: string; label: string }>; layers: LayerDef[] }
@@ -58,4 +61,11 @@ export interface ViewState { lng: number; lat: number; zoom: number; bearing: nu
 export type Selection = { mode: 'feature'; layer: string; id: string } | { mode: 'list'; layer: string } | null;
 export interface Insets { top: number; right: number; bottom: number; left: number }
 export interface LayerData { status: 'idle' | 'loading' | 'ready' | 'error'; features: LayerFeature[]; meta: LayerMeta | null;
-  etag: string | null; rev: number; fetchedAt: number | null; nextAt: number | null; error: string | null }
+  etag: string | null; rev: number; fetchedAt: number | null; nextAt: number | null; error: string | null;
+  changed: string[]; changedAt: number | null }
+export interface ChangeItem { id: string; at: string; kind: 'weather' | 'alert' | 'outage' | 'flood'; source: string;
+  title: string; severity: number; layer: string; feature: string | null; lat: number | null; lon: number | null;
+  borough: FeatureBorough; ended: boolean }
+export interface ChangesPage { now: string; since: string; items: ChangeItem[] }
+export interface FeedState { status: 'idle' | 'loading' | 'ready' | 'error'; items: ChangeItem[]; etag: string | null;
+  fetchedAt: number | null; seenAt: number; error: string | null }

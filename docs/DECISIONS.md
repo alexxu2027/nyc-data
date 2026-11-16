@@ -151,3 +151,34 @@ parallel. Spreading those facts across Python and TypeScript would let them drif
 **Consequences:** a new layer is mostly YAML plus one API builder (`api/layers/`) and one map
 renderer. Map styling is limited to what the declarative scales express; anything richer (pulses,
 clusters, halos, icons) lives in the per-layer renderer, keyed by layer id.
+
+## ADR-013: Phase 2.5 liveness: trains, radar, flood depth, changes (2026-11-16)
+**Context:** Phase 2.5 makes live data visible: FloodNet depth, rain radar, moving subway trains
+and a "what changed" feed. The frozen contracts (adapter v1, catalog v1) must carry them without
+a rewrite, and the archive must stay small (about 48 MB/day measured before trains).
+**Decision:**
+1. **Trains are per-trip events.** The `mta_trains` adapter emits one event per trip
+   (`start_date:trip_id`, category `train`) whose props (`route`, `dir`, `stop`) change only when
+   a train passes a stop, so change-only archiving costs about 20–26 MB/day (a test in U2 gates
+   this). The API builds positions; the client animates between polls. Track geometry lives in
+   the committed `config/subway_static.json`, built by `scripts/build_subway_static.py`.
+2. **Stdlib GTFS-rt decoder.** `nyclive.sources._gtfsrt` is a small protobuf wire decoder (feed,
+   trip update, vehicle position, NYCT extension 1001), so there is no new dependency and
+   adapters stay pure. DATA_MODEL allows importing it.
+3. **Raster layers.** Catalog `kind: raster` carries a `raster` block `{index_url, tiles, frames,
+   tile_size, max_zoom, opacity, stale_s}`. Raster layers have no sources, no builder and no
+   `/api/layers/{id}` (404); the client polls the frame index and loads tiles directly. Style is
+   optional, filters are empty.
+4. **`changes` key.** A point or cluster layer may declare `changes: {props: [str], new: bool}`.
+   On each 200 poll the client diffs the listed props per feature id (and, if `new`, counts new
+   ids) to give `changedIds`, which drive the change pulse. First load yields none.
+5. **Feed endpoint.** `GET /api/changes?hours=&limit=` lists recent changes from the events of
+   NWS alerts, unplanned subway alerts, elevator outages and FloodNet episodes, ordered by
+   `events.first_seen`, with ETag and 304.
+6. **Hooks.** Renderers may return `live(ctx)` for per-frame work (trains, radar); the
+   controller calls `update(features, visible)` and `destroy()`.
+7. Catalog schema stays `version: 1`: new keys (`raster`, `changes`) default to `null`, and
+   `types.ts`, the loader and this ADR changed together (ADR-012 item 6).
+**Consequences:** subway trains rely on a built static file (the layer says "STATIC GTFS NOT
+BUILT" without it). The pipeline loads every open trip row each 30 s; if that is slow it needs a
+pipeline change after the soak. Radar is coarse at street zoom. FloodNet depth lags up to 45 min.

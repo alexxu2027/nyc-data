@@ -6,7 +6,9 @@ import { clusters } from './clusters';
 import { emptyRendered, type RenderCtx, type Rendered } from './common';
 import { polygonAlerts } from './nwsAlerts';
 import { bikeStations, cameras, points } from './points';
+import { radar } from './radar';
 import { speedLines } from './roadSpeeds';
+import { trains } from './trains';
 
 export type Renderer = (ctx: RenderCtx) => Rendered;
 
@@ -24,6 +26,8 @@ export const RENDERERS: Record<string, Renderer> = {
   collisions: points,
   elevator_outages: (ctx) => points(ctx, { glyphMinZoom: 12 }),
   subway_alerts: (ctx) => points(ctx, { glyphMinZoom: 12 }),
+  subway_trains: trains,
+  radar,
   flood_events: points,
   weather: chips,
   tide_gauge: chips,

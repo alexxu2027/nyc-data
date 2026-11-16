@@ -125,16 +125,32 @@ sources:
 
   mta_subway_realtime:
     name: MTA subway trip updates & vehicles (GTFS-rt protobuf)
-    phase: 5
-    shape: observations
+    # adapter: mta_trains   # U2 sets this when mta_trains.py exists (ADR-013)
+    phase: 2
+    shape: events
     cadence_s: 30
+    max_lag_s: 3600
     auth: none
     probe: https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-ace
     status: verified
     verified_on: 2026-11-14
     notes: >
-      Binary protobuf; parse with gtfs-realtime-bindings. One feed per line group:
-      gtfs (1-7,S), gtfs-ace, gtfs-bdfm, gtfs-g, gtfs-jz, gtfs-nqrw, gtfs-l, gtfs-si.
+      Binary protobuf; decoded with the stdlib wire decoder nyclive.sources._gtfsrt (ADR-013, no
+      new dependency). One feed per line group: gtfs (1-7,S), gtfs-ace, gtfs-bdfm, gtfs-g,
+      gtfs-jz, gtfs-nqrw, gtfs-l, gtfs-si. One event per trip (props change only at stops).
+
+  mta_subway_gtfs_static:
+    name: MTA subway static GTFS (shapes, stops, routes)
+    phase: 2
+    shape: entities
+    cadence_s: null
+    auth: none
+    probe: https://rrgtfsfeeds.s3.amazonaws.com/gtfs_subway.zip
+    status: verified
+    verified_on: 2026-11-16
+    notes: >
+      Not collected at runtime. scripts/build_subway_static.py turns the 5.6 MB zip into the
+      committed config/subway_static.json that positions trains along the track (ADR-013).
 
   # ----------------------------------------------------- water & weather
   noaa_tide_battery:
@@ -211,21 +227,35 @@ sources:
 
   floodnet_live:
     name: FloodNet live depth (FieldKit project 174)
+    # adapter: floodnet_live   # U1 sets this when floodnet_live.py exists (ADR-013)
     phase: 1
     shape: observations
-    cadence_s: 300
+    cadence_s: 1800
+    max_lag_s: 7200
     auth: none
     probe: https://api.fieldkit.org/projects
     expect: NYC FloodNet
     status: partial
-    verified_on: 2026-11-15
+    verified_on: 2026-11-16
     notes: >
-      NOT COLLECTED (ADR-010, 2026-11-15): public read works (/projects/174/stations,
-      /sensors/data/tail?stations=..., sensor 44 = depth) but full polling is ~13 MB per poll from
-      an undocumented API; waiting on the FloodNet team's OK.
-      Powers dataviz.floodnet.nyc. Project list is public (NYC FloodNet = id 174) but the
-      per-sensor reading endpoints are undocumented. Phase 1 spike decides whether we use
-      it; fallback is events-only flooding. Poll gently and attribute FloodNet.
+      ADR-010 ready design, FloodNet team OK'd polling (2026-11-16): /projects/174/stations plus
+      /sensors/data/tail?stations=<50 ids> every 30 min, sensor 44 (depth, inches) only,
+      change-only. FieldKit ids differ from Open Data sensor_id; joined by coordinates in parse.
+      Powers dataviz.floodnet.nyc. Attribute FloodNet.
+
+  rainviewer_radar:
+    name: RainViewer radar frame index
+    phase: 2
+    shape: observations  # raster tiles, client-only; the registry has no raster shape
+    cadence_s: null
+    auth: none
+    probe: https://api.rainviewer.com/public/weather-maps.json
+    expect: radar
+    status: verified
+    verified_on: 2026-11-16
+    notes: >
+      Not collected. The browser polls the frame index and loads tiles directly (ADR-013, kind:
+      raster). Radar tiles only go to zoom 7; frames every 10 min. Attribute RainViewer.
 
   # ------------------------------------------------------- NYC Open Data
   nyc_311:

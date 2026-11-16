@@ -41,6 +41,8 @@ function layer(id: string, group: string, z: number, extra: Partial<LayerDef> = 
     filters: [],
     style: { color: { value: 'ink' } },
     legend: [],
+    raster: null,
+    changes: null,
     ...extra,
   };
 }

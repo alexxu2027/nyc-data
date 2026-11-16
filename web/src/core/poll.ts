@@ -9,6 +9,7 @@
 // - Never sends borough or bbox.
 import type { LayerData, LayerDef } from '../types';
 import { api as defaultApi, type Api } from './api';
+import { changedIds } from './changes';
 import { effectiveFilters, serverParams } from './filters';
 import { type AppState, EMPTY_LAYER_DATA, useApp } from './store';
 
@@ -104,6 +105,8 @@ export function startPolling(opts: PollOptions = {}): () => void {
           fetchedAt: t,
           nextAt,
           error: null,
+          changed: changedIds(c.def, prev.features, res.body.features, prev.rev === 0),
+          changedAt: t,
         });
       }
       if (!c.done) schedule(c, intervalFor(c));
@@ -150,7 +153,7 @@ export function startPolling(opts: PollOptions = {}): () => void {
     if (!catalog) return;
     for (const id of want) {
       const def = catalog.layers.find((l) => l.id === id);
-      if (!def) continue;
+      if (!def || def.kind === 'raster') continue; // raster layers are client-only (ADR-013)
       const params = serverParams(def, effectiveFilters(def, s.filters[id]));
       const key = JSON.stringify(params);
       const c = ctls.get(id);

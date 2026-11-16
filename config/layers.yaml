@@ -228,20 +228,78 @@ layers:
       - {label: Accessible, shape: circle, color: ink}
       - {label: Not accessible, shape: ring, color: ink}
 
+  - id: subway_trains
+    label: Subway trains (live)
+    short: Trains
+    group: transit
+    kind: point
+    sources: [mta_subway_realtime]
+    default: true
+    poll_s: 30
+    z: 50
+    borough_filter: false
+    detail: {type: none}
+    empty_text: "NO TRAINS REPORTING"
+    lag_note: "Positions estimated between stations from MTA arrival data"
+    attribution: {text: "MTA GTFS-realtime + static GTFS", url: "https://api.mta.info/"}
+    legend_title: Line
+    filters:
+      - key: line
+        label: Line
+        type: enum
+        apply: client
+        prop: line
+        options:
+          - {value: "123", label: "1 2 3"}
+          - {value: "456", label: "4 5 6"}
+          - {value: "7", label: "7"}
+          - {value: ACE, label: "A C E"}
+          - {value: BDFM, label: "B D F M"}
+          - {value: G, label: "G"}
+          - {value: JZ, label: "J Z"}
+          - {value: L, label: "L"}
+          - {value: NQRW, label: "N Q R W"}
+          - {value: S, label: "S shuttles"}
+          - {value: SIR, label: "Staten Island Railway"}
+        default: ["123", "456", "7", ACE, BDFM, G, JZ, L, NQRW, S, SIR]
+    style:
+      color: {prop: line, scale: match, stops: [["123", "#d82233"], ["456", "#009952"], ["7", "#9a38a1"], [ACE, "#0062cf"], [BDFM, "#eb6800"], [G, "#799534"], [JZ, "#8e5c33"], [L, "#7c858c"], [NQRW, "#f6bc26"], [S, "#7c858c"], [SIR, "#08179c"]], default: "#7c858c"}
+      radius: {value: 4}
+      label: {prop: route, min_zoom: 13}
+    legend:
+      - {label: 1 2 3, shape: circle, color: "#d82233"}
+      - {label: 4 5 6, shape: circle, color: "#009952"}
+      - {label: "7", shape: circle, color: "#9a38a1"}
+      - {label: A C E, shape: circle, color: "#0062cf"}
+      - {label: B D F M, shape: circle, color: "#eb6800"}
+      - {label: G, shape: circle, color: "#799534"}
+      - {label: J Z, shape: circle, color: "#8e5c33"}
+      - {label: L, shape: circle, color: "#7c858c"}
+      - {label: N Q R W, shape: circle, color: "#f6bc26"}
+      - {label: S shuttles, shape: circle, color: "#7c858c"}
+      - {label: Staten Island Railway, shape: circle, color: "#08179c"}
+
   # ------------------------------------------------------------------ water & weather
   - id: flood_sensors
-    label: Flood sensors (FloodNet)
+    label: Flood sensors (FloodNet, live depth)
     short: Sensors
     group: water
     kind: point
-    sources: [floodnet_sensors, floodnet_events]
+    sources: [floodnet_sensors, floodnet_events, floodnet_live]
     default: false
-    poll_s: 3600
+    poll_s: 300
     z: 40
+    changes: {props: [flooding], new: false}
     detail: {type: entity, kind: flood_sensor}
     attribution: {text: "FloodNet NYC sensor deployments (kb2e-tjy3)", url: "https://www.floodnet.nyc/"}
-    legend_title: Sensors
+    legend_title: Water depth now
     filters:
+      - key: flooding
+        label: Flooding now
+        type: toggle
+        apply: client
+        where: {prop: flooding, op: eq, value: true}
+        default: false
       - key: tidal
         label: Tidally influenced
         type: toggle
@@ -255,12 +313,16 @@ layers:
         where: {prop: events_30d, op: gt, value: 0}
         default: false
     style:
-      color: {value: "#0072b2"}
-      radius: {value: 3.5}
-      hollow: {prop: events_30d, op: eq, value: 0}
+      color: {prop: depth_in, scale: step, base: "#56b4e9", stops: [[1, "#0072b2"], [4, "#e69f00"], [12, "#d55e00"]], default: "#8a8a8a"}
+      radius: {prop: depth_in, scale: step, base: 3.5, stops: [[1, 5], [4, 6.5], [12, 8]]}
+      hollow: {prop: live, op: eq, value: false}
+      pulse: {prop: flooding, op: eq, value: true}
     legend:
-      - {label: Flooded in the last 30 days of data, shape: circle, color: "#0072b2"}
-      - {label: No recent flood, shape: ring, color: "#0072b2"}
+      - {label: "Dry (under 1 in)", shape: circle, color: "#56b4e9"}
+      - {label: 1–4 in, shape: circle, color: "#0072b2"}
+      - {label: 4–12 in, shape: circle, color: "#e69f00"}
+      - {label: 12+ in, shape: circle, color: "#d55e00"}
+      - {label: "No reading in 2 h", shape: ring, color: "#8a8a8a"}
 
   # ------------------------------------------------------------------ transit
   - id: citibike
@@ -272,6 +334,7 @@ layers:
     default: true
     poll_s: 60
     z: 45
+    changes: {props: [state], new: true}
     detail: {type: entity, kind: bike_station}
     attribution: {text: "Citi Bike / Lyft GBFS", url: "https://citibikenyc.com/system-data"}
     legend_title: "Bikes as a share of working docks"
@@ -346,6 +409,7 @@ layers:
     default: false
     poll_s: 3600
     z: 55
+    changes: {props: [], new: true}
     detail: {type: event, source: nyc_collisions}
     lag_note: "Published several days late"
     attribution: {text: "NYPD Motor Vehicle Collisions (h9gi-nx95)", url: "https://data.cityofnewyork.us/d/h9gi-nx95"}
@@ -395,6 +459,7 @@ layers:
     default: false
     poll_s: 300
     z: 60
+    changes: {props: [n, current], new: true}
     list: true
     detail: {type: entity, kind: subway_station}
     attribution: {text: "MTA Elevator & Escalator Status", url: "https://new.mta.info/elevator-escalator-status"}
@@ -432,6 +497,7 @@ layers:
     default: true
     poll_s: 60
     z: 65
+    changes: {props: [n, active, severity], new: true}
     list: true
     detail: {type: entity, kind: subway_station}
     attribution: {text: "MTA Subway Service Alerts", url: "https://new.mta.info/alerts"}
@@ -504,6 +570,32 @@ layers:
       - {label: 12 in or more, shape: circle, color: "#084594"}
       - {label: Within 48 h of the newest data, shape: pulse, color: "#4292c6"}
       - {label: "Size: peak depth", shape: size}
+
+  - id: radar
+    label: Rain radar (RainViewer)
+    short: Radar
+    group: water
+    kind: raster
+    sources: []
+    default: false
+    poll_s: 300
+    z: 4
+    empty_text: "NO RECENT RADAR FRAME"
+    attribution: {text: "Radar: RainViewer", url: "https://www.rainviewer.com/api.html"}
+    legend_title: Rain intensity
+    raster:
+      index_url: "https://api.rainviewer.com/public/weather-maps.json"
+      tiles: "{host}{path}/256/{z}/{x}/{y}/2/1_1.png"
+      frames: radar.past
+      tile_size: 256
+      max_zoom: 7
+      opacity: 0.7
+      stale_s: 1800
+    legend:
+      - {label: Light, shape: fill, color: "#88ddee"}
+      - {label: Moderate, shape: fill, color: "#00a000"}
+      - {label: Heavy, shape: fill, color: "#f0c000"}
+      - {label: Very heavy, shape: fill, color: "#d00000"}
 
   - id: weather
     label: Weather now (Open-Meteo)
