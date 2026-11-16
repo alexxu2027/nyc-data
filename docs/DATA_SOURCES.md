@@ -49,9 +49,21 @@ without a key. The other 2 were skipped because they need free keys. `mta_subway
 - data.ny.gov `39hk-dx4f`: `gtfs_stop_id`, `complex_id`, `stop_name`, `gtfs_latitude/longitude`,
   `borough` as `M/Bk/Q/Bx/SI`. Daily refresh is plenty. Pins alerts and outages to stations.
 
-**MTA subway realtime** (`mta_subway_realtime`, Phase 5)
+**MTA subway realtime** (`mta_subway_realtime`, Phase 2.5, adapter `mta_trains`)
 - Protobuf feeds per line group: `nyct%2Fgtfs` (1–7, S), `-ace`, `-bdfm`, `-g`, `-jz`, `-nqrw`,
-  `-l`, `-si`. Parse with `gtfs-realtime-bindings`, and use static GTFS for stop locations.
+  `-l`, `-si`, every 30 s, keyless. Decoded with the stdlib wire decoder `nyclive.sources._gtfsrt`
+  (ADR-013), not `gtfs-realtime-bindings`. The NYCT extension (field 1001) carries direction and
+  train id.
+- Vehicle positions give `stop_id` and `current_status`, not lat/lon. One event per trip
+  (`start_date:trip_id`); props change only at stop passages, so change-only archiving stays near
+  20–26 MB/day. Positions between stops are estimated by the API from static GTFS.
+- No ETag; the `gtfs` feed is 63 KB at night.
+
+**MTA subway static GTFS** (`mta_subway_gtfs_static`)
+- `https://rrgtfsfeeds.s3.amazonaws.com/gtfs_subway.zip` (5.6 MB, 261 shapes). Not collected:
+  `scripts/build_subway_static.py` writes the committed `config/subway_static.json` (route colours,
+  stop locations, stop patterns, per-segment track geometry and scheduled run times). Realtime
+  `shape_id` equals the trip id after its first `_`.
 
 **DOT real-time traffic speeds** (`dot_traffic_speeds`)
 - Socrata dataset `i4gi-tjb9`. Fields: `speed`, `travel_time`, `encoded_poly_line`,
@@ -75,14 +87,24 @@ without a key. The other 2 were skipped because they need free keys. `mta_subway
 - Events: Open Data `aq7i-eu5q`. One row per flood with `max_depth_inches`, onset, drain and
   duration times, and `flood_profile_depth_inches`. **Last updated 2026-11-02**, so it runs about 2
   weeks behind.
-- Live: the dashboard at `dataviz.floodnet.nyc` uses the **FieldKit** API (`api.fieldkit.org`).
-  Project list is public (NYC FloodNet = project **174**). The JS references `/sensors/data`,
-  `/sensors/data/recently`, `/sensors/data/tail` and `/stations`, all undocumented.
-  **Phase 1 spike:** confirm public read access and polling etiquette, ideally by contacting the
-  FloodNet team. If no, the map shows events with a "data as of" label.
+- Live (`floodnet_live`, Phase 2.5): the dashboard at `dataviz.floodnet.nyc` uses the
+  **FieldKit** API (`api.fieldkit.org`). Project list is public (NYC FloodNet = project **174**).
+  The undocumented endpoints in use are `/projects/174/stations` (496 stations, 1.1 MB) and
+  `/sensors/data/tail?stations=<ids>`. The FloodNet team OK'd polling (2026-11-16, ADR-010).
+  Polled every 30 min, 50 stations per request (about 1.3 MB, 15 s), sensor 44
+  (`wh.floodnet.depth`, inches) only, change-only. Each response carries 48 h in 864 s buckets
+  with avg/min/max/last. FieldKit ids differ from Open Data `sensor_id`, so the adapter joins by
+  coordinates (30 m, one-to-one). Latency is up to about 45 min.
 - **Event times are UTC**, not New York local like other Socrata data (verified 2026-11-15:
   tidal-sensor flood peaks land 29–61 min after NOAA Rockaway Inlet high tides when read as
   UTC). The `$where` cursor literal is UTC too. Some sensors have `date_removed`.
+
+**RainViewer radar** (`rainviewer_radar`, Phase 2.5, not collected)
+- `GET https://api.rainviewer.com/public/weather-maps.json` returns `{host, radar.past[]
+  {time, path}, radar.nowcast[]}`; frames every 10 min, nowcast empty. Tiles:
+  `{host}{path}/256/{z}/{x}/{y}/2/1_1.png`. Tiles above zoom 7 return a placeholder, so the layer
+  caps at `max_zoom: 7` (coarse at street zoom). The browser polls the index and loads tiles
+  directly (catalog `kind: raster`, ADR-013). Attribution "Radar: RainViewer" is required.
 
 **NOAA tide gauge, The Battery** (`noaa_tide_battery`)
 - CO-OPS datagetter, station `8518750`, `product=water_level` (6-min) plus `product=predictions`

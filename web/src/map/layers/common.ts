@@ -1,5 +1,11 @@
 // Building blocks shared by the per-layer renderers (plan §7.3).
-import type { ExpressionSpecification, FilterSpecification, GeoJSONSourceSpecification, LayerSpecification } from 'maplibre-gl';
+import type {
+  ExpressionSpecification,
+  FilterSpecification,
+  GeoJSONSourceSpecification,
+  LayerSpecification,
+  Map as MlMap,
+} from 'maplibre-gl';
 import type { FeatureCollection } from 'geojson';
 import type { LayerDef, LayerFeature } from '../../types';
 import { glyphImageId } from '../icons';
@@ -22,6 +28,25 @@ export interface RenderCtx {
 export interface ExtraSource {
   id: string;
   build(features: LayerFeature[]): FeatureCollection;
+  /** Extra options for this source (e.g. `{promoteId: 'id'}`). */
+  spec?: Partial<GeoJSONSourceSpecification>;
+}
+
+/** What the controller hands a renderer's `live` hook (ADR-013 item 6). */
+export interface LiveCtx {
+  map: MlMap;
+  def: LayerDef;
+  /** GeoJSON source id: `nl-<id>` (not added for raster layers). */
+  source: string;
+  beforeId: string | undefined;
+  reducedMotion(): boolean;
+}
+
+export interface LiveHandle {
+  /** Called on every features or visibility change (raster layers: `update([], visible)`). */
+  update(features: LayerFeature[], visible: boolean): void;
+  /** Remove any sources and layers the hook added, if they still exist. */
+  destroy(): void;
 }
 
 export interface Rendered {
@@ -38,6 +63,8 @@ export interface Rendered {
   extra?: ExtraSource[];
   /** Rendered as HTML chip markers instead of canvas layers. */
   chips?: boolean;
+  /** Per-frame or client-only work (animated trains, radar tiles). */
+  live?: (ctx: LiveCtx) => LiveHandle;
 }
 
 export const emptyRendered = (): Rendered => ({ layers: [], halo: [], hit: [], pulse: [] });

@@ -67,7 +67,15 @@ METRICS = frozenset(
 )
 
 CATEGORIES = frozenset(
-    {"service_alert", "elevator_outage", "weather_alert", "complaint_311", "collision", "flood"}
+    {
+        "service_alert",
+        "elevator_outage",
+        "weather_alert",
+        "complaint_311",
+        "collision",
+        "flood",
+        "train",
+    }
 )
 
 BOROUGHS = ("MN", "BK", "QN", "BX", "SI")

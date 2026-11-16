@@ -76,7 +76,8 @@ def create_app(
     settings = settings or load_settings()
     registry = load_registry()
     catalog = load_catalog(layers_path, set(registry.sources))
-    missing = set(catalog.layers) ^ set(BUILDERS)
+    built = {lid for lid, d in catalog.layers.items() if d["kind"] != "raster"}
+    missing = built ^ set(BUILDERS)
     if missing:
         raise ValueError(f"layers without a builder or builders without a layer: {missing}")
     services = Services(settings, catalog, BoroughIndex(boroughs_path), registry, now)
@@ -92,9 +93,15 @@ def create_app(
     app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=6)
     errors.install(app)
 
-    from nyclive.api import routes_entities, routes_events, routes_health, routes_layers
+    from nyclive.api import (
+        routes_changes,
+        routes_entities,
+        routes_events,
+        routes_health,
+        routes_layers,
+    )
 
-    for mod in (routes_health, routes_layers, routes_entities, routes_events):
+    for mod in (routes_health, routes_layers, routes_entities, routes_events, routes_changes):
         app.include_router(mod.router)
     _mount_web(app, web_dist)
     return app

@@ -41,6 +41,8 @@ function placeholderDef(id: string): LayerDef {
     filters: [],
     style: { color: { value: 'ink' } },
     legend: [],
+    raster: null,
+    changes: null,
   };
 }
 

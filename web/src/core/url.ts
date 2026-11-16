@@ -10,7 +10,7 @@ export type UrlState = Pick<AppState, 'visible' | 'boroughs' | 'filters' | 'view
   t?: 'live';
 };
 
-const PANELS: PanelId[] = ['layers', 'health', 'about'];
+const PANELS: PanelId[] = ['layers', 'health', 'about', 'feed'];
 
 const round = (n: number, dp: number) => {
   const f = 10 ** dp;

@@ -28,7 +28,8 @@ def test_catalog_is_valid_and_complete():
     ids = [layer["id"] for layer in layers]
     assert len(ids) >= 12
     assert len(set(ids)) == len(ids)
-    assert set(ids) == set(BUILDERS), "a builder for every id and no extras"
+    built = {layer["id"] for layer in layers if layer["kind"] != "raster"}
+    assert built == set(BUILDERS), "a builder for every non-raster id and no extras"
     for layer in layers:
         assert all(s in REG.sources for s in layer["sources"]), layer["id"]
         assert layer["legend"], layer["id"]
@@ -50,7 +51,7 @@ def test_api_layers_fills_defaults(client):
     keys = {
         "id", "label", "short", "group", "kind", "sources", "default", "poll_s", "z",
         "borough_filter", "list", "detail", "attribution", "lag_note", "empty_text",
-        "legend_title", "filters", "style", "legend",
+        "legend_title", "filters", "style", "legend", "raster", "changes",
     }  # fmt: skip
     for layer in body["layers"]:
         assert keys <= set(layer), keys - set(layer)

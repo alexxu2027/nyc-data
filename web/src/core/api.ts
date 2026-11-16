@@ -2,6 +2,7 @@
 // and send `If-None-Match` themselves, so a 304 is visible to the poller.
 import type {
   Catalog,
+  ChangesPage,
   EntityDetail,
   EventDetail,
   EventsPage,
@@ -68,6 +69,8 @@ async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
 
 export type LayerResult = { status: 200; etag: string | null; body: LayerCollection } | { status: 304 };
 
+export type ChangesResult = { status: 200; etag: string | null; body: ChangesPage } | { status: 304 };
+
 export const api = {
   catalog(): Promise<Catalog> {
     return getJson<Catalog>('/layers');
@@ -85,6 +88,14 @@ export const api = {
     if (!res.ok) throw await errorFrom(res);
     const body = (await res.json()) as LayerCollection;
     return { status: 200, etag: res.headers.get('ETag'), body };
+  },
+  async changes(etag: string | null, signal?: AbortSignal): Promise<ChangesResult> {
+    const headers: Record<string, string> = {};
+    if (etag) headers['If-None-Match'] = etag;
+    const res = await send('/changes', { headers, signal });
+    if (res.status === 304) return { status: 304 };
+    if (!res.ok) throw await errorFrom(res);
+    return { status: 200, etag: res.headers.get('ETag'), body: (await res.json()) as ChangesPage };
   },
   health(): Promise<Health> {
     return getJson<Health>('/health');

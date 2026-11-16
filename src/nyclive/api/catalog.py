@@ -1,4 +1,4 @@
-"""Load and validate config/layers.yaml (schema v1, plan Interfaces §1) and fill defaults.
+"""Load and validate config/layers.yaml (schema v1, ADR-012 + ADR-013) and fill defaults.
 
 `Catalog.public` is what `/api/layers` serves: every layer key filled in, `classify` stripped.
 `Catalog.classify` keeps the server-only 311 grouping rules.
@@ -19,7 +19,9 @@ from nyclive.registry import REPO_ROOT
 DEFAULT_LAYERS = REPO_ROOT / "config" / "layers.yaml"
 DEFAULT_BOROUGHS = REPO_ROOT / "config" / "boroughs.geojson"
 
-KINDS = {"point", "line", "polygon", "cluster"}
+KINDS = {"point", "line", "polygon", "cluster", "raster"}
+CHANGE_KINDS = {"point", "cluster"}
+RASTER_KEYS = {"index_url", "tiles", "frames", "tile_size", "max_zoom", "opacity", "stale_s"}
 FILTER_TYPES = {"enum", "select", "toggle"}
 APPLY = {"client", "server"}
 OPS = {"eq", "ne", "gt", "gte", "lt", "lte", "in"}
@@ -36,6 +38,8 @@ LAYER_DEFAULTS: dict[str, Any] = {
     "lag_note": None,
     "empty_text": None,
     "filters": [],
+    "raster": None,
+    "changes": None,
 }
 REQUIRED = ("id", "label", "short", "group", "kind", "sources", "poll_s", "z", "attribution")
 
@@ -83,6 +87,9 @@ def load_catalog(path: Path = DEFAULT_LAYERS, registry_ids: set[str] | None = No
         problems += p
         if lid in layers:
             problems.append(f"duplicate layer id {lid}")
+        if layer.get("kind") == "raster":
+            layer.update(borough_filter=False, list=False, filters=[], detail={"type": "none"})
+            layer.setdefault("style", {"color": {"value": "muted"}})
         layer.setdefault("legend_title", layer.get("label"))
         layer["filters"] = [_fill_filter(f) for f in layer["filters"]]
         rules = layer.pop("classify", None)
@@ -164,6 +171,8 @@ def _layer_problems(layer: dict, groups: set[str], registry_ids: set[str] | None
         if "color" in item and not is_color(item["color"]):
             p.append(f"legend colour {item['color']!r} invalid")
     style = layer.get("style") or {}
+    if layer["kind"] == "raster" and not style:
+        style = {"color": {"value": "muted"}}
     if "color" not in style:
         p.append("style.color is required")
     else:
@@ -174,6 +183,22 @@ def _layer_problems(layer: dict, groups: set[str], registry_ids: set[str] | None
     for k in ("hollow", "pulse", "dash", "fade"):
         if k in style:
             p += _where_problems(style[k], f"style.{k}")
+    if layer["kind"] == "raster":
+        p += _raster_problems(layer)
+    elif layer.get("raster") is not None:
+        p.append("raster block is only for kind: raster")
+    ch = layer.get("changes")
+    if ch is not None:
+        if layer["kind"] not in CHANGE_KINDS:
+            p.append("changes is only for point or cluster layers")
+        if not (
+            isinstance(ch, dict)
+            and set(ch) == {"props", "new"}
+            and isinstance(ch["props"], list)
+            and all(isinstance(x, str) for x in ch["props"])
+            and isinstance(ch["new"], bool)
+        ):
+            p.append("changes must be {props: [str], new: bool}")
     detail = layer["detail"]
     if detail.get("type") not in {"entity", "event", "none"}:
         p.append("detail.type must be entity|event|none")
@@ -189,4 +214,26 @@ def _layer_problems(layer: dict, groups: set[str], registry_ids: set[str] | None
             p.append(f"filter {f['key']}: enum needs prop")
         if "default" not in f:
             p.append(f"filter {f['key']}: needs default")
+    return p
+
+
+def _raster_problems(layer: dict) -> list[str]:
+    r = layer.get("raster")
+    if not isinstance(r, dict) or set(r) != RASTER_KEYS:
+        return [f"raster must have exactly {sorted(RASTER_KEYS)}"]
+    p = []
+    if not (isinstance(r["index_url"], str) and r["index_url"].startswith("https://")):
+        p.append("raster.index_url must be https")
+    if not all(f"{{{k}}}" in r["tiles"] for k in ("host", "path", "z", "x", "y")):
+        p.append("raster.tiles needs {host}{path}{z}{x}{y}")
+    if not (isinstance(r["frames"], str) and r["frames"]):
+        p.append("raster.frames must be a dotted path")
+    if r["tile_size"] not in (256, 512):
+        p.append("raster.tile_size must be 256 or 512")
+    if not isinstance(r["max_zoom"], int) or isinstance(r["max_zoom"], bool):
+        p.append("raster.max_zoom must be an int")
+    if not (isinstance(r["opacity"], int | float) and 0 <= r["opacity"] <= 1):
+        p.append("raster.opacity must be 0..1")
+    if not (isinstance(r["stale_s"], int | float) and r["stale_s"] > 0):
+        p.append("raster.stale_s must be > 0")
     return p

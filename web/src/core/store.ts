@@ -3,6 +3,7 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand';
 import type {
   BoroughCode,
   Catalog,
+  FeedState,
   FilterOverrides,
   FilterValue,
   Health,
@@ -34,6 +35,9 @@ export interface AppState {
   hover: { layer: string; id: string } | null;
   insets: Insets;
   fly: { lng: number; lat: number; zoom?: number; nonce: number } | null;
+  /** Raster layer opacity overrides (layer id -> 0..1, 0.05 steps). */
+  opacity: Record<string, number>;
+  feed: FeedState;
   // actions
   setLayerVisible(id: string, on: boolean): void;
   toggleLayer(id: string): void;
@@ -48,6 +52,7 @@ export interface AppState {
   setTheme(t: Theme): void;
   setPanel(p: PanelId | null): void;
   setInsets(i: Insets): void;
+  setOpacity(id: string, v: number): void;
 }
 
 export const BOROUGH_ORDER: BoroughCode[] = ['MN', 'BK', 'QN', 'BX', 'SI'];
@@ -64,7 +69,18 @@ export const EMPTY_LAYER_DATA: LayerData = Object.freeze({
   fetchedAt: null,
   nextAt: null,
   error: null,
+  changed: [],
+  changedAt: null,
 }) as LayerData;
+
+export const EMPTY_FEED: FeedState = Object.freeze({
+  status: 'idle',
+  items: [],
+  etag: null,
+  fetchedAt: null,
+  seenAt: 0,
+  error: null,
+}) as FeedState;
 
 /** Layer ids in catalog order (unknown ids dropped, duplicates removed). Without a catalog the
  * input order is kept. */
@@ -99,6 +115,7 @@ type Data = Omit<
   | 'setTheme'
   | 'setPanel'
   | 'setInsets'
+  | 'setOpacity'
 >;
 
 export function initialData(): Data {
@@ -119,6 +136,8 @@ export function initialData(): Data {
     hover: null,
     insets: { top: 0, right: 0, bottom: 0, left: 0 },
     fly: null,
+    opacity: {},
+    feed: EMPTY_FEED,
   };
 }
 
@@ -198,6 +217,13 @@ export const useApp: UseBoundStore<StoreApi<AppState>> = create<AppState>()((set
     const c = get().insets;
     if (c.top === i.top && c.right === i.right && c.bottom === i.bottom && c.left === i.left) return;
     set({ insets: i });
+  },
+  setOpacity(id, v) {
+    if (!Number.isFinite(v)) return;
+    const q = Math.round(Math.min(1, Math.max(0, v)) / 0.05) * 0.05;
+    const next = Math.round(q * 100) / 100;
+    if (get().opacity[id] === next) return;
+    set({ opacity: { ...get().opacity, [id]: next } });
   },
 }));
 
