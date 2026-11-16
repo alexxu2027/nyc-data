@@ -10,6 +10,8 @@ export const KIND_LABEL: Record<ChangeItem['kind'], string> = {
   flood: 'FLOOD',
 };
 
+/** Weather alerts cover whole boroughs: fly to an area view, not street level. */
+const AREA_ZOOM = 11;
 /** Feature zoom for a click: never zoom out, at least street level. */
 export const ITEM_ZOOM = 14;
 
@@ -66,7 +68,7 @@ export function openItem(it: ChangeItem, st: OpenStore): OpenResult {
   const def = st.catalog?.layers.find((l) => l.id === it.layer);
   if (!def) return 'none';
   st.setLayerVisible(it.layer, true);
-  if (it.lat !== null && it.lon !== null) st.flyTo({ lng: it.lon, lat: it.lat, zoom: Math.max(st.view.zoom, ITEM_ZOOM) });
+  if (it.lat !== null && it.lon !== null) st.flyTo({ lng: it.lon, lat: it.lat, zoom: Math.max(st.view.zoom, it.kind === 'weather' ? AREA_ZOOM : ITEM_ZOOM) });
   if (it.feature !== null) {
     st.select({ mode: 'feature', layer: it.layer, id: it.feature });
     return 'feature';
