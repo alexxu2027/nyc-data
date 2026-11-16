@@ -13,12 +13,14 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from nyclive.api.events import Lookup
-from nyclive.api.geo import geometry_bbox, r5
+from nyclive.api.geo import geometry_bbox, r5, wkt_to_geojson
 from nyclive.api.layers.common import iso, loads, ts_text
 from nyclive.api.layers.transit import is_unplanned, outage_status
 from nyclive.api.layers.water import nws_geometry
 
-CHANGE_SOURCES = ["nws_alerts", "mta_subway_alerts", "mta_elevator_outages", "floodnet_live"]
+CHANGE_SOURCES = [
+    "nws_alerts", "mta_subway_alerts", "mta_elevator_outages", "floodnet_live", "notify_nyc",
+]  # fmt: skip
 
 # source -> (kind, layer, entity kind whose first mappable ref is the feature)
 ROUTES: dict[str, tuple[str, str, str | None]] = {
@@ -26,6 +28,7 @@ ROUTES: dict[str, tuple[str, str, str | None]] = {
     "mta_subway_alerts": ("alert", "subway_alerts", "subway_station"),
     "mta_elevator_outages": ("outage", "elevator_outages", "subway_station"),
     "floodnet_live": ("flood", "flood_sensors", "flood_sensor"),
+    "notify_nyc": ("notice", "city_alerts", None),  # ADR-015
 }
 
 
@@ -34,6 +37,9 @@ def _wanted(ev: dict, now_text: str, since_text: str) -> bool:
         # It backfills 48 h, so first_seen alone would list two-day-old floods as new on its
         # first run (review 2026-11-16, #6). Only floods that began inside the window count.
         return ev["starts_at"] > since_text
+    if ev["source"] == "notify_nyc":
+        # A cancellation isn't news on its own: the alert it cancels was already listed.
+        return loads(ev["props"], {}).get("msg_type") != "Cancel"
     if ev["source"] == "mta_subway_alerts":
         return is_unplanned(ev) and ev["starts_at"] <= now_text
     if ev["source"] == "mta_elevator_outages":
@@ -54,7 +60,14 @@ def _first_mappable(ev: dict, kind: str, lookup: Lookup) -> sqlite3.Row | None:
 def _item(ev: dict, now_text: str, lookup: Lookup, boroughs) -> dict[str, Any]:
     kind, layer, ref_kind = ROUTES[ev["source"]]
     feature, lat, lon, borough = None, ev["lat"], ev["lon"], ev["borough"]
-    if ref_kind is None:  # NWS: the alert is the feature; fly to its bbox centre
+    if ev["source"] == "notify_nyc":
+        # Its own polygon or nothing: never a borough outline for a street-level incident.
+        geom = wkt_to_geojson(ev["geometry_wkt"])
+        box = geometry_bbox(geom) if geom else None
+        if box is not None:
+            feature = ev["event_id"]
+            lon, lat = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
+    elif ref_kind is None:  # NWS: the alert is the feature; fly to its bbox centre
         feature = ev["event_id"]
         geom, _, codes = nws_geometry(ev, boroughs)
         box = geometry_bbox(geom) if geom else None

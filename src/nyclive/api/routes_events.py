@@ -19,6 +19,7 @@ LIST_SOURCES = {
     "nws_alerts": "nws_alerts",
     "subway_alerts": "mta_subway_alerts",
     "elevator_outages": "mta_elevator_outages",
+    "city_alerts": "notify_nyc",  # ADR-015 (served once the layer is in the catalog)
 }
 HORIZON = {"subway_alerts": ALERT_HORIZON}
 

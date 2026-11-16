@@ -1,4 +1,4 @@
-"""Streets & safety layers: road_speeds, cameras, collisions."""
+"""Streets & safety layers: road_speeds, cameras, collisions, city_alerts (Notify NYC)."""
 
 from __future__ import annotations
 
@@ -8,8 +8,10 @@ from nyclive.api.geo import point, wkt_to_geojson
 from nyclive.api.layers.common import (
     Ctx,
     LayerResult,
+    anchor,
     as_int,
     entities,
+    event_status,
     feature,
     iso,
     latest_by_entity,
@@ -143,5 +145,47 @@ def collisions(ctx: Ctx) -> LayerResult:
         feats,
         data_as_of=iso(end),
         window={"from": iso(start), "to": iso(end)},
+        unlocated=unlocated,
+    )
+
+
+# ----------------------------------------------------------------------------- city alerts
+CITY_ALERTS_SOURCE = "notify_nyc"
+
+
+def city_alerts(ctx: Ctx) -> LayerResult:
+    """Notify NYC alerts in effect (ADR-015). Local polygons draw; citywide alerts and alerts
+    that name their place only in text count as `unlocated` (they're in the list and CHANGES)."""
+    rows = ctx.conn.execute(
+        "SELECT * FROM events WHERE source = ? AND (ends_at IS NULL OR ends_at > ?)"
+        " ORDER BY severity DESC, starts_at DESC, event_id",
+        (CITY_ALERTS_SOURCE, ctx.now_text),
+    ).fetchall()
+    feats, unlocated = [], 0
+    for r in rows:
+        ev = dict(r)
+        geom = wkt_to_geojson(ev["geometry_wkt"])
+        if geom is None or geom["type"] not in ("Polygon", "MultiPolygon"):
+            unlocated += 1
+            continue
+        p = loads(ev["props"], {})
+        feats.append(
+            feature(
+                ev["event_id"],
+                ev["borough"],
+                geom,
+                event=ev["subtype"] or "City alert",
+                severity=int(ev["severity"] or 0),
+                status=event_status(ev["starts_at"], ev["ends_at"], ctx.now_text),
+                starts_at=iso(ev["starts_at"]),
+                ends_at=iso(ev["ends_at"]),
+                headline=ev["title"],
+                area=(p.get("area_desc") or "")[:120],
+                msg_type=p.get("msg_type") or "Alert",
+            )
+        )
+    return LayerResult(
+        feats,
+        data_as_of=iso(anchor(ctx.conn, CITY_ALERTS_SOURCE, ctx.now_text)),
         unlocated=unlocated,
     )
