@@ -61,6 +61,8 @@ export interface RowNote {
   text: string;
   /** warn = the yellow highlighter (something failed); muted = an honest caveat. */
   tone: 'warn' | 'muted';
+  /** Hover text with the longer explanation. */
+  title?: string;
 }
 
 export interface RowState {
@@ -75,6 +77,16 @@ export interface RowState {
 }
 
 const n = (x: number) => x.toLocaleString('en-US');
+
+/** Who publishes a layer's data, for the "publishes late" note: the city's portal or the source. */
+export function publisher(url: string | undefined): string {
+  try {
+    const host = url ? new URL(url).hostname : '';
+    return host === 'cityofnewyork.us' || host.endsWith('.cityofnewyork.us') ? 'CITY' : 'SOURCE';
+  } catch {
+    return 'SOURCE';
+  }
+}
 
 /** A layer's data counts as lagging past 3 refreshes, and never before an hour. */
 export function lagLimitMs(pollS: number | undefined): number {
@@ -114,7 +126,7 @@ const DOT_TITLES: Record<FreshState, string> = {
 export function rowState(
   v: RowInput,
   health: SourceState | 'unknown',
-  def: Pick<LayerDef, 'empty_text' | 'list'> & Partial<Pick<LayerDef, 'poll_s' | 'detail'>>,
+  def: Pick<LayerDef, 'empty_text' | 'list'> & Partial<Pick<LayerDef, 'poll_s' | 'detail' | 'lag_note' | 'attribution'>>,
   now: number,
 ): RowState {
   const hasData = v.rev > 0;
@@ -165,7 +177,21 @@ export function rowState(
   // Cameras are the exception: their as-of is the camera list's, the frames themselves are live.
   const liveFrames = def.detail?.type === 'entity' && def.detail.kind === 'camera';
   if (!liveFrames && ref > 0 && Number.isFinite(asOf) && ref - asOf > lagLimitMs(def.poll_s)) {
-    notes.push({ key: 'lag', tone: 'muted', text: `DATA FROM ${ago(ref - asOf)} AGO` });
+    const age = ago(ref - asOf);
+    if (health === 'ok') {
+      // The collector is on schedule, so the age is the publisher's: say whose it is, so it
+      // doesn't read as a broken collector (311 is published once a day, 1–2 days late).
+      const who = publisher(def.attribution?.url);
+      const why = def.lag_note ? `${def.lag_note}. ` : '';
+      notes.push({
+        key: 'lag',
+        tone: 'muted',
+        text: `${who === 'CITY' ? 'CITY PUBLISHES LATE' : 'PUBLISHED LATE'} · ${age} BEHIND`,
+        title: `${why}Our collector is checking on schedule and has everything published so far.`,
+      });
+    } else {
+      notes.push({ key: 'lag', tone: 'muted', text: `DATA FROM ${age} AGO` });
+    }
   }
   if (v.meta && v.meta.unlocated > 0) {
     // A listed layer: no number here. The server's count ignores the status filter, so "9 NOT ON

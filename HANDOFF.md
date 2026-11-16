@@ -272,6 +272,17 @@ An Opus reviewer checked the live app (desktop, phone in an iframe, dark theme) 
 - **Needs a `nyclive serve` restart to show:** the `layers.yaml` copy (Past floods, the numeric
   Citi Bike key, the alerts key title).
 
+### Late-publisher wording and the soak report (2026-11-16 afternoon)
+- **Row lag note:** when a feed's health is OK, a lagging layer now says who is late: 311 shows
+  `CITY PUBLISHES LATE · 38 H BEHIND` (city portal), FloodNet shows `PUBLISHED LATE · 7 D
+  BEHIND`. Hovering adds the layer's lag note plus "our collector is checking on schedule". If
+  health is STALE or FAILING it still says `DATA FROM … AGO`, so a collector problem never gets
+  blamed on the city.
+- **`scripts/soak_report.py`:** the per-source success check skips sources this collector never
+  attempted (trains and FloodNet live depth were added after it started) and prints them on a
+  "not in this soak" line. Before this, they would have kept the soak at FAIL forever. At
+  ~43 h, only the 48 h total is left.
+
 ## Collector: start / stop
 `uv run nyclive collect --keep-awake` starts it (it doesn't survive a reboot). To stop it: Task
 Manager → end the `python.exe` running `nyclive collect`, or in PowerShell:

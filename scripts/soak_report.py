@@ -127,8 +127,12 @@ def main() -> int:
     for r in runs:
         by_src[r["source"]].append(r)
     worst = []
+    not_in_soak = []  # registered, but this collector never attempted them (added after it started)
     for src in sorted((s for s in reg.sources.values() if s.adapter), key=lambda s: s.id):
         mine = by_src.get(src.id, [])
+        if not mine:
+            not_in_soak.append(src.id)
+            continue
         ok_runs = sum(1 for r in mine if r["ok"])
         # Expected runs count from this source's own first run (sources joined at different
         # times), over the time the collector was up.
@@ -147,6 +151,11 @@ def main() -> int:
             f"{sid} {ok}/{exp} ok ({rate:.0%}, {n} attempted)" for rate, sid, ok, n, exp in bad
         ),
     )
+    if not_in_soak:
+        # Not a failure of this soak, but never hidden: a source that should run and doesn't
+        # shows up here by name.
+        print(f"not in this soak (never attempted; added after the collector started): "
+              f"{', '.join(not_in_soak)}")  # fmt: skip
 
     # Storage.
     sizes: dict[str, int] = defaultdict(int)

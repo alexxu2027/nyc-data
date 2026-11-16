@@ -160,14 +160,26 @@ describe('rowState', () => {
     const now = Date.parse('2026-11-16T12:00:00Z');
     const meta = (asOf: string): Partial<RowInput> => ({ meta: { data_as_of: asOf, unlocated: 0 } as RowInput['meta'] });
     const old = rowState(view(meta('2026-11-10T12:00:00Z')), 'ok', { ...DEF, poll_s: 3600 }, now);
-    expect(old.notes.map((x) => x.text)).toContain('DATA FROM 6 D AGO');
+    expect(old.notes.map((x) => x.text)).toContain('PUBLISHED LATE · 6 D BEHIND');
     const fresh = rowState(view(meta('2026-11-16T11:30:00Z')), 'ok', { ...DEF, poll_s: 60 }, now);
     expect(fresh.notes.some((x) => x.key === 'lag')).toBe(false);
     const slow = rowState(view(meta('2026-11-16T09:00:00Z')), 'ok', { ...DEF, poll_s: 300 }, now);
-    expect(slow.notes.map((x) => x.text)).toContain('DATA FROM 3 H AGO');
+    expect(slow.notes.map((x) => x.text)).toContain('PUBLISHED LATE · 3 H BEHIND');
     // No clock (now = 0): measured against the last fetch.
     const noClock = rowState(view({ ...meta('2026-11-10T12:00:00Z'), fetchedAt: now }), 'ok', { ...DEF, poll_s: 3600 }, 0);
-    expect(noClock.notes.map((x) => x.text)).toContain('DATA FROM 6 D AGO');
+    expect(noClock.notes.map((x) => x.text)).toContain('PUBLISHED LATE · 6 D BEHIND');
+    // The city's portal is named, and the hover says the collector is fine.
+    const city = rowState(
+      view(meta('2026-11-15T06:00:00Z')),
+      'ok',
+      { ...DEF, poll_s: 21600, lag_note: '311 data arrives 1 to 2 days late', attribution: { text: '311', url: 'https://data.cityofnewyork.us/d/erm2-nwe9' } },
+      now,
+    ).notes.find((x) => x.key === 'lag');
+    expect(city?.text).toBe('CITY PUBLISHES LATE · 30 H BEHIND');
+    expect(city?.title).toMatch(/^311 data arrives 1 to 2 days late\. Our collector is checking on schedule/);
+    // A stale feed is on us: no "publishes late".
+    const stale = rowState(view(meta('2026-11-10T12:00:00Z')), 'stale', { ...DEF, poll_s: 3600 }, now);
+    expect(stale.notes.map((x) => x.text)).toEqual(['FEED STALE: SEE HEALTH', 'DATA FROM 6 D AGO']);
   });
 
   it('a feed with no data yet shows one plain note and no count (UX review B8)', () => {

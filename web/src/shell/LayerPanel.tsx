@@ -236,7 +236,7 @@ function Note({ note }: { note: RowNote }) {
     );
   }
   return (
-    <Line muted>
+    <Line muted title={note.title}>
       <span className={note.key === 'loading' ? 'sh-dots' : undefined}>{note.text}</span>
     </Line>
   );
