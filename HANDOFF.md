@@ -2,11 +2,16 @@
 
 _Last updated: 2026-11-16_
 
-> **NEXT SESSION:** Phase 2 is done, reviewed and pushed (2026-11-16). Next:
-> 1. Close Phase 1 when `scripts/soak_report.py` says `SOAK: PASS` (earliest Nov 16, 8:50 PM ET).
-> 2. Then the `floodnet_live` adapter (FloodNet OK'd polling).
-> 3. Then Phase 3, starting with the ADR-009 hosting decision.
-> Don't restart the collector before the soak passes. Use `uv run --no-sync`.
+> **NEXT SESSION:** Phase 2.5 (liveness) is built and merged on main (2026-11-16); it is NOT live
+> yet. Next, in order:
+> 1. When `scripts/soak_report.py` says `SOAK: PASS` (earliest Nov 16 ~8:50 PM ET), close Phase 1.
+> 2. Before restarting the collector, fix the trains load in `collect/pipeline.py`: `events_for`
+>    loads ~60k trip rows (~1 s per 30 s run); load only open events for complete feeds.
+> 3. Restart the collector. Watch the first `floodnet_live` run (~2.3 min, 18 requests) and the
+>    trains; after 24 h, measure the trains archive (budget ~6 MB/day).
+> 4. Then the Phase 2.5 browser acceptance on live data, and an Opus review (persistence + new
+>    external feeds) if usage allows.
+> Use `uv run --no-sync` while the soak runs.
 
 This file is the session-to-session log: where the project stands, what to do next, and gotchas
 learned the hard way. Read it first, then `docs/ROADMAP.md`.
@@ -146,6 +151,27 @@ see "Collector: start / stop" below.)
 - Run it: `cd web && npm run build`, then `uv run --no-sync nyclive serve`, then open
   http://127.0.0.1:8000/. Dev: `nyclive serve` + `cd web && npm run dev` (port 5173).
 - Main checkout: use `uv run --no-sync` until the soak ends.
+
+## Phase 2.5 liveness (2026-11-16, /orchestrate Tier 2, no Fable)
+- Plan: `.orchestrate/p25/plan.md` (local, gitignored), with conductor notes after each wave.
+- Units on main:
+  - U0 freeze (Sonnet): catalog, types and stubs, ADR-013.
+  - U1 FloodNet live (Sonnet): joins 433/435 active stations by location; batches of 25; the
+    drawer has a 48 h depth chart.
+  - U2 trains backend (Opus): stdlib GTFS-rt decoder, `mta_trains` adapter,
+    `config/subway_static.json`, API segments; 244 trains live in the test run; ~6 MB/day.
+  - U3 radar and animated trains (Opus).
+  - U4 `/api/changes` feed, ticker, CHANGES panel and change pulse (Opus).
+- Checks: 378 pytest, 227 vitest, ruff, typecheck, lint, build all pass. On the main server: the
+  feed lists 30 real items, the radar shows; trains and flood sensors say "FEED NOT COLLECTED YET"
+  until the collector restarts.
+- Known gaps:
+  - The change ring is covered only by unit tests.
+  - Feed "seen" state isn't kept across reloads.
+  - `/api/changes` ETag changes every 30 s (the body has `now`), with no re-render.
+  - Radar tiles stop at zoom 7.
+  - FloodNet depth lag is up to ~45 min.
+- No independent review yet (usage).
 
 ## Collector: start / stop
 `uv run nyclive collect --keep-awake` starts it (it doesn't survive a reboot). To stop it: Task
