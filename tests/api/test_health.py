@@ -20,8 +20,9 @@ def test_all_ok_when_fresh(client):
     h = client.get("/api/health").json()
     assert h["now"] == "2026-11-15T03:30:00Z"
     assert h["collector"]["state"] == "running"
-    assert len(h["sources"]) == len(COLLECTED) == 14
-    assert h["summary"] == {"ok": 14, "stale": 0, "degraded": 0, "never": 0}
+    n = len(COLLECTED)
+    assert len(h["sources"]) == n
+    assert h["summary"] == {"ok": n, "stale": 0, "degraded": 0, "never": 0}
     src = {s["id"]: s for s in h["sources"]}
     cb = src["citibike_station_status"]
     assert cb["age_s"] == 120 and cb["runs_24h"] == 1 and cb["ok_24h"] == 1
@@ -46,7 +47,7 @@ def test_stale_never_degraded(tmp_path):
     assert st["nyc_311"] == "ok"
     assert st["dot_cameras"] == "degraded"
     assert st["openmeteo_current"] == "never"
-    assert h["summary"]["never"] == 11 and h["summary"]["degraded"] == 1
+    assert h["summary"]["never"] == len(COLLECTED) - 3 and h["summary"]["degraded"] == 1
     assert h["collector"]["state"] == "stalled"  # last attempt is 12 minutes old
     assert health(settings, NOW)["collector"]["state"] == "running"
 
@@ -68,4 +69,4 @@ def test_unknown_collector_and_missing_db(tmp_path):
     conn.commit()
     conn.close()
     h = TestClient(app).get("/api/health").json()
-    assert h["collector"]["state"] == "unknown" and h["summary"]["never"] == 14
+    assert h["collector"]["state"] == "unknown" and h["summary"]["never"] == len(COLLECTED)
