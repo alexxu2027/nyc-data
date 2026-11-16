@@ -1,0 +1,26 @@
+{
+  "source_id": "notify_nyc",
+  "captured_at": "2026-11-16T21:30:00+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "rss",
+      "url": "https://feeds.everbridge.net/feeds/453003085617722/rss/rss.xml",
+      "file": "rss.bin",
+      "fetched_at": "2026-11-16T21:30:00+00:00"
+    },
+    {
+      "name": "cap-900020",
+      "url": "https://feeds.everbridge.net/feeds/453003085617722/cap/900020.xml",
+      "file": "cap-900020.bin",
+      "fetched_at": "2026-11-16T21:30:00+00:00"
+    },
+    {
+      "name": "cap-900021",
+      "url": "https://feeds.everbridge.net/feeds/453003085617722/cap/900021.xml",
+      "file": "cap-900021.bin",
+      "fetched_at": "2026-11-16T21:30:00+00:00"
+    }
+  ],
+  "note": "synthetic: an Update (references kept) and a Cancel (ends when sent)"
+}

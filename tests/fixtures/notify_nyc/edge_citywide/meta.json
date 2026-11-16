@@ -1,0 +1,20 @@
+{
+  "source_id": "notify_nyc",
+  "captured_at": "2026-07-15T01:30:00+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "rss",
+      "url": "https://feeds.everbridge.net/feeds/453003085617722/rss/rss.xml",
+      "file": "rss.bin",
+      "fetched_at": "2026-07-15T01:30:00+00:00"
+    },
+    {
+      "name": "cap-2625738456985519",
+      "url": "https://feeds.everbridge.net/feeds/453003085617722/cap/6a56e28fd759291db1ba68bb.xml",
+      "file": "cap-2625738456985519.bin",
+      "fetched_at": "2026-07-15T01:30:00+00:00"
+    }
+  ],
+  "note": "CAP is real (Wayback 20260716151922, citywide air-quality alert, 54-point polygon); RSS wrapper synthetic (English + Spanish twin)"
+}

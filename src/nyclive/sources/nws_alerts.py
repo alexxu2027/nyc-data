@@ -13,10 +13,10 @@ record can't be built with ends_at >= starts_at and is skipped.
 
 from __future__ import annotations
 
-import json
 from typing import Any
 
 from nyclive.model import PROPS_MAX_BYTES, Event, borough_code
+from nyclive.sources._text import trim_text_fields
 from nyclive.sources.base import Batch, FetchContext, RawPart, RawPayload
 from nyclive.timeutil import parse_iso_utc
 
@@ -29,7 +29,6 @@ NYC_SAME = frozenset({"036005", "036047", "036061", "036081", "036085"})
 SEVERITY = {"Extreme": 3, "Severe": 3, "Moderate": 2, "Minor": 1}
 CATEGORY = "weather_alert"
 _TEXT_FIELDS = ("description", "instruction")
-_ELLIPSIS = "…"
 
 
 def fetch(ctx: FetchContext) -> RawPayload:
@@ -102,19 +101,7 @@ def _props(p: dict, nyc: list[str]) -> dict[str, Any]:
     }
     for k in _TEXT_FIELDS:
         props[k] = p.get(k) if isinstance(p.get(k), str) else None
-    # Trim the longer text field until the props fit; deterministic for a given input.
-    while (over := _size(props) - PROPS_MAX_BYTES) > 0:
-        k = max(_TEXT_FIELDS, key=lambda f: len(props[f] or ""))
-        text = props[k] or ""
-        if not text:
-            break  # nothing left to trim; record_problems will report the oversize props
-        keep = max(0, len(text.rstrip(_ELLIPSIS)) - over - len(_ELLIPSIS))
-        props[k] = text[:keep].rstrip() + _ELLIPSIS if keep else None
-    return props
-
-
-def _size(props: dict) -> int:
-    return len(json.dumps(props, ensure_ascii=False, allow_nan=False).encode("utf-8"))
+    return trim_text_fields(props, _TEXT_FIELDS, PROPS_MAX_BYTES)
 
 
 def _ring(coords: list) -> str:

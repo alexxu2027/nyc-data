@@ -1,0 +1,20 @@
+{
+  "source_id": "notify_nyc",
+  "captured_at": "2026-11-16T21:30:00+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "rss",
+      "url": "https://feeds.everbridge.net/feeds/453003085617722/rss/rss.xml",
+      "file": "rss.bin",
+      "fetched_at": "2026-11-16T21:30:00+00:00"
+    },
+    {
+      "name": "cap-900001",
+      "url": "https://feeds.everbridge.net/feeds/453003085617722/cap/900001.xml",
+      "file": "cap-900001.bin",
+      "fetched_at": "2026-11-16T21:30:00+00:00"
+    }
+  ],
+  "note": "synthetic: a local polygon in the Bronx (must draw), plus a Spanish twin to ignore"
+}

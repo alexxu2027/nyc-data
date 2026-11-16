@@ -302,6 +302,17 @@ An Opus reviewer checked the live app (desktop, phone in an iframe, dark theme) 
   has a polygon. Stop it early:
   `Get-CimInstance Win32_Process | ? CommandLine -like '*watch_notify*' | % { Stop-Process -Id $_.ProcessId }`.
   `edge_empty` is already saved.
+- **Adapter built (not live):** `sources/notify_nyc.py`.
+  - RSS → English items → CAP files. CAP polygon or circle becomes WKT; citywide alerts (all 5
+    counties, or a polygon covering ≥ 60% of the city bbox) get no geometry; no geocoding.
+    Cancel ends when sent.
+  - Fixtures: `edge_archived_rss` and `edge_citywide` (real, from the Wayback Machine), plus
+    synthetic cases from `tests/fixtures/make_edges_notify_nyc.py`.
+  - Shared `sources/_text.py` trimming (NWS uses it too), `timeutil.parse_rfc2822_utc`, and the
+    `city_alert` category.
+  - The registry has **no `adapter:` yet**, on purpose: the API, catalog and frontend come
+    next. It goes live with the catalog entry once the watcher's `real` capture confirms the
+    geometry rule.
 
 ### Trains hardening before go-live (2026-11-16 evening, ADR-014)
 - **#8:** a quiet line feed (a weekend shutdown) is valid: that line has no trips, and the other

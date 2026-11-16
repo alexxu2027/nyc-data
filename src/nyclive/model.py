@@ -75,6 +75,7 @@ CATEGORIES = frozenset(
         "collision",
         "flood",
         "train",
+        "city_alert",  # Notify NYC (ADR-015)
     }
 )
 

@@ -1,0 +1,14 @@
+{
+  "source_id": "notify_nyc",
+  "captured_at": "2026-02-12T01:22:00+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "rss",
+      "url": "https://feeds.everbridge.net/feeds/453003085617722/rss/rss.xml",
+      "file": "rss.bin",
+      "fetched_at": "2026-02-12T01:22:00+00:00"
+    }
+  ],
+  "note": "real: Wayback 20260212012200 of the RSS (13 languages, one traffic alert); CAP files not archived, so RSS-only"
+}

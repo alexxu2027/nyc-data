@@ -39,6 +39,16 @@ def parse_iso_utc(s: str) -> datetime:
     return dt.astimezone(UTC)
 
 
+def parse_rfc2822_utc(s: str) -> datetime:
+    """Parse an RSS `pubDate` ("Thu, 12 Feb 2026 01:10:35 GMT"); it must carry a zone."""
+    from email.utils import parsedate_to_datetime
+
+    dt = parsedate_to_datetime(s.strip())
+    if dt.tzinfo is None:
+        raise ValueError(f"{s!r} has no zone")
+    return dt.astimezone(UTC)
+
+
 def parse_naive_utc(s: str, fmt: str | None = None) -> datetime:
     """Parse a string that is UTC but carries no offset (NOAA with `time_zone=gmt` sends
     "2026-11-15 01:06"). Use only when the source documents the time as UTC."""
