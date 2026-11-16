@@ -41,12 +41,15 @@ Phases 1–2 that's acceptable, and the `runs` table shows the gaps. To reduce t
 `nyclive collect --keep-awake`, which blocks sleep while it runs.
 
 ## Web app (Phase 2)
+Needs Node 24 / npm 11 and the API extra (`uv sync --extra api`).
 ```bash
-cd web
-npm create vite@latest . -- --template react-ts   # one-time scaffold
-npm install maplibre-gl zustand
-npm run dev                                       # proxies /api to http://localhost:8000
+cd web && npm install
+npm run build            # → web/dist
+cd .. && uv run nyclive serve        # API + app at http://127.0.0.1:8000/
 ```
+Dev loop: keep `uv run nyclive serve` running and, in `web/`, run `npm run dev` (port 5173,
+proxies `/api` to :8000). Checks in `web/`: `npm run typecheck`, `npm run lint`, `npm run test`.
+The UI kit gallery is at `/?gallery=1`.
 
 ## RTX 3050 PC (later, always-on box)
 1. Install git, uv, Node, and the current NVIDIA driver.

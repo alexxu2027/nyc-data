@@ -79,9 +79,13 @@ WKT `LINESTRING(lon lat, …)`. Everything source-specific that doesn't fit a co
 | `Queens`, `QUEENS`, `Q`, SAME `036081` | `QN` |
 | `Bronx`, `BRONX`, `Bx`, SAME `036005` | `BX` |
 | `Staten Island`, `STATEN ISLAND`, `Richmond`, SAME `036085` | `SI` |
-Adapters set borough only through `model.borough_code()`. If none is given, the pipeline (not
-the adapter) derives it from lat/lon with a point-in-polygon against the NYC borough
-boundaries (cached GeoJSON in `config/`).
+Adapters set borough only through `model.borough_code()`, and the pipeline stores what they
+give (often null). The **API** fills the gap when it serves a feature: stored column first, else a
+point-in-polygon against `config/boroughs.geojson` (built by `scripts/build_boroughs.py`; lines and
+polygons use the entity column), else 8 retries offset by 0.003° (about 300 m, for waterfront
+points just outside the simplified polygons), else **`XX`**: outside the five boroughs (e.g. the
+~106 Citi Bike stations in New Jersey). A row with no location and no column stays `null`, and the
+borough filter always lets `null` through.
 
 ## SQLite `state.db` tables
 Implemented in `storage/state.py` (schema v2, `PRAGMA user_version`; v1 migrates in place). Timestamps are ISO 8601 UTC

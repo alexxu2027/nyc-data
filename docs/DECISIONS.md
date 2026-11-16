@@ -121,3 +121,30 @@ down. Feeds like MTA alerts and elevator outages drop items when they end instea
    zstd.
 **Consequences:** keys are unique within a date partition after compaction, not across days.
 Keyframes cost about one full snapshot per source per day, which is small next to the change rows.
+
+## ADR-012: Layer catalog and style contract (2026-11-15)
+**Context:** Phase 2 adds 14 map layers. The API, the layer panel, the legends, the filters and
+the map renderer all need the same facts about each layer, and three builders worked on them in
+parallel. Spreading those facts across Python and TypeScript would let them drift.
+**Decision:**
+1. `config/layers.yaml` (schema `version: 1`) is the single source of truth for what the UI shows:
+   basemaps, initial view, boroughs, groups, and per layer `id`, `label`, `short`, `group`,
+   `kind`, `sources`, `default`, `poll_s`, `z`, `borough_filter`, `list`, `detail`,
+   `attribution`, `lag_note`, `empty_text`, `filters`, `style`, `legend`.
+2. The API validates it at startup (`api/catalog.py`, problems name the layer and key) and serves
+   it at `/api/layers` with defaults filled in. `classify` (server-side bucketing rules) is
+   stripped from the response.
+3. Styles are declarative, not MapLibre JSON: a value is `{value}`, `{prop, scale:
+   interpolate|step|match, stops, base?, default?}` or `{zoom: [[z, w], …]}`, and colours are
+   `#rrggbb` or the theme tokens `ink | paper | muted`. The web app turns them into MapLibre
+   expressions (`web/src/map/styleToPaint.ts`) and resolves tokens per theme, so a theme swap
+   needs no catalog change. Ramps are colour-blind safe (Okabe-Ito, viridis, ColorBrewer RdYlBu).
+4. Filters are `enum | select | toggle`, applied `client` (on feature properties) or `server`
+   (sent as `f.<key>=`, validated against the declared options). The URL carries them (ADR-005
+   URL state).
+5. Every layer must have an attribution and a legend; the catalog loader rejects one without.
+6. The TypeScript shape is frozen in `web/src/types.ts`. Adding a key means adding it to the
+   loader, `types.ts` and this ADR together; never rename or retype a key within `version: 1`.
+**Consequences:** a new layer is mostly YAML plus one API builder (`api/layers/`) and one map
+renderer. Map styling is limited to what the declarative scales express; anything richer (pulses,
+clusters, halos, icons) lives in the per-layer renderer, keyed by layer id.

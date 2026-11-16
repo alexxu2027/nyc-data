@@ -1,9 +1,10 @@
 # HANDOFF: start here
 
-_Last updated: 2026-11-14_
+_Last updated: 2026-11-16_
 
-> **NEXT SESSION:** Phase 2 wave 2 is paused mid-build. Go to "How to resume Phase 2 in a NEW
-> session" below. The collector soak is running; don't restart it, and use `uv run --no-sync`.
+> **NEXT SESSION:** Phase 2 is built and browser-verified (2026-11-16). Still to do: commit the
+> docs, push, and clean up the wave-2 worktrees and branches (see "Phase 2 wrap-up" below). The
+> collector soak is still running; don't restart it, and use `uv run --no-sync`.
 
 This file is the session-to-session log: where the project stands, what to do next, and gotchas
 learned the hard way. Read it first, then `docs/ROADMAP.md`.
@@ -122,34 +123,31 @@ see "Collector: start / stop" below.)
   - U3 core: 66 tests.
 - ✅ Gate W1: `nyclive serve` + the built app show live counts for all 14 layers (borough=BK +
   Citi Bike filter → 180/2,519 stations, 206/974 cameras; health 14 ok).
-- ⏸ **Wave 2 paused at the usage limit (2026-11-15, ~4 PM ET).** Partial work is committed
-  as WIP and pushed. None of it has been checked yet.
+- ✅ **Wave 2 merged (2026-11-16):** U4 shell (Sonnet), U5 map (Opus), U6 drawer (Sonnet), each
+  resumed from its WIP branch. U4 and U6 needed no changes after review. U5 finished the MapLibre
+  controller (worker URL fix for MapLibre 6 under Vite, `window.__nlMap` in dev only).
+  - Checks on main: typecheck, lint, 165 vitest, build (chunk > 500 kB warning only), 302 pytest,
+    ruff all pass.
+  - The conductor's 10-item browser check list (plan "Order") passes on `nyclive serve` + build:
+    - first paint 0.52 s; MN filter changes every layer and drops NJ;
+    - the URL round-trips byte-identical; camera frames come every 3.0 s and stop on close;
+    - phone sheets have three detents with no horizontal scroll;
+    - the NWS empty state, the tide surge, and health 14/14 all show.
+  - Docs done (uncommitted at handoff): ARCHITECTURE §6 and §7, the DATA_MODEL borough note,
+    ADR-012 (layer catalog), DEV_SETUP web section, and the ROADMAP Phase 2 acceptance boxes ticked.
+  - **No independent review.** The Fable review hit the usage limit, and Alex then dropped Fable
+    from /orchestrate. Untested by hand: reduced-motion pulse, keyboard-only traversal, and the
+    flood event / 311 / collision / NWS detail views in a browser. An Opus review of
+    `git diff 55cc569..HEAD -- web/src/shell web/src/map web/src/drawer` is optional.
 
-  | Unit | Branch (local worktree branch) | GitHub | Lines | Stopped at |
-  |---|---|---|---|---|
-  | U4 shell + panels | `worktree-agent-a6e09673dd4acf504` | `wip/p2-u4-shell` | 2,204 | about to check in the browser |
-  | U5 map + layers | `worktree-agent-ae614e45a33ccd506` | `wip/p2-u5-map` | 1,746 | writing the MapLibre controller |
-  | U6 drawer | `worktree-agent-ad826f01a90f6065b` | `wip/p2-u6-drawer` | 2,323 | writing the event views |
-
-### How to resume Phase 2 in a NEW session (start here)
-1. Read this file, then `.orchestrate/p2/context.md` and `.orchestrate/p2/plan.md` (local,
-   gitignored; on another machine they are not in git, so re-plan from ROADMAP Phase 2).
-2. Use `/orchestrate` to finish wave 2. Give each builder a brief that says: "continue unit Ux
-   from branch `<branch>`: merge it into your worktree first (`git merge <branch>`), review what
-   is there, then finish per plan Ux". Give each builder only its own plan sections (Ux plus the
-   § it consumes), not the whole plan.
-   - Models: U5 map on Opus (design-heavy); U4 and U6 on Sonnet unless their WIP looks rough.
-   - Run at most 2 builders at a time.
-3. When a unit merges, delete its local worktree and branch, and the `wip/p2-*` branch on GitHub.
-4. Then U7 (conductor): the browser check list in plan "Order", the docs (ARCHITECTURE §6–7,
-   DATA_MODEL borough note, ADR-012 for the layer catalog), the ROADMAP ticks, and one Fable review.
-5. Main checkout: always use `uv run --no-sync` until the soak ends (see below).
+### Phase 2 wrap-up (needs Alex's OK)
+1. Commit the docs + HANDOFF, and push main.
+2. Remove the wave-2 worktrees under `.claude/worktrees/` (`git worktree remove -f -f`; they are
+   locked) and their local branches (`worktree-agent-*`).
+3. Delete the remote branches `wip/p2-u4-shell`, `wip/p2-u5-map`, `wip/p2-u6-drawer`.
 - Run it: `cd web && npm run build`, then `uv run --no-sync nyclive serve`, then open
-  http://127.0.0.1:8000/. For dev: `nyclive serve` + `cd web && npm run dev` (port 5173).
-- **During the soak, use `uv run --no-sync` in the main checkout.** A plain `uv run` after a
-  pyproject change tries to reinstall `nyclive.exe` while the collector holds it (os error 32).
-- Design brief: transcript-ui chrome, but a rich, colourful data map (colour-blind-safe ramps,
-  clustering, pulses, halos).
+  http://127.0.0.1:8000/. Dev: `nyclive serve` + `cd web && npm run dev` (port 5173).
+- Main checkout: use `uv run --no-sync` until the soak ends.
 
 ## Collector: start / stop
 `uv run nyclive collect --keep-awake` starts it (it doesn't survive a reboot). To stop it: Task

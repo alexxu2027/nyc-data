@@ -113,13 +113,20 @@ Tasks:
 7. Health panel and About/attribution panel.
 8. Static borough/NTA boundaries for filtering and the neighborhood outline.
 
-**Acceptance criteria**
-- [ ] ≥ 10 layers toggleable. Each has a legend and attribution; the borough filter counts as a
-  filter, and layers with many features have at least one more.
-- [ ] Borough filter applies to all layers. URL reproduces the view exactly.
-- [ ] First useful render < 3 s locally. Layer refresh polling doesn't flash or jank.
-- [ ] Clicking a camera shows its live frame. Bulk thumbnails are never loaded.
-- [ ] Works at phone width (layer panel collapses to a sheet).
+**Acceptance criteria** (verified 2026-11-15 in the browser on `nyclive serve` + built app, live data)
+- [x] ≥ 10 layers toggleable. Each has a legend and attribution; the borough filter counts as a
+  filter, and layers with many features have at least one more. *(14 layers; extra filters on
+  Citi Bike, cameras, 311, collisions, flood sensors, subway stations and more.)*
+- [x] Borough filter applies to all layers. URL reproduces the view exactly. *(MN: bikes
+  2,519 → 690, NJ gone; a URL with layers, borough, filter, camera, bearing, pitch and theme
+  reloads byte-identical.)*
+- [x] First useful render < 3 s locally. Layer refresh polling doesn't flash or jank. *(first
+  paint 0.52 s, first layers 0.6 s; ETag polling, `setData` only on change.)*
+- [x] Clicking a camera shows its live frame. Bulk thumbnails are never loaded. *(frames 3.0 s
+  apart for the selected camera only; none after closing.)*
+- [x] Works at phone width (layer panel collapses to a sheet). *(375 × 812: two sheets with three
+  detents, no horizontal scroll.)*
+- Task 8: borough boundaries shipped; NTA outlines deferred to Phase 5 (plan default).
 
 ---
 

@@ -173,44 +173,81 @@ Total ≈ 100 MB/day kept plus a rolling ~1.5 GB of frames. Disk is not the cons
 of GB free); the Phase 1 soak replaces these estimates with measured numbers.
 
 ## 6. API (FastAPI, read-only)
+`nyclive serve` runs it (`src/nyclive/api/`). It opens `state.db` read-only (`mode=ro` URI) and
+never writes; history comes from the Parquet archive through `storage/query.py`. It also serves
+`web/dist` with an `index.html` fallback. OpenAPI docs: `/api/docs`.
+
 | Method & path | Returns |
 |---|---|
-| `GET /api/health` | Per-source status, last success, lag seconds, consecutive failures |
-| `GET /api/layers` | Layer catalog from `config/layers.yaml`: id, group, kind, legend, filters, default visibility, attribution |
-| `GET /api/layers/{layer}?bbox=&borough=&f.<filter>=` | GeoJSON FeatureCollection of **current** state |
-| `GET /api/layers/{layer}/at?t=ISO8601&bbox=…` | GeoJSON state **as of t** (replay, Phase 3) |
-| `GET /api/entities/{source}/{id}` | Entity detail, latest observations, recent events nearby |
-| `GET /api/entities/{source}/{id}/series?metric=&from=&to=&bucket=5m` | Time series for charts |
-| `GET /api/events?layers=&from=&to=&bbox=&borough=` | Paged events list (alerts feed) |
-| `GET /api/timeline?from=&to=&bucket=1h` | Activity counts per bucket for the slider sparkline |
+| `GET /api/health` | Collector state plus per-source status, last success, age/lag, failures, 24 h run counts |
+| `GET /api/layers` | Layer catalog from `config/layers.yaml` (ADR-012), defaults filled: groups, legends, filters, styles, attribution, basemaps, view, boroughs |
+| `GET /api/layers/{id}?borough=&bbox=&f.<key>=&limit=` | GeoJSON FeatureCollection of **current** state plus `meta` (count, total, truncated, unlocated, data_as_of, updated_at, window, note) |
+| `GET /api/entities/{kind}/{id}` | Entity detail: latest values, `derived` per kind, linked events, series descriptors |
+| `GET /api/entities/{kind}/{id}/series?metrics=&hours=&ahead=` | Time series for charts (≤ 2,000 points per metric) |
+| `GET /api/events?layer=&status=&borough=&limit=&offset=` | Paged events of a `list: true` layer, active first |
+| `GET /api/events/{source}/{event_id}` | One event in full, with resolved entities |
+| `GET /api/layers/{layer}/at?t=…` | *Phase 3:* state **as of t** (replay) |
+| `GET /api/timeline?from=&to=&bucket=1h` | *Phase 3:* activity counts per bucket |
 
-- Live updates use frontend polling every 30–60 s with `ETag`/`If-None-Match` (ADR-006).
-  Server-sent events (SSE) may come later.
-- "State as of t": for entities, take the last observation ≤ t per (entity, metric), via DuckDB
-  `QUALIFY ROW_NUMBER()` over partitions date(t) and date(t)+1 (the daily keyframe makes that
-  enough). For events, take the newest version ≤ t per event with
+- Entities are keyed by `kind` (the `entities` primary key), not by source. Ids may contain `:`
+  and `/` (`{id:path}`).
+- **Caching:** `/api/layers`, `/api/layers/{id}` and `/api/health` send a weak ETag (sha1 of the
+  body) with `Cache-Control: no-cache`; a matching `If-None-Match` gets 304. Bodies carry no
+  generation time, so the ETag changes only when the data does. Layer bodies are cached per
+  `(layer, params)` until a source's `(last_success, rows_last_run)` changes or the entry ages
+  past `max(30, min(poll_s, 300))` s. Bodies over 1 KB are gzipped.
+- Event layers (311, collisions, flood events) use a window anchored at the source's newest
+  record (`data_as_of`), not the wall clock, and are labelled "as of". 311 is capped at the newest
+  20,000 rows and says so in `meta.truncated`.
+- Borough is resolved in the API (stored column, else point-in-polygon, else `XX`); see
+  DATA_MODEL "Borough normalization".
+- Errors are `{"error": {code, message}}` with 400/404/503/500; a missing `state.db` is 503.
+- Live updates use frontend polling at `max(cadence, 30 s)` with `If-None-Match` (ADR-006).
+- "State as of t" (Phase 3): for entities, take the last observation ≤ t per (entity, metric), via
+  DuckDB `QUALIFY ROW_NUMBER()` over partitions date(t) and date(t)+1 (the daily keyframe makes
+  that enough). For events, take the newest version ≤ t per event with
   `starts_at ≤ t < coalesce(ends_at, ∞)`. Gaps come from the `runs` table.
-- Camera images: the frontend loads `imageUrl` from DOT directly and only when a camera is
-  selected. It never bulk-loads thumbnails.
+- Camera images: the frontend loads `image_url` from DOT directly and only for the selected camera.
+  It never bulk-loads thumbnails.
 
 ## 7. Web app
-- **Stack:** Vite, React and TypeScript; MapLibre GL JS with an OpenFreeMap basemap (no key);
-  Zustand for state; a small chart library (uPlot or Recharts) for series. deck.gl comes in only if
-  needed for heavy layers like trains or heatmaps (ADR-005).
+- **Stack:** Vite, React and TypeScript; MapLibre GL JS with OpenFreeMap basemaps (positron light,
+  dark; no key); Zustand for state. Charts are hand-drawn SVG (no chart library). deck.gl comes in
+  only if needed for heavy layers like trains or heatmaps (ADR-005). Built to `web/dist`, which
+  `nyclive serve` hosts; in dev, `npm run dev` proxies `/api` to port 8000.
+- **Code layout** (`web/src/`; units talk only through the store):
+  `core/` store, URL, API client, polling, filters · `ui/` transcript UI kit (`?gallery=1`) ·
+  `shell/` layout and panels · `map/` MapLibre controller and per-layer renderers ·
+  `drawer/` detail views and charts · `types.ts` frozen catalog/API types (ADR-012).
 - **Layout:**
-  - **Left:** layer panel grouped as *Transit*, *Water & Weather*, *Cameras*, *City services*,
-    *Safety*. Each row has a toggle, a freshness dot, a count, and an expandable filter section.
-  - **Top:** search or geocode, borough chips, a mode presets menu, and the About and Health links.
-  - **Right:** detail drawer for the selected item. A camera shows its frame (refreshing every 3 s)
-    and counts chart. A station shows its bikes chart. A sensor shows its depth profile.
-  - **Bottom:** time bar with a **LIVE** pill. In Phase 3 it becomes a scrubber with an activity
-    sparkline, play/pause, and 60×/600× speeds.
-- **URL state:** `?layers=citibike,floodnet&borough=BK&f.citibike=empty&t=live&z=12&c=-73.99,40.68`.
-  Every view is shareable.
-- **Rendering:** data-driven styles per layer. Points use circles with a color ramp. Road speeds
-  are lines colored by speed relative to the speed limit. Alerts get an icon and a pulse.
-- **Design:** dark basemap by default with a light theme toggle, color-blind-safe ramps, and a
-  legend plus attribution for every layer.
+  - **Top:** title, borough chips (ALL MN BK QN BX SI), `[HEALTH]`, `[ABOUT]`, theme toggle.
+  - **Left:** layer panel grouped as *Transit*, *Streets & safety*, *Water & weather*,
+    *City services*, *Reference* (from the catalog). Each row: toggle, freshness dot, fixed-width
+    count, `[+]` for legend, filters, AS OF, lag note, attribution and `[LIST n]`. Rows state
+    loading, error, empty, truncated and unlocated counts honestly.
+  - **Right:** detail drawer. A camera shows its live frame (one `<img>`, refreshed every 3 s
+    only while open and visible); a bike station, road segment, weather point or the tide gauge
+    shows a 24 h chart (tide adds +12 h of prediction and the surge); a flood event shows its
+    depth profile; subway stations and alerts show full text. List mode pages a list layer's events.
+  - **Bottom:** status line with a **LIVE** pill, ET clock, visible layer and feature totals and
+    the next refresh. In Phase 3 it becomes the time bar.
+  - **Phone (≤ 680 px):** full-bleed map; the layer panel and the drawer become bottom sheets with
+    peek / half / full detents; borough chips scroll sideways.
+- **URL state** (written with `replaceState`, debounced; canonical order):
+  `?layers=citibike,road_speeds&borough=BK,QN&f.citibike.state=empty,low&c=-73.98570,40.74840&z=12.35&b=15.0&p=30.0&sel=cameras:<id>&theme=dark&panel=health&t=live`.
+  `layers`, `c`, `z` are always written; the rest only when not default. `b`/`p` are bearing and
+  pitch. `sel` and `list` are mutually exclusive. `t` is reserved for Phase 3 replay.
+- **Polling:** each visible layer polls at `max(poll_s, 30 s)` with its stored ETag; a 304 only
+  bumps freshness, a 200 replaces the features. The map calls `setData` only when a layer's
+  filtered features change identity, so ticks don't flash.
+- **Rendering:** chrome follows the transcript look (monospace, ink on paper, 1px rules, stepped
+  motion), but the map is a rich data map: data-driven circle colour and size (bike availability),
+  speed-banded road lines with zoom widths, clustered 311 points with counts, NWS polygon fills,
+  stepped pulses on flooding and unplanned alerts (still under reduced motion), SDF glyph icons,
+  hover highlight and a selected-feature halo, a borough mask. Ramps are colour-blind safe;
+  legends use colour swatches.
+- **Design:** paper (light) theme by default with a dark toggle; a theme swap reloads the basemap
+  and reinstalls every data layer and the selection. Every layer has a legend and attribution.
 
 ## 8. Computer vision (Phase 4)
 - **Input:** DOT JPEG snapshots, 352×240, a new frame roughly every 2 s. They're too sparse for
