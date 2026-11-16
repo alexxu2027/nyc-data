@@ -21,7 +21,7 @@ def test_changes_stub_and_etag(client):
     r = client.get("/api/changes")
     assert r.status_code == 200
     body = r.json()
-    assert body["items"] == [] and {"now", "since"} <= set(body)
+    assert isinstance(body["items"], list) and {"now", "since"} <= set(body)  # filled by U4
     again = client.get("/api/changes", headers={"If-None-Match": r.headers["etag"]})
     assert again.status_code == 304
     assert client.get("/api/changes?hours=49").status_code in (400, 422)

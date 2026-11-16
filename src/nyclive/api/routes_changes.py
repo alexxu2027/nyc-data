@@ -1,20 +1,21 @@
-"""GET /api/changes: the "what changed" feed (ADR-013). Stub from U0; U4 fills `items`."""
+"""GET /api/changes: the "what changed" feed (ADR-013, plan I3c)."""
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import timedelta
 
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import Response
 
 from nyclive.api.cache import conditional
+from nyclive.api.changes import CHANGE_SOURCES, change_items
 from nyclive.api.db import reading
 from nyclive.api.layers.common import iso
 from nyclive.api.routes_layers import _stamp
 
 router = APIRouter(prefix="/api")
 
-CHANGE_SOURCES = ["nws_alerts", "mta_subway_alerts", "mta_elevator_outages", "floodnet_live"]
+MAX_AGE_S = 30  # `ended` and the window move with the clock even when no source changed
 
 
 @router.get("/changes", summary="Recent changes across alerts, outages and flooding")
@@ -29,9 +30,9 @@ def changes(
         stamp = _stamp(conn, CHANGE_SOURCES)
 
         def build() -> dict:
-            since = datetime.fromtimestamp(now.timestamp() - hours * 3600, UTC)
-            return {"now": iso(now), "since": iso(since), "items": []}
+            items = change_items(conn, now, hours, limit, services.boroughs)
+            return {"now": iso(now), "since": iso(now - timedelta(hours=hours)), "items": items}
 
         key = ("changes", hours, limit)
-        entry = services.cache.get_or_build(key, stamp, now.timestamp(), 30, build)
+        entry = services.cache.get_or_build(key, stamp, now.timestamp(), MAX_AGE_S, build)
     return conditional(request, entry)

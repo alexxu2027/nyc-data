@@ -1,0 +1,59 @@
+/* The "what changed" list and ticker (ADR-013 item 4). Tokens only. */
+
+.fd-mark {
+  display: inline-block;
+  width: 2ch;
+  flex: none;
+}
+
+.fd-mark.off {
+  visibility: hidden;
+}
+
+.fd-kind {
+  display: inline-block;
+  width: 8ch;
+  flex: none;
+  color: var(--muted);
+}
+
+.fd-title.ended {
+  color: var(--muted);
+}
+
+/* The ticker: one line, ellipsised, the whole thing a button. */
+.fd-ticker {
+  display: inline-flex;
+  align-items: baseline;
+  column-gap: 1ch;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.fd-ticker:hover,
+.fd-ticker[aria-pressed='true'] {
+  outline: 1px solid currentColor;
+  outline-offset: -1px;
+}
+
+.fd-tick-k {
+  flex: none;
+  opacity: 0.7;
+}
+
+.fd-tick-t {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

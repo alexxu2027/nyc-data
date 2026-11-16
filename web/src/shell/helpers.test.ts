@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { FilterDef, LayerDef, LayerFeature, LayerMeta, SourceHealth } from '../types';
 import {
   allEnum,
+  changesLabel,
   controlValue,
   countBy,
   enumIsAll,
@@ -330,5 +331,12 @@ describe('formatting', () => {
   it('clock renders New York time with seconds across DST', () => {
     expect(fmtClock(Date.parse('2026-11-15T20:28:05Z'))).toBe('3:28:05 PM ET'); // EST
     expect(fmtClock(Date.parse('2026-07-01T16:00:09Z'))).toBe('12:00:09 PM ET'); // EDT
+  });
+
+  it('changes button shows the unread count, capped', () => {
+    expect(changesLabel(0)).toBe('CHANGES');
+    expect(changesLabel(3)).toBe('CHANGES (3 NEW)');
+    expect(changesLabel(100)).toBe('CHANGES (99+ NEW)');
+    expect(changesLabel(Number.NaN)).toBe('CHANGES');
   });
 });

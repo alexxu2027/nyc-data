@@ -36,7 +36,7 @@ export function phaseAt(ms: number): number {
   return step / PULSE_STEPS;
 }
 
-function reducedMotion(): boolean {
+export function reducedMotion(): boolean {
   return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
