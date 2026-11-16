@@ -1,10 +1,10 @@
 // The "what changed" list and its one-line ticker (ADR-013 item 4). The shell places them: the
 // list in the CHANGES panel (desktop: floating bottom-left; phone: a dialog), the ticker in the
 // status line.
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { fmtTime, useApp } from '../core';
 import type { ChangeItem } from '../types';
-import { Banner, Line } from '../ui';
+import { Banner, Line, PRINT_STAGGER_MS, typeTiming, useArrivals, useChangeKey } from '../ui';
 import { isNew, itemText, KIND_LABEL, newestAt, openItem, unreadCount } from './model';
 import './feed.css';
 
@@ -44,6 +44,10 @@ function Row({ it, fresh, onOpen }: { it: ChangeItem; fresh: boolean; onOpen: (i
 export function FeedBody({ onOpened }: { onOpened?: () => void }) {
   const feed = useApp((s) => s.feed);
   const [markFrom] = useState(() => useApp.getState().feed.seenAt);
+  // Rows print in: the ones marked NEW when the list opens, then each poll's arrivals.
+  const ids = useMemo(() => feed.items.map((it) => it.id), [feed.items]);
+  const fresh = useMemo(() => new Set(feed.items.filter((it) => isNew(it, markFrom)).map((it) => it.id)), [feed.items, markFrom]);
+  const arrivals = useArrivals(ids, (id) => fresh.has(id));
   useEffect(() => {
     const n = newestAt(feed.items);
     if (n > useApp.getState().feed.seenAt) useApp.setState((s) => ({ feed: { ...s.feed, seenAt: n } }));
@@ -73,7 +77,12 @@ export function FeedBody({ onOpened }: { onOpened?: () => void }) {
       {!loading && !feed.items.length && feed.status !== 'error' && <Line muted>NOTHING NEW IN THE LAST 12 H.</Line>}
       <div className="fd-list" role="list" aria-label="Changes, newest first">
         {feed.items.map((it) => (
-          <div role="listitem" key={it.id}>
+          <div
+            role="listitem"
+            key={it.id}
+            className={arrivals.has(it.id) ? 'print-row' : undefined}
+            style={arrivals.has(it.id) ? { animationDelay: `${(arrivals.get(it.id) ?? 0) * PRINT_STAGGER_MS}ms` } : undefined}
+          >
             <Row it={it} fresh={isNew(it, markFrom)} onOpen={open} />
           </div>
         ))}
@@ -95,7 +104,10 @@ export function FeedTicker() {
   if (it) text = `${hhmm(it.at)} ${itemText(it)}${it.ended ? ' (ENDED)' : ''}`;
   else if (fetched) text = 'NOTHING NEW IN 12 H';
   else if (status === 'error') text = 'CHANGES UNAVAILABLE';
+  // The newest change types itself out when it replaces the last one (not on the first load).
+  const typed = useChangeKey(it?.id ?? null);
   if (text === null) return null;
+  const pace = typeTiming(text);
   return (
     <button
       type="button"
@@ -105,7 +117,17 @@ export function FeedTicker() {
       title={text}
       onClick={() => setPanel(panel === 'feed' ? null : 'feed')}
     >
-      <span className="fd-tick-k">{unread ? '* LATEST' : 'LATEST'}</span> <span className="fd-tick-t">{text}</span>
+      <span className="fd-tick-k">{unread ? '* LATEST' : 'LATEST'}</span>{' '}
+      {typed > 0 ? (
+        <span key={typed} className="fd-tick-t fd-typed">
+          <span className="type-line" style={{ '--type-ms': `${pace.ms}ms`, '--type-n': pace.steps } as CSSProperties}>
+            {text}
+          </span>
+          <i className="type-cursor" aria-hidden="true" />
+        </span>
+      ) : (
+        <span className="fd-tick-t">{text}</span>
+      )}
     </button>
   );
 }

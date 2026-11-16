@@ -34,7 +34,7 @@ export function StatusLine({ compact = false }: { compact?: boolean }) {
           </span>
           <span>
             <Num value={catalog ? layers : null} width={2} /> LAYERS{' '}
-            <Num value={catalog ? features : null} width={6} /> <span className="full">FEATURES</span>
+            <Num value={catalog ? features : null} width={6} deal /> <span className="full">FEATURES</span>
             <span className="short">FEAT.</span>
           </span>
           {!compact && (
@@ -61,7 +61,7 @@ export function StatusLine({ compact = false }: { compact?: boolean }) {
             <FreshDot state={healthError && !health ? 'degraded' : worstState(health)} />{' '}
             {health ? (
               <>
-                <Num value={ok} width={2} /> OF {total} FEEDS OK
+                <Num value={ok} width={2} deal /> OF {total} FEEDS OK
               </>
             ) : healthError ? (
               'HEALTH UNAVAILABLE'

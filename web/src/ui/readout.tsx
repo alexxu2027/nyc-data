@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { useChangeKey } from './motion';
 
 export interface ReadoutProps {
   /** Key, set in a fixed column (min 10ch; override with the --ro-k CSS variable). */
@@ -26,6 +27,8 @@ export interface NumProps {
   /** Minimum width in ch (default 6). */
   width?: number;
   align?: 'left' | 'right';
+  /** Drop the digits in (a dealt card) each time the value changes after its first load. */
+  deal?: boolean;
 }
 
 export function fmtNum(value: NumProps['value']): string {
@@ -35,11 +38,20 @@ export function fmtNum(value: NumProps['value']): string {
 }
 
 /** A live number in a fixed-width box, so ticking digits never re-wrap the line. */
-export function Num({ value, width = 6, align = 'right' }: NumProps) {
+export function Num({ value, width = 6, align = 'right', deal = false }: NumProps) {
   const style: CSSProperties = { minWidth: `${width}ch` };
+  const key = useChangeKey(deal ? value : null);
+  const text = fmtNum(value);
   return (
     <span className={align === 'right' ? 'num right' : 'num'} style={style}>
-      {fmtNum(value)}
+      {deal && key > 0 ? (
+        // A new key remounts the span, which replays the drop; same value, no replay.
+        <span key={key} className="num-deal">
+          {text}
+        </span>
+      ) : (
+        text
+      )}
     </span>
   );
 }

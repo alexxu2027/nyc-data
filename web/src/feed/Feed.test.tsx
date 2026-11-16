@@ -91,3 +91,26 @@ describe('ticker', () => {
     expect(useApp.getState().panel).toBe(null);
   });
 });
+
+describe('feed motion', () => {
+  it('rows marked NEW print when the list opens; later arrivals print; old rows never replay', () => {
+    setFeed(ITEMS, Date.parse('2026-11-15T03:15:00Z')); // a is new, b is not
+    const { container } = render(<FeedBody />);
+    const printing = () =>
+      [...container.querySelectorAll<HTMLElement>('[role=listitem]')].map((r) => (r.classList.contains('print-row') ? 'P' : '.'));
+    expect(printing()).toEqual(['P', '.']);
+    act(() => setFeed([item('c', '2026-11-15T03:25:00Z'), ...ITEMS], useApp.getState().feed.seenAt));
+    expect(printing()).toEqual(['P', 'P', '.']);
+  });
+
+  it('the ticker types a new latest change, not the first one', () => {
+    setFeed(ITEMS);
+    const { container } = render(<FeedTicker />);
+    expect(container.querySelector('.type-line')).toBeNull();
+    act(() => setFeed([item('c', '2026-11-15T03:25:00Z'), ...ITEMS]));
+    const typed = container.querySelector<HTMLElement>('.type-line');
+    expect(typed?.textContent).toMatch(/Alert c/);
+    expect(typed?.style.getPropertyValue('--type-n')).not.toBe('');
+    expect(container.querySelector('.type-cursor')).toBeTruthy();
+  });
+});

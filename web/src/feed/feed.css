@@ -57,3 +57,18 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* A new latest change types itself out, with a cursor that blinks a few times and goes. */
+.fd-typed {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.fd-typed .type-line {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.fd-typed .type-cursor {
+  flex: none;
+}

@@ -142,6 +142,79 @@
   }
 }
 
+/* ---- Printed rows: one line's quick print wipe (4 bands), staggered by an inline delay ---
+ * Used by the CHANGES list (rows that arrive), the drawer (rows of a new detail) and the boot
+ * log. `both` keeps a waiting row blank until its turn, like paper that hasn't fed yet. */
+
+.print-row {
+  /* `backwards`, not `both`: blank while waiting, and no clip-path left behind afterwards
+   * (a resting clip would cut off the gutter line number, which sits outside the row). */
+  animation: nl-print-row 0.16s steps(4, end) backwards;
+}
+
+@keyframes nl-print-row {
+  /* Wide sideways so the gutter number prints with its row. */
+  from {
+    clip-path: inset(-4px -100vw 100% -100vw);
+  }
+  to {
+    clip-path: inset(-4px -100vw 0 -100vw);
+  }
+}
+
+/* ---- Typed line with a per-line pace: set --type-ms and --type-n inline ----------------- */
+
+.type-line {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: top;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: nl-type var(--type-ms, 0.3s) steps(var(--type-n, 24), end) both;
+}
+
+/* The cursor that trails a typed line, then blinks a few times and goes (rest: gone). */
+.type-cursor {
+  display: inline-block;
+  width: 0.8ch;
+  height: 1em;
+  margin-left: 0.2ch;
+  vertical-align: -0.12em;
+  background: currentColor;
+  visibility: hidden;
+  animation: nl-cursor 0.4s steps(1, end) var(--type-ms, 0.3s) 4;
+}
+
+@keyframes nl-cursor {
+  0% {
+    visibility: visible;
+  }
+  50% {
+    visibility: hidden;
+  }
+}
+
+/* ---- A live number that changed: it drops in like a dealt card ------------------------- */
+
+.num-deal {
+  display: inline-block;
+  animation: nl-deal 0.15s steps(3, end);
+}
+
+/* ---- Boot log: prints the feed check line by line, holds, then rolls up and goes ------- */
+
+.boot-log {
+  animation: nl-roll-up 0.2s steps(4, end) forwards;
+  animation-delay: var(--boot-hold, 1.6s);
+}
+
+@keyframes nl-roll-up {
+  to {
+    clip-path: inset(100% 0 0 0);
+    visibility: hidden;
+  }
+}
+
 .paused,
 .paused * {
   animation-play-state: paused !important;

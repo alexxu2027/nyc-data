@@ -514,3 +514,21 @@ button.sh-src[aria-expanded='true'] .fresh {
     animation: none;
   }
 }
+
+/* Boot log (BootLog.tsx): over the map's bottom-right corner, above "N OF M FEEDS OK". */
+.sh-bootlog {
+  position: absolute;
+  right: var(--pad-x);
+  bottom: 8px;
+  z-index: var(--z-panel);
+  width: min(46ch, calc(100% - 2 * var(--pad-x)));
+  max-height: calc(100% - 16px);
+  overflow: hidden;
+  pointer-events: none;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+/* The log is short-lived and fits the map: it never scrolls. */
+.sh-bootlog .panel-body {
+  overflow: hidden;
+}

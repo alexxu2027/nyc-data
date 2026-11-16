@@ -1,10 +1,10 @@
 // The detail drawer (U6). Content only: the Shell positions it (plan §7.2). It reads `selection`
 // from the store and shows either one feature (an instant header from the feature, then the
 // detail endpoint the catalog names) or a list of a `list: true` layer's events.
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, fmtAgo, fmtTime, useApp } from '../core';
 import type { EntityDetail, EventDetail, LayerDef, LayerFeature } from '../types';
-import { Blank, Line, Panel, Readout, TextButton } from '../ui';
+import { Blank, Line, Panel, Readout, TextButton, usePrintRows } from '../ui';
 import { BOROUGH_NAMES, asOfTime, featureTitle } from './detail';
 import { useAsync, useClock } from './hooks';
 import { ListView } from './ListView';
@@ -93,6 +93,9 @@ function FeatureView({ def, id, back }: { def: LayerDef; id: string; back?: () =
   const [retry, setRetry] = useState(0);
   const rev = (layer?.rev ?? 0) + retry * 1e6;
   const now = useClock();
+  // A newly opened detail prints its rows top to bottom (this view remounts per selection).
+  const printRef = useRef<HTMLDivElement>(null);
+  usePrintRows(printRef);
 
   const detailRef = def.detail;
   const kind = detailRef.type === 'entity' ? detailRef.kind : null;
@@ -111,7 +114,7 @@ function FeatureView({ def, id, back }: { def: LayerDef; id: string; back?: () =
   const asOf = source ? (layer?.meta?.data_as_of ?? layer?.meta?.updated_at ?? null) : asOfTime(props, entity, layer?.meta, now);
 
   return (
-    <>
+    <div ref={printRef} className="drw-print">
       {back && (
         <Line>
           <TextButton onClick={back} ariaLabel={`Back to the ${def.label} list`}>
@@ -144,7 +147,7 @@ function FeatureView({ def, id, back }: { def: LayerDef; id: string; back?: () =
       ) : (
         <PropsTable props={props} />
       )}
-    </>
+    </div>
   );
 }
 

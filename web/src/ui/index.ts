@@ -28,3 +28,4 @@ export { Banner, type BannerProps } from './Banner';
 export { Sheet, detentReducer, DETENTS, type Detent, type DetentAction, type SheetProps } from './Sheet';
 export { glyphPath, GLYPHS, isGlyph, type GlyphName } from './glyphs';
 export { useIsPhone, useReducedMotion, useLineHeight, readLinePx, PHONE_QUERY, MID_QUERY } from './hooks';
+export { useArrivals, usePrintRows, useChangeKey, typeTiming, PRINT_STAGGER_MS, PRINT_MAX_STAGGER } from './motion';

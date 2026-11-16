@@ -199,7 +199,7 @@ function RowRight({
     <>
       <FreshDot state={rs.dot} title={rs.dotTitle} />
       <span className={v.visible ? 'sh-count' : 'sh-count muted'} aria-label={`${rs.count ?? 'no'} features`}>
-        <Num value={rs.count} width={6} />
+        <Num value={rs.count} width={6} deal />
       </span>
       <ExpandButton def={def} open={open} onExpand={onExpand} />
     </>

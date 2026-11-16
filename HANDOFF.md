@@ -203,6 +203,25 @@ Working notes: `.orchestrate/p25/progress.md` and the review in `.orchestrate/p2
   - #10: a trip missing for one poll is closed and reopened (2 rows, and its dot jumps back).
 - Checks: 386 pytest, 233 vitest, ruff, typecheck, lint, build all pass.
 
+### Transcript motion (2026-11-16, uncommitted until Alex OKs)
+Five moments that use the motion kit from `styles/motion.css`. Each has a cause, and under
+reduced motion each shows its finished frame.
+- **CHANGES list:** the rows marked NEW print when the panel opens, then each poll's arrivals
+  print, newest first, staggered 45 ms.
+- **Ticker:** a new latest change types out (paced by length, ≤ 650 ms) with a cursor that
+  blinks a few times. Not on the first load.
+- **Drawer:** a newly opened detail prints its rows top to bottom, including the rows that arrive
+  with the first fetch (900 ms window). Live refreshes after that don't replay it.
+- **Counts:** `Num deal` drops digits in on a real change (layer rows, FEATURES total, FEEDS OK).
+- **Boot log** (`shell/BootLog.tsx`, desktop only): once per visit (sessionStorage), the first
+  `/api/health` answer prints a FEED CHECK panel over the map's bottom-right corner. It holds,
+  then rolls up into "N OF M FEEDS OK". Skipped under reduced motion, in a hidden tab, or if
+  health takes more than 8 s.
+- Helpers are in `ui/motion.ts` (`useArrivals`, `usePrintRows`, `useChangeKey`, `typeTiming`).
+  `.print-row` uses `backwards` fill and a wide clip on purpose: a resting clip-path cut off the
+  gutter line numbers (found in the browser check).
+- Checked live in Chrome on the dev server; 244 vitest, typecheck, lint and build pass.
+
 ## Collector: start / stop
 `uv run nyclive collect --keep-awake` starts it (it doesn't survive a reboot). To stop it: Task
 Manager → end the `python.exe` running `nyclive collect`, or in PowerShell:

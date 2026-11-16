@@ -317,3 +317,8 @@ button.t.drw-link {
     display: none;
   }
 }
+
+/* The detail prints its rows (usePrintRows); the wrapper takes no layout of its own. */
+.drw-print {
+  display: contents;
+}

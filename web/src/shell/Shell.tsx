@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useApp } from '../core';
 import { FeedBody, persistFeedSeen, startFeedPolling } from '../feed';
+import { BootLog } from './BootLog';
 import type { Selection } from '../types';
 import { Banner, Line, Panel, Sheet, TextButton, useIsPhone, FreshDot, type Detent } from '../ui';
 import { AboutBody } from './AboutPanel';
@@ -129,6 +130,7 @@ export function Shell({ map, drawer }: ShellProps) {
             </div>
           )}
           {!isPhone && dialog}
+          {!isPhone && <BootLog />}
         </main>
       </div>
       {!isPhone && <StatusLine />}
