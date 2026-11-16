@@ -21,7 +21,7 @@ from nyclive.api.geo import r5
 from nyclive.api.layers.common import iso, loads, ts_text
 from nyclive.api.layers.streets import camera_props, is_stale, speed_band
 from nyclive.api.layers.transit import ALERT_HORIZON, bike_derived
-from nyclive.api.layers.water import sensor_stats, weather_derived
+from nyclive.api.layers.water import live_depth, sensor_stats, weather_derived
 from nyclive.api.tide import tide_for
 from nyclive.model import KINDS, METRICS
 from nyclive.storage import query
@@ -67,6 +67,9 @@ SERIES = {
     ],
     "road_segment": [
         {"label": "Speed", "unit": "mph", "metrics": ["speed_mph"], "hours": 24, "ahead": 0}
+    ],
+    "flood_sensor": [
+        {"label": "Water depth", "unit": "in", "metrics": ["depth_in"], "hours": 48, "ahead": 0}
     ],
     "weather_point": [
         {"label": "Temperature", "unit": "°C", "metrics": ["temp_c"], "hours": 24, "ahead": 0},
@@ -169,8 +172,15 @@ def _derived(services, conn, kind: str, ent, latest: dict[str, tuple], now) -> d
     if kind == "subway_station":
         return {"routes": str(props.get("daytime_routes") or "").split()}
     if kind == "flood_sensor":
-        st = sensor_stats(conn, ts_text(now)).get(ent["entity_id"], {})
-        return {"events_30d": st.get("events_30d", 0)}
+        now_text = ts_text(now)
+        st = sensor_stats(conn, now_text).get(ent["entity_id"], {})
+        live = live_depth(conn, now_text).get(ent["entity_id"])
+        return {
+            "events_30d": st.get("events_30d", 0),
+            "depth_in": live["depth_in"] if live else None,
+            "live": bool(live and live["live"]),
+            "flooding": bool(live and live["flooding"]),
+        }
     return {}
 
 
@@ -182,7 +192,7 @@ def _events(services, conn, kind: str, entity_id: str, now) -> list[dict]:
     if kind == "subway_station":
         sources, ordered = STATION_EVENT_SOURCES, "active"
     elif kind == "flood_sensor":
-        sources, ordered = ("floodnet_events",), "newest"
+        sources, ordered = ("floodnet_events", "floodnet_live"), "newest"
     else:
         return []
     ref = _like(f'"{kind}:{entity_id}"')

@@ -227,7 +227,7 @@ sources:
 
   floodnet_live:
     name: FloodNet live depth (FieldKit project 174)
-    # adapter: floodnet_live   # U1 sets this when floodnet_live.py exists (ADR-013)
+    adapter: floodnet_live
     phase: 1
     shape: observations
     cadence_s: 1800
@@ -238,10 +238,12 @@ sources:
     status: partial
     verified_on: 2026-11-16
     notes: >
-      ADR-010 ready design, FloodNet team OK'd polling (2026-11-16): /projects/174/stations plus
-      /sensors/data/tail?stations=<50 ids> every 30 min, sensor 44 (depth, inches) only,
-      change-only. FieldKit ids differ from Open Data sensor_id; joined by coordinates in parse.
-      Powers dataviz.floodnet.nyc. Attribute FloodNet.
+      Adapter floodnet_live (ADR-010, FloodNet team OK'd polling 2026-11-16): /projects/174/stations
+      plus /sensors/data/tail?stations=<25 ids> every 30 min (about 18 requests of 25 stations, ~12 MB, ~3 min),
+      sensor 44 (depth, inches) only, change-only. FieldKit ids differ from Open Data sensor_id;
+      parse joins them by coordinates (within 30 m, 433 of 435 active stations on 2026-11-16).
+      Flood episodes (wet = 1 in, peak 2 in) become `floodnet_live` events. Powers
+      dataviz.floodnet.nyc. Attribute FloodNet.
 
   rainviewer_radar:
     name: RainViewer radar frame index

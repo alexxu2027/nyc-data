@@ -29,7 +29,7 @@ def first(client, layer):
         ("road_segment", "road_speeds", {"band", "stale"}),
         ("camera", "cameras", {"image_url", "status"}),
         ("subway_station", "subway_stations", {"routes"}),
-        ("flood_sensor", "flood_sensors", {"events_30d"}),
+        ("flood_sensor", "flood_sensors", {"events_30d", "depth_in", "live", "flooding"}),
     ],
 )  # fmt: skip
 def test_entity_detail(client, kind, layer, derived):
