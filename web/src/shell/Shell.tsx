@@ -3,6 +3,7 @@
 // Talks to the map and the drawer only through the store.
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useApp } from '../core';
+import { FeedBody, startFeedPolling } from '../feed';
 import type { Selection } from '../types';
 import { Banner, Line, Panel, Sheet, TextButton, useIsPhone, FreshDot, type Detent } from '../ui';
 import { AboutBody } from './AboutPanel';
@@ -83,9 +84,18 @@ export function Shell({ map, drawer }: ShellProps) {
     }
   }, [isPhone, open, drawerW, layerSheetH, drawerSheetH, setInsets]);
 
+  // The "what changed" feed polls for the whole session (it waits for the map's first answer).
+  useEffect(() => startFeedPolling(), []);
+
   const closePanel = useCallback(() => setPanel(null), [setPanel]);
   const dialog =
-    panel === 'health' ? (
+    panel === 'feed' ? (
+      // Desktop: floating bottom-left over the map, not modal. Phone: a dialog that closes
+      // when an item opens, so the detail sheet shows.
+      <Dialog title="CHANGES" onClose={closePanel} className="sh-feed">
+        <FeedBody onOpened={isPhone ? closePanel : undefined} />
+      </Dialog>
+    ) : panel === 'health' ? (
       <Dialog title="FEED HEALTH" onClose={closePanel} className="sh-health">
         <HealthBody />
       </Dialog>

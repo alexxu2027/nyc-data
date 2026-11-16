@@ -301,6 +301,12 @@ const clockFmt = new Intl.DateTimeFormat('en-US', {
   hour12: true,
 });
 
+/** The top bar's feed button: "CHANGES", or "CHANGES (3 NEW)" (99+ caps the width). */
+export function changesLabel(unread: number): string {
+  if (!(unread > 0)) return 'CHANGES';
+  return `CHANGES (${unread > 99 ? '99+' : unread} NEW)`;
+}
+
 /** "3:28:05 PM ET" (set it in a 14ch box so the status line never shifts). */
 export function fmtClock(ms: number): string {
   return `${clockFmt.format(new Date(ms)).replace(/\s/g, ' ')} ET`;

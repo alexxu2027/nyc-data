@@ -22,6 +22,7 @@ import { FALLBACK_BASEMAPS, firstPlaceLayer, offlineStyle, postProcess } from '.
 import { installIcons } from './icons';
 import { renderLayer, sourceId, type Rendered } from './layers';
 import type { LiveHandle } from './layers/common';
+import { ChangeFlash, flashLayer } from './changePulse';
 import { Pulse } from './pulse';
 import { readTokens, type ThemeTokens } from './styleToPaint';
 
@@ -86,6 +87,9 @@ export class MapController {
   readonly tooltip = new TooltipStore();
   private readonly container: HTMLElement;
   private readonly pulse: Pulse;
+  private readonly flash: ChangeFlash;
+  /** changedAt of the last poll flashed per layer (ADR-013 change pulse). */
+  private flashedAt = new Map<string, number | null>();
   private readonly ro: ResizeObserver | null;
   private readonly unsub: () => void;
 
@@ -136,6 +140,7 @@ export class MapController {
     this.map.addControl(new AttributionControl({ compact: false }), 'bottom-right');
     this.lastView = v;
     this.pulse = new Pulse(this.map);
+    this.flash = new ChangeFlash(this.map);
 
     this.map.on('style.load', this.onStyleLoad);
     this.map.on('error', this.onError);
@@ -161,6 +166,7 @@ export class MapController {
     this.unsub();
     this.ro?.disconnect();
     this.pulse.destroy();
+    this.flash.destroy();
     cancelAnimationFrame(this.moveRaf);
     this.map.remove();
   }
@@ -263,6 +269,7 @@ export class MapController {
 
   private resetInstall(): void {
     this.destroyLive();
+    this.flash.setTargets([]);
     this.installed.clear();
     this.hitToLayer.clear();
     this.hitLayers = [];
@@ -297,6 +304,7 @@ export class MapController {
     const defs = [...cat.layers].sort((a, b) => a.z - b.z);
     const halos: Array<{ def: LayerDef; layer: LayerSpecification }> = [];
     const pulses: Rendered['pulse'] = [];
+    const flashes: Array<{ layer: string; id: string }> = [];
     for (const def of defs) {
       const rendered = renderLayer(def, this.tokens);
       const w = this.want.get(def.id);
@@ -332,6 +340,12 @@ export class MapController {
         map.addLayer(withVisibility(layer, vis), before);
         ids.push(layer.id);
       }
+      if (def.changes && (def.kind === 'point' || def.kind === 'cluster')) {
+        const fl = flashLayer(def.id, src, this.tokens.ink);
+        map.addLayer(withVisibility(fl, vis), before);
+        ids.push(fl.id);
+        flashes.push({ layer: def.id, id: fl.id });
+      }
       for (const layer of rendered.halo) {
         halos.push({ def, layer: withVisibility(layer, vis) });
         ids.push(layer.id);
@@ -355,6 +369,10 @@ export class MapController {
     // Hit order follows draw order, top first (queryRenderedFeatures sorts anyway).
     this.hitLayers = [...this.hitToLayer.keys()].reverse();
     this.pulse.setTargets(pulses);
+    this.flash.setTargets(flashes);
+    // Only polls after this install flash (a theme swap must not replay the last one).
+    const data = useApp.getState().data;
+    for (const f of flashes) this.flashedAt.set(f.layer, data[f.layer]?.changedAt ?? null);
     for (const id of this.installed.keys()) this.applyLayer(id);
     this.sync(useApp.getState());
   }
@@ -384,6 +402,7 @@ export class MapController {
       this.applySelection(s);
       this.applyHover(s);
       this.applyMask(s);
+      this.applyFlash(s);
     }
     this.applyView(s);
     this.applyInsets(s);
@@ -420,6 +439,16 @@ export class MapController {
     this.appliedMask = key;
     for (const b of this.catalog?.boroughs ?? []) {
       this.setState('boroughs', b.id, { masked: s.boroughs.length > 0 && !s.boroughs.includes(b.id) });
+    }
+  }
+
+  /** Ring the dots that changed on each layer's newest poll (once per poll). */
+  private applyFlash(s: AppState): void {
+    for (const [layer, at] of this.flashedAt) {
+      const d = s.data[layer];
+      if (!d || d.changedAt === null || d.changedAt === at) continue;
+      this.flashedAt.set(layer, d.changedAt);
+      if (d.changed.length && s.visible.includes(layer)) this.flash.flash(layer, d.changed);
     }
   }
 

@@ -1,6 +1,8 @@
 // Bottom status line: LIVE pill, ET clock, visible layer and feature totals, next refresh.
 // This is the Phase 3 time-bar slot: replay will swap the pill and clock for a scrubber here.
+// The newest change rides at the end (desktop) or on a second line (compact, phone sheet).
 import { useApp } from '../core';
+import { FeedTicker } from '../feed';
 import { FreshDot, Num } from '../ui';
 import { fmtClock, fmtCountdown, worstState } from './helpers';
 import { useNow, useVisibleTotals } from './hooks';
@@ -14,6 +16,7 @@ export function StatusLine({ compact = false }: { compact?: boolean }) {
   const stalled = health?.collector.state === 'stalled';
   const total = health ? health.sources.length : null;
   const ok = health ? health.summary.ok : null;
+  const ticker = useApp((s) => s.feed.items.length > 0 || s.feed.fetchedAt !== null || s.feed.status === 'error');
 
   return (
     <div className="sh-status screen" data-slot="timebar" role="status" aria-live="off">
@@ -42,6 +45,14 @@ export function StatusLine({ compact = false }: { compact?: boolean }) {
               <span>
                 NEXT UPDATE <span className="num sh-cd">{fmtCountdown(nextAt === null ? null : nextAt - now)}</span>
               </span>
+              {ticker && (
+                <>
+                  <span className="sh-sep" aria-hidden="true">
+                    |
+                  </span>
+                  <FeedTicker />
+                </>
+              )}
             </>
           )}
         </span>
@@ -60,6 +71,13 @@ export function StatusLine({ compact = false }: { compact?: boolean }) {
           </span>
         )}
       </div>
+      {compact && ticker && (
+        <div className="l nowrap sh-status-tick">
+          <span className="l-main">
+            <FeedTicker />
+          </span>
+        </div>
+      )}
     </div>
   );
 }

@@ -161,6 +161,18 @@ button[aria-pressed='true'] .fresh {
   width: min(64ch, calc(100% - 24px));
 }
 
+/* CHANGES: a narrow list floating bottom-left of the map; the body scrolls after 8 rows (plus
+ * its one header line). */
+.shell:not(.phone) .sh-dialog.sh-feed {
+  top: auto;
+  bottom: 12px;
+  width: min(340px, calc(100% - 24px));
+}
+
+.shell:not(.phone) .sh-feed .panel-body {
+  max-height: calc(var(--line) * 9);
+}
+
 .sh-boot {
   top: 50%;
   left: 50%;
@@ -239,6 +251,20 @@ button[aria-pressed='true'] .fresh {
 
 .sh-cd {
   min-width: 5ch;
+}
+
+/* The change ticker takes what is left of the line and ellipsises. */
+.sh-status-main > .fd-ticker {
+  flex: 1 1 auto;
+}
+
+.sh-status-tick {
+  counter-increment: none;
+}
+
+.sh-status-tick > .l-main {
+  display: flex;
+  min-width: 0;
 }
 
 /* ---- Layer panel rows ---------------------------------------------------------------- */

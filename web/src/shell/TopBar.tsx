@@ -1,8 +1,10 @@
-// Top bar: title chip, borough chips with ALL, [HEALTH], [ABOUT] and the theme toggle.
+// Top bar: title chip, borough chips with ALL, [CHANGES (n NEW)] (desktop), [HEALTH], [ABOUT]
+// and the theme toggle.
 import { useApp } from '../core';
+import { useUnread } from '../feed';
 import type { BoroughCode, PanelId } from '../types';
 import { Chip, FreshDot, TextButton } from '../ui';
-import { worstState } from './helpers';
+import { changesLabel, worstState } from './helpers';
 
 const FALLBACK_BOROUGHS: Array<{ id: BoroughCode; label: string }> = [
   { id: 'MN', label: 'Manhattan' },
@@ -27,6 +29,7 @@ export function TopBar() {
   const all = boroughs.length === 0;
   const flip = (p: PanelId) => setPanel(panel === p ? null : p);
   const healthDot = healthError && !health ? 'degraded' : worstState(health);
+  const unread = useUnread();
 
   return (
     <header className="sh-top">
@@ -54,6 +57,15 @@ export function TopBar() {
       </nav>
       <div className="sh-actions l">
         <span className="l-main">
+          <span className="hide-phone">
+            <TextButton
+              pressed={panel === 'feed'}
+              onClick={() => flip('feed')}
+              ariaLabel={unread ? `Changes, ${unread} new` : 'Changes'}
+            >
+              {changesLabel(unread)}
+            </TextButton>
+          </span>
           <TextButton pressed={panel === 'health'} onClick={() => flip('health')} ariaLabel="Feed health">
             <>
               <FreshDot state={healthDot} /> HEALTH
