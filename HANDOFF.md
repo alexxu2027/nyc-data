@@ -310,6 +310,14 @@ An Opus reviewer checked the live app (desktop, phone in an iframe, dark theme) 
   longer, it closes once at its last-seen time. That's no close/reopen churn and no backward
   jump.
 - Both ride tonight's collector restart. The Notify NYC ADR is now ADR-015.
+- **`scripts/golive_check.py`:** run it after the restart (again until no WAIT is left). It
+  checks:
+  - trains: runs, the layer (≥ 20 trains, data < 3 min old), health, MB/day vs ~6;
+  - FloodNet live: the first run ok in < 6 min, live depth on ≥ 300 sensors, ≤ 10 FloodNet
+    items in CHANGES (the backfill must not leak);
+  - collector log ERROR lines.
+  It prints PASS/WAIT/WARN/FAIL per check and `GO-LIVE:` overall. Before the restart it
+  reads all WAIT.
 
 ## Collector: start / stop
 `uv run nyclive collect --keep-awake` starts it (it doesn't survive a reboot). To stop it: Task
