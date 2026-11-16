@@ -12,6 +12,10 @@ _Last updated: 2026-11-16_
 > 4. Then the Phase 2.5 browser acceptance on live data, and an Opus review (persistence + new
 >    external feeds) if usage allows.
 > Use `uv run --no-sync` while the soak runs.
+> **Scheduled work:** Alex wants work to resume at **10:05 AM ET on 2026-11-16**. A new session
+> should create a one-shot CronCreate job for that time (`5 10 16 11 *`), unless it is already past.
+> The job does step 2 (the pipeline open-events fix) in code and tests only, without restarting the
+> collector. Ask before committing.
 
 This file is the session-to-session log: where the project stands, what to do next, and gotchas
 learned the hard way. Read it first, then `docs/ROADMAP.md`.
