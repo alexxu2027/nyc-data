@@ -27,6 +27,9 @@ from nyclive.model import BOROUGHS, borough_code
 
 RECENT = timedelta(hours=48)
 SENSOR_WINDOW = timedelta(days=30)
+LIVE_WITHIN = timedelta(hours=2)  # a reading older than this is "no reading"
+FLOOD_IN = 1.0  # depth at or above this counts as flooding (same as the adapter's wet bucket)
+NOT_COLLECTED = "LIVE DEPTH NOT COLLECTED YET"
 
 
 # ------------------------------------------------------------------------------ NWS alerts
@@ -149,8 +152,52 @@ def sensor_stats(conn, now_text: str) -> dict[str, dict]:
     return out
 
 
+def live_depth(conn, now_text: str) -> dict[str, dict]:
+    """sensor id -> {depth_in, depth_at, live, flooding, flood_since} from floodnet_live.
+
+    Only sensors with a depth reading appear. `live` = reading within 2 h; `flooding` = live and
+    at least FLOOD_IN deep, or an open floodnet_live event; `flood_since` = start of that open
+    event (None when flooding is only a reading).
+    """
+    live_after = ts_text(parse_ts(now_text) - LIVE_WITHIN)
+    open_since: dict[str, str] = {}
+    for r in conn.execute(
+        "SELECT entity_refs, starts_at FROM events WHERE source = 'floodnet_live'"
+        " AND ends_at IS NULL AND starts_at <= ? ORDER BY starts_at DESC",
+        (now_text,),
+    ):
+        for ref in loads(r["entity_refs"], []):
+            if ref.startswith("flood_sensor:"):
+                open_since[ref.split(":", 1)[1]] = r["starts_at"]  # oldest start wins
+    out: dict[str, dict] = {}
+    for sid, m in latest_by_entity(conn, "flood_sensor").items():
+        if "depth_in" not in m:
+            continue
+        value, observed = m["depth_in"]
+        live = observed >= live_after
+        since = open_since.get(sid)
+        out[sid] = {
+            "depth_in": num(value, 1),
+            "depth_at": iso(observed),
+            "live": live,
+            "flooding": (live and value >= FLOOD_IN) or since is not None,
+            "flood_since": iso(since),
+        }
+    return out
+
+
+def live_note(conn) -> str | None:
+    row = conn.execute(
+        "SELECT last_success FROM source_state WHERE source = 'floodnet_live'"
+    ).fetchone()
+    return None if row and row["last_success"] else NOT_COLLECTED
+
+
 def flood_sensors(ctx: Ctx) -> LayerResult:
     stats = sensor_stats(ctx.conn, ctx.now_text)
+    depth = live_depth(ctx.conn, ctx.now_text)
+    none = {"depth_in": None, "depth_at": None, "live": False, "flooding": False,
+            "flood_since": None}  # fmt: skip
     idx = ctx.services.boroughs
     empty = {"events_30d": 0, "last_event_at": None, "last_max_depth_in": None}
     feats, newest, unlocated = [], None, 0
@@ -169,9 +216,16 @@ def flood_sensors(ctx: Ctx) -> LayerResult:
                 tidal=p.get("tidally_influenced") is True,
                 nta=p.get("nta"),
                 **stats.get(e["entity_id"], empty),
+                **depth.get(e["entity_id"], none),
             )
         )
-    return LayerResult(feats, data_as_of=iso(newest), unlocated=unlocated)
+    live_at = max((d["depth_at"] for d in depth.values()), default=None)
+    return LayerResult(
+        feats,
+        data_as_of=live_at or iso(newest),
+        unlocated=unlocated,
+        note=live_note(ctx.conn),
+    )
 
 
 # --------------------------------------------------------------------------------- weather

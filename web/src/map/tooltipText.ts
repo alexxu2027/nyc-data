@@ -70,11 +70,25 @@ export function tooltipText(layer: string, p: Record<string, unknown>, def?: Lay
         lines: [str(p.routes), (num(p.ada) ?? 0) > 0 ? 'Accessible' : 'Not accessible'].filter(Boolean),
       };
     case 'flood_sensors': {
-      const n = num(p.events_30d) ?? 0;
-      return {
-        title: name,
-        lines: [n > 0 ? `${plural(n, 'flood')} in 30 days of data` : 'No recent flood', p.tidal === true ? 'Tidal' : ''].filter(Boolean),
-      };
+      const depth = num(p.depth_in);
+      const lines = [
+        depth !== null && p.live === true && typeof p.depth_at === 'string'
+          ? `${depth.toFixed(1)} in · ${fmtTime(p.depth_at)}`
+          : 'No reading in 2 h',
+      ];
+      if (p.flooding === true) {
+        lines.push(typeof p.flood_since === 'string' ? `Flooding since ${fmtTime(p.flood_since)}` : 'Flooding now');
+      }
+      return { title: name, lines };
+    }
+    case 'subway_trains': {
+      const route = str(p.route);
+      const headsign = str(p.headsign);
+      const next = str(p.next_name);
+      const atStop = p.at_stop === true;
+      const lines = [next ? `${atStop ? 'At' : 'Next'}: ${next}` : ''];
+      if (!atStop) lines.push('Position estimated between stations');
+      return { title: `${route} train${headsign ? ` to ${headsign}` : ''}`, lines: lines.filter(Boolean) };
     }
     case 'collisions': {
       const inj = num(p.injured) ?? 0;

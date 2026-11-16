@@ -174,6 +174,13 @@ function WeatherView(p: EntityViewProps) {
 
 // ---- Flood sensor ---------------------------------------------------------------------------
 
+/** The live-depth ledger row: a reading now, an old reading, or none ever collected. */
+export function floodDepthReadout(depth: number | null, live: boolean, at: string | null | undefined) {
+  if (depth !== null && live) return { k: 'DEPTH NOW', v: `${depth.toFixed(1)} IN`, r: at ? fmtTime(at) : undefined };
+  if (depth !== null) return { k: 'DEPTH', v: 'NO READING', r: `SINCE ${at ? fmtTime(at) : '--'}` };
+  return { k: 'DEPTH', v: '--', r: 'LIVE DEPTH NOT COLLECTED YET' };
+}
+
 function FloodSensorView(p: EntityViewProps) {
   const select = useApp((s) => s.select);
   const flyTo = useApp((s) => s.flyTo);
@@ -183,8 +190,19 @@ function FloodSensorView(p: EntityViewProps) {
   const nta = (p.props?.nta as string | null | undefined) ?? (p.detail?.props.nta as string | undefined);
   const installed = p.detail?.props.date_installed as string | undefined;
   const events = p.detail?.events ?? [];
+  const d = p.detail?.derived ?? {};
+  const depth = pick(p.props?.depth_in, d.depth_in);
+  const live = (p.props?.live ?? d.live) === true;
+  const depthAt = (p.props?.depth_at as string | null | undefined) ?? p.detail?.latest.depth_in?.observed_at;
+  const flooding = (p.props?.flooding ?? d.flooding) === true;
+  const since = p.props?.flood_since as string | null | undefined;
+  const reading = floodDepthReadout(depth, live, depthAt);
   return (
     <>
+      <Readout {...reading} />
+      {flooding && <Readout k="FLOODING" v="YES" r={since ? `SINCE ${fmtTime(since)}` : 'NOW'} />}
+      <Series {...p} />
+      <Blank />
       <Readout k="FLOODS, 30 D" v={<Num value={n30} width={4} />} r="OF DATA" />
       <Readout k="TIDAL" v={yesNo(tidal)} r={nta ? `NTA ${nta}` : undefined} />
       {installed && <Readout k="INSTALLED" v={fmtTime(installed, 'date')} />}
