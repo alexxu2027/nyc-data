@@ -1,0 +1,490 @@
+/* Shell layout and panels (U4). Tokens only: no colour is hard-coded here. */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  --sh-top-h: calc(var(--line) * 2);
+}
+
+/* ---- Top bar ------------------------------------------------------------------------- */
+
+.sh-top {
+  flex: none;
+  position: relative;
+  z-index: var(--z-panel);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 3ch;
+  height: calc(var(--sh-top-h) + 1px);
+  padding: 0 var(--pad-x);
+  border-bottom: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.sh-top > .l {
+  flex-wrap: nowrap;
+  align-items: center;
+  counter-increment: none;
+}
+
+.sh-title {
+  flex: none;
+}
+
+.sh-title > h1 {
+  white-space: nowrap;
+}
+
+.sh-boro {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.sh-boro > .l-main {
+  flex: 1 1 auto;
+  padding: 1px; /* room for the chip borders inside the scroller... */
+  margin: -1px 0; /* ...without growing the line */
+}
+
+.sh-actions {
+  flex: none;
+}
+
+.sh-actions > .l-main {
+  white-space: nowrap;
+}
+
+/* A dot inside a pressed control takes the control's (inverted) text colour. */
+button[aria-pressed='true'] .fresh {
+  color: inherit;
+}
+
+/* ---- Main row: layer column + map ----------------------------------------------------- */
+
+.sh-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+.sh-side {
+  flex: none;
+  width: var(--col-panel);
+  max-width: 60vw;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+  z-index: var(--z-panel);
+  border-right: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.sh-side > .panel {
+  flex: 1 1 auto;
+  height: 100%;
+  padding-top: calc(var(--line) / 2);
+}
+
+.sh-side .panel-foot,
+.bsheet .panel-foot {
+  border-top: 1px solid var(--ink);
+}
+
+.sh-map {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+/* ---- Drawer slot (desktop overlay) --------------------------------------------------- */
+
+.sh-drawer {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: min(var(--col-drawer), calc(100% - 24px));
+  z-index: var(--z-drawer);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--paper);
+}
+
+.sh-drawer-sheet {
+  min-height: 100%;
+}
+
+/* ---- Floating panels: health, about, boot error --------------------------------------- */
+
+.sh-dialog {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: min(72ch, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  z-index: var(--z-modal);
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  outline: none;
+}
+
+.sh-dialog:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.sh-dialog > .panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: calc(var(--line) / 2) 0;
+}
+
+.sh-dialog-close {
+  position: absolute;
+  top: calc(var(--line) / 2);
+  right: var(--pad-x);
+  line-height: var(--line);
+}
+
+.sh-about {
+  width: min(64ch, calc(100% - 24px));
+}
+
+.sh-boot {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(60ch, calc(100% - 24px));
+}
+
+/* ---- Status line (Phase 3 time-bar slot) --------------------------------------------- */
+
+.sh-status {
+  flex: none;
+  padding: 0 var(--pad-x);
+  border-top: 1px solid var(--ink);
+  position: relative;
+  z-index: var(--z-panel);
+}
+
+.sh-status > .l {
+  flex-wrap: nowrap;
+  counter-increment: none;
+}
+
+.sh-status-main {
+  display: inline-flex;
+  align-items: baseline;
+  column-gap: 2ch;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sh-pill {
+  display: inline-block;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0 1ch;
+  margin: -1px 0;
+  line-height: var(--line);
+}
+
+.sh-pill.stalled {
+  background: var(--warn);
+  color: var(--on-warn);
+  border-color: var(--warn);
+}
+
+.sh-blink {
+  display: inline-block;
+  width: 0.8ch;
+  height: 0.8ch;
+  margin-right: 1ch;
+  background: currentColor;
+  vertical-align: 0.05em;
+  animation: sh-blink 1.6s steps(1, end) infinite;
+}
+
+.sh-pill.stalled .sh-blink {
+  animation: none;
+}
+
+@keyframes sh-blink {
+  50% {
+    visibility: hidden;
+  }
+}
+
+.sh-clock {
+  display: inline-block;
+  min-width: 14ch;
+}
+
+.sh-sep {
+  color: var(--muted);
+}
+
+.sh-cd {
+  min-width: 5ch;
+}
+
+/* ---- Layer panel rows ---------------------------------------------------------------- */
+
+.sh-group {
+  flex-wrap: nowrap;
+  column-gap: 1ch;
+}
+
+.sh-group > .l-main {
+  flex: none;
+}
+
+.sh-fill {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sh-layer > .l.opt > .l-right {
+  display: inline-flex;
+  align-items: center;
+  column-gap: 1ch;
+  align-self: center;
+}
+
+.sh-layer > .l.opt .txt {
+  text-transform: uppercase;
+}
+
+.sh-layer[data-state='off'] > .l.opt .txt {
+  color: var(--muted);
+}
+
+.sh-count {
+  display: inline-block;
+}
+
+.sh-slot {
+  color: var(--faint);
+}
+
+/* Indented block under a row: notes and the expanded legend / filters / timing. */
+.sh-ind .l {
+  padding-left: 4ch;
+}
+
+.sh-ind .l .l {
+  padding-left: 0;
+}
+
+.sh-x {
+  background: linear-gradient(var(--faint), var(--faint)) 1.5ch 0 / 1px calc(100% - var(--line)) no-repeat;
+}
+
+.sh-x .ro {
+  --ro-k: 9ch;
+}
+
+.sh-x .l > .l-right .num {
+  color: var(--muted);
+}
+
+.sh-x a {
+  overflow-wrap: anywhere;
+}
+
+/* Stepped "printing" dots after LOADING. */
+.sh-dots::after {
+  content: '';
+  display: inline-block;
+  width: 3ch;
+  text-align: left;
+  animation: sh-dots 1.2s steps(1, end) infinite;
+}
+
+@keyframes sh-dots {
+  0% {
+    content: '';
+  }
+  25% {
+    content: '.';
+  }
+  50% {
+    content: '..';
+  }
+  75% {
+    content: '...';
+  }
+}
+
+.sh-fresh-legend {
+  display: inline-flex;
+  flex-wrap: wrap;
+  column-gap: 2ch;
+}
+
+.sh-fresh-legend > span {
+  white-space: nowrap;
+}
+
+/* ---- Health rows --------------------------------------------------------------------- */
+
+.sh-src {
+  flex-wrap: nowrap;
+  column-gap: 1ch;
+  justify-content: flex-start;
+}
+
+button.sh-src {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  line-height: inherit;
+}
+
+button.sh-src:hover {
+  outline: 1px solid var(--ink);
+  outline-offset: -1px;
+}
+
+button.sh-src[aria-expanded='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+button.sh-src[aria-expanded='true'] .fresh {
+  color: inherit;
+}
+
+.sh-src-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sh-src-age {
+  flex: none;
+  width: 11ch;
+  text-align: right;
+}
+
+.sh-src-runs {
+  flex: none;
+  width: 9ch;
+  text-align: right;
+}
+
+/* ---- Phone (≤ 680 px): full-bleed map, sheets ------------------------------------------ */
+
+.shell.phone {
+  --sh-top-h: calc(var(--line) * 2);
+  --sheet-gap: calc(var(--sh-top-h) + 1px);
+}
+
+.phone .sh-top {
+  flex-wrap: wrap;
+  align-content: flex-start;
+  row-gap: 0;
+  column-gap: 1ch;
+}
+
+.phone .sh-title {
+  order: 1;
+  flex: 1 1 auto;
+}
+
+.phone .sh-actions {
+  order: 2;
+}
+
+.phone .sh-actions button.t {
+  padding: 0 0.25ch;
+}
+
+.phone .sh-boro {
+  order: 3;
+  flex: 1 0 100%;
+  min-width: 0;
+}
+
+.phone .sh-status {
+  border-top: 0;
+}
+
+.phone .sh-dialog {
+  position: fixed;
+  top: calc(var(--sh-top-h) + 1px);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: auto;
+  max-height: none;
+  transform: none;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  box-shadow: none;
+}
+
+.phone .sh-boot {
+  top: calc(var(--sh-top-h) + 1px);
+}
+
+/* ---- Motion: still frames ------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  .sh-blink,
+  .sh-dots::after {
+    animation: none;
+  }
+
+  .sh-dots::after {
+    content: '...';
+  }
+}
+
+@media (forced-colors: active) {
+  .sh-pill,
+  button.sh-src[aria-expanded='true'] {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+    border-color: Highlight;
+  }
+
+  .sh-x {
+    background: none;
+    border-left: 1px solid GrayText;
+  }
+}
+
+@media print {
+  .shell {
+    height: auto;
+    overflow: visible;
+  }
+
+  .sh-blink {
+    animation: none;
+  }
+}
