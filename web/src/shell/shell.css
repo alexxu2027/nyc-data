@@ -55,6 +55,18 @@
   flex: none;
 }
 
+/* Desktop: three columns, so the centred borough chips stay put when the actions change
+ * width ("[CHANGES (30 NEW)]" -> "[CHANGES]" moved them ~35px; UX review C5). */
+.shell:not(.phone) .sh-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  column-gap: 2ch;
+}
+
+.shell:not(.phone) .sh-actions {
+  justify-self: end;
+}
+
 .sh-actions > .l-main {
   white-space: nowrap;
 }
@@ -160,7 +172,7 @@ button[aria-pressed='true'] .fresh {
 .shell:not(.phone) .sh-dialog.sh-feed {
   top: auto;
   bottom: 12px;
-  width: min(340px, calc(100% - 24px));
+  width: min(64ch, calc(100% - 24px)); /* 340px cut titles to ~9 characters (UX review B10) */
 }
 
 .shell:not(.phone) .sh-feed .panel-body {
@@ -277,6 +289,8 @@ button[aria-pressed='true'] .fresh {
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
+  /* Whole characters only: a rule clipped mid-glyph left a half "=" (UX review C10). */
+  max-width: round(down, 100%, 1ch);
 }
 
 .sh-layer > .l.opt > .l-right {

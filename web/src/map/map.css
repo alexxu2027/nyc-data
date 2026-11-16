@@ -217,3 +217,7 @@
   background: var(--ink);
   color: var(--paper);
 }
+
+.nl-tip-hint {
+  color: var(--muted);
+}

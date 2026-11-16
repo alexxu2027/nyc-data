@@ -1,13 +1,14 @@
 /* The "what changed" list and ticker (ADR-013 item 4). Tokens only. */
 
+/* State column: NEW (since you last looked), ENDED, or blank (UX review B10). */
 .fd-mark {
   display: inline-block;
-  width: 2ch;
+  width: 6ch;
   flex: none;
 }
 
-.fd-mark.off {
-  visibility: hidden;
+.fd-mark.ended {
+  color: var(--muted);
 }
 
 .fd-kind {

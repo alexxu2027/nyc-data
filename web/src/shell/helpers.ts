@@ -126,8 +126,14 @@ export function rowState(
     const from = v.fetchedAt != null ? ` FROM ${rel(v.fetchedAt, now)}` : '';
     notes.push({ key: 'error', tone: 'warn', text: `UPDATE FAILED, SHOWING DATA${from}` });
   }
-  if (health === 'stale' || health === 'degraded' || health === 'never') {
-    const word = health === 'stale' ? 'STALE' : health === 'degraded' ? 'FAILING' : 'NOT COLLECTED YET';
+  if (health === 'never') {
+    // One plain line, and no count: "0" plus "no trains reporting" read as "the subway stopped"
+    // (UX review B8). The dashed dot and HEALTH already say the feed has no data.
+    notes.push({ key: 'feed', tone: 'muted', text: 'NO DATA COLLECTED YET' });
+    return { dot: health, dotTitle: DOT_TITLES[health], count: null, notes };
+  }
+  if (health === 'stale' || health === 'degraded') {
+    const word = health === 'stale' ? 'STALE' : 'FAILING';
     notes.push({ key: 'feed', tone: 'muted', text: `FEED ${word}: SEE HEALTH` });
   }
   if (v.total === 0) {

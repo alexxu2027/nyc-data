@@ -234,6 +234,21 @@ An Opus reviewer checked the live app (desktop, phone in an iframe, dark theme) 
   two), each phone sheet has exactly one (the layer sheet showed two bars side by side), and the
   phone detail sheet's SOURCE footer stays pinned. Checked in Chrome: desktop light and dark,
   and phone layer and detail sheets.
+- **Step 3a, quick clarity wins ✅:**
+  - Footer key: `[X] SHOW · [+] KEY & FILTERS`, plus the missing `◌ NO DATA YET`.
+  - A feed with no data shows `--` and one `NO DATA COLLECTED YET` line.
+  - REFRESH and NEXT are split, so nothing is cut off.
+  - Camera drawer drops the misleading AS OF.
+  - Map tooltips end with `CLICK FOR DETAIL`.
+  - Tide chip shows `=` for steady and `SURGE +0.6`; chips get a title.
+  - Station drawer has a `TYPE` row. Weather precipitation is in inches. Citi Bike says `BIKES
+    IN 24% OF DOCKS`, and its colour key is numeric (0%…100%).
+  - Floods is renamed `Past floods`, with honest pulse copy.
+  - CHANGES is 64ch wide, with NEW/ENDED columns and a key line.
+  - Borough chips no longer jump (3-column top bar).
+  - Phone status reads `6:17 AM ET | 3,795 ON MAP`.
+  - Rule lines clip to whole characters.
+  - The YAML changes (Past floods, Citi Bike key) show after `nyclive serve` restarts.
 
 ## Collector: start / stop
 `uv run nyclive collect --keep-awake` starts it (it doesn't survive a reboot). To stop it: Task

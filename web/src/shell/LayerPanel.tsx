@@ -401,14 +401,15 @@ function Timing({ def }: { def: LayerDef }) {
   const v = useLayerView(def.id);
   const now = useNow();
   const m = v.meta;
-  const next = v.visible && v.nextAt ? `, NEXT ${fmtCountdown(v.nextAt - now)}` : '';
+  const next = Boolean(v.visible && v.nextAt);
   const span = m?.window ? (Date.parse(m.window.to) - Date.parse(m.window.from)) / 1000 : null;
   return (
     <>
       <Readout k="AS OF" v={m?.data_as_of ? fmtTime(m.data_as_of, 'datetime').toUpperCase() : '--'} />
       {span !== null && <Readout k="WINDOW" v={`${fmtDuration(span)} TO THE NEWEST RECORD`} />}
       <Readout k="FETCHED" v={v.fetchedAt ? fmtAgo(v.fetchedAt, now).toUpperCase() : '--'} />
-      <Readout k="REFRESH" v={`${fmtPoll(def.poll_s)}${next}`} />
+      <Readout k="REFRESH" v={fmtPoll(def.poll_s)} />
+      {next && <Readout k="NEXT" v={`IN ${fmtCountdown(v.nextAt! - now)}`} />}
       {def.lag_note && <Line muted>{def.lag_note}</Line>}
       {m?.note && <Line muted>{m.note}</Line>}
       <Line muted>

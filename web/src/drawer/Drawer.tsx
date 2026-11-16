@@ -126,11 +126,15 @@ function FeatureView({ def, id, back }: { def: LayerDef; id: string; back?: () =
         <span className="drw-title">{title}</span>
       </Line>
       <Readout k="LAYER" v={def.label} r={borough ? (BOROUGH_NAMES[borough] ?? borough).toUpperCase() : undefined} />
-      <Readout
-        k="AS OF"
-        v={asOf ? fmtTime(asOf, 'datetime') : '--'}
-        r={asOf ? <span className="muted">{fmtAgo(asOf, now).toUpperCase()}</span> : undefined}
-      />
+      {/* A camera's FRAME row says how fresh it is; the list's fetch time here read as "7 H AGO"
+          next to a 2 s old frame (UX review B9). */}
+      {kind !== 'camera' && (
+        <Readout
+          k="AS OF"
+          v={asOf ? fmtTime(asOf, 'datetime') : '--'}
+          r={asOf ? <span className="muted">{fmtAgo(asOf, now).toUpperCase()}</span> : undefined}
+        />
+      )}
       {def.lag_note && <Line muted>{def.lag_note}.</Line>}
       {!feature && layer?.status === 'ready' && (
         <Line muted>Not in the current map data (filtered out or gone).</Line>

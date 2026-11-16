@@ -337,7 +337,7 @@ layers:
     changes: {props: [state], new: true}
     detail: {type: entity, kind: bike_station}
     attribution: {text: "Citi Bike / Lyft GBFS", url: "https://citibikenyc.com/system-data"}
-    legend_title: "Bikes as a share of working docks"
+    legend_title: "Colour: share of docks with a bike"
     filters:
       - key: state
         label: Availability
@@ -362,11 +362,11 @@ layers:
       radius: {prop: capacity, scale: interpolate, stops: [[0, 3], [20, 4.5], [40, 6.5], [80, 9.5]], default: 4.5}
       hollow: {prop: state, op: eq, value: offline}
     legend:
-      - {label: Empty, shape: circle, color: "#440154"}
-      - {label: Low, shape: circle, color: "#3b528b"}
-      - {label: Half, shape: circle, color: "#21918c"}
-      - {label: Plenty, shape: circle, color: "#5ec962"}
-      - {label: Full, shape: circle, color: "#fde725"}
+      - {label: "0% (empty)", shape: circle, color: "#440154"}
+      - {label: "25%", shape: circle, color: "#3b528b"}
+      - {label: "50%", shape: circle, color: "#21918c"}
+      - {label: "75%", shape: circle, color: "#5ec962"}
+      - {label: "100% (full)", shape: circle, color: "#fde725"}
       - {label: Not renting, shape: ring, color: "#8a8a8a"}
       - {label: "Size: dock capacity", shape: size}
 
@@ -532,7 +532,7 @@ layers:
   # ------------------------------------------------------------------ water & weather
   - id: flood_events
     label: Street flooding (FloodNet)
-    short: Floods
+    short: Past floods
     group: water
     kind: point
     sources: [floodnet_events, floodnet_sensors]
@@ -568,7 +568,7 @@ layers:
       - {label: Under 4 in, shape: circle, color: "#9ecae1"}
       - {label: 4–12 in, shape: circle, color: "#4292c6"}
       - {label: 12 in or more, shape: circle, color: "#084594"}
-      - {label: Within 48 h of the newest data, shape: pulse, color: "#4292c6"}
+      - {label: "Newest in the data (about 2 weeks old)", shape: pulse, color: "#4292c6"}
       - {label: "Size: peak depth", shape: size}
 
   - id: radar

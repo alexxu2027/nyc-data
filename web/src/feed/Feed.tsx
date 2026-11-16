@@ -25,14 +25,11 @@ function Row({ it, fresh, onOpen }: { it: ChangeItem; fresh: boolean; onOpen: (i
       title={`${fmtTime(it.at, 'datetime')}: ${itemText(it)}${it.ended ? ' (ended)' : ''}${where}`}
       right={<span className="num muted">{hhmm(it.at)}</span>}
     >
-      <span className={fresh ? 'fd-mark' : 'fd-mark off'} aria-label={fresh ? 'New: ' : undefined}>
-        {fresh ? '*' : ' '}
+      <span className={!fresh && it.ended ? 'fd-mark ended' : 'fd-mark'} aria-label={fresh ? 'New: ' : it.ended ? 'Ended: ' : undefined}>
+        {fresh ? 'NEW' : it.ended ? 'ENDED' : ''}
       </span>
       <span className="fd-kind">{KIND_LABEL[it.kind] ?? it.kind.toUpperCase()}</span>
-      <span className={it.ended ? 'fd-title ended' : 'fd-title'}>
-        {it.title}
-        {it.ended ? ' (ENDED)' : ''}
-      </span>
+      <span className={it.ended ? 'fd-title ended' : 'fd-title'}>{it.title}</span>
     </Line>
   );
 }
@@ -62,7 +59,7 @@ export function FeedBody({ onOpened }: { onOpened?: () => void }) {
   return (
     <>
       <Line muted right="TIMES ET">
-        LAST 12 H
+        LAST 12 H · NEW = SINCE YOU LAST LOOKED
       </Line>
       {feed.status === 'error' && (
         <Line>

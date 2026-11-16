@@ -174,6 +174,20 @@ function PhoneTitle() {
 /** Every symbol gets a legend: the freshness dots used on the rows. */
 function FreshLegend() {
   return (
+    <>
+      <ControlsLegend />
+      <FreshDots />
+    </>
+  );
+}
+
+/** What the row controls do (UX review B6): "[+]" read as "add". */
+function ControlsLegend() {
+  return <Line muted nowrap>[X] SHOW · [+] KEY & FILTERS</Line>;
+}
+
+function FreshDots() {
+  return (
     <Line muted>
       <span className="sh-fresh-legend">
         <span>
@@ -184,6 +198,9 @@ function FreshLegend() {
         </span>
         <span>
           <FreshDot state="degraded" /> FAILING
+        </span>
+        <span>
+          <FreshDot state="never" /> NO DATA YET
         </span>
         <span>
           <FreshDot state="off" /> OFF

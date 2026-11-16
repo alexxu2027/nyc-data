@@ -48,7 +48,8 @@ describe('feed list', () => {
     // ...but the reader has now seen everything up to the newest row.
     expect(screen.getByTestId('unread').textContent).toBe('0');
     expect(useApp.getState().feed.seenAt).toBe(Date.parse('2026-11-15T03:20:00Z'));
-    expect(screen.getByText(/Alert b \(ENDED\)/)).toBeTruthy();
+    expect(screen.getAllByLabelText('Ended:')).toHaveLength(1);
+    expect(screen.getByText('Alert b')).toBeTruthy();
     // A newer item arriving while open is marked and read at once.
     act(() => setFeed([item('c', '2026-11-15T03:25:00Z'), ...ITEMS], useApp.getState().feed.seenAt));
     expect(screen.getAllByLabelText('New:')).toHaveLength(2);

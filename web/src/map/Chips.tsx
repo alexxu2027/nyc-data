@@ -33,13 +33,13 @@ export function chipContent(layer: string, p: Record<string, unknown>, icon?: st
   if (layer === 'tide_gauge') {
     const lvl = num(p.water_level_ft);
     const s = num(p.surge_ft);
-    const arrow = p.trend === 'rising' ? '▲' : p.trend === 'falling' ? '▼' : p.trend === 'steady' ? '■' : '';
-    const surge = s === null ? null : `${s > 0 ? '+' : s < 0 ? '−' : '±'}${Math.abs(s).toFixed(1)}`;
+    const arrow = p.trend === 'rising' ? '▲' : p.trend === 'falling' ? '▼' : p.trend === 'steady' ? '=' : '';
+    const surge = s === null ? null : `SURGE ${s > 0 ? '+' : s < 0 ? '−' : '±'}${Math.abs(s).toFixed(1)}`;
     return {
       glyph: icon ?? 'wave',
       text: `${lvl === null ? '–' : lvl.toFixed(1)} FT${arrow ? ` ${arrow}` : ''}`,
       sub: surge,
-      label: `${name}: water level ${lvl === null ? 'unknown' : `${lvl.toFixed(1)} feet`}${p.trend ? `, ${String(p.trend)}` : ''}${surge ? `, surge ${surge} feet` : ''}`,
+      label: `${name}: water level ${lvl === null ? 'unknown' : `${lvl.toFixed(1)} feet`}${p.trend ? `, ${String(p.trend)}` : ''}${surge ? `, ${surge.toLowerCase()} feet` : ''}`,
     };
   }
   return { glyph: icon ?? null, text: name, sub: null, label: name };
@@ -102,6 +102,7 @@ function ChipMarker({ ctl, layer, f, icon }: { ctl: MapController; layer: string
       type="button"
       className={`nl-chip${selected ? ' is-sel' : ''}${hovered ? ' is-hover' : ''}`}
       aria-label={c.label}
+      title={c.label}
       aria-pressed={selected}
       onClick={(e) => {
         e.stopPropagation();

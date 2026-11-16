@@ -27,16 +27,23 @@ export function StatusLine({ compact = false }: { compact?: boolean }) {
             {stalled ? 'STALLED' : 'LIVE'}
           </span>
           <span className="sh-clock" aria-label="New York time">
-            {fmtClock(now)}
+            {compact ? fmtClock(now).replace(/:\d\d (?=[AP]M)/, ' ') : fmtClock(now)}
           </span>
           <span className="sh-sep" aria-hidden="true">
             |
           </span>
-          <span>
-            <Num value={catalog ? layers : null} width={2} /> LAYERS{' '}
-            <Num value={catalog ? features : null} width={6} deal /> <span className="full">FEATURES</span>
-            <span className="short">FEAT.</span>
-          </span>
+          {compact ? (
+            // Phone: the full line was cut to "10 LAYERS 3," (UX review C2).
+            <span>
+              <Num value={catalog ? features : null} width={5} deal /> ON MAP
+            </span>
+          ) : (
+            <span>
+              <Num value={catalog ? layers : null} width={2} /> LAYERS{' '}
+              <Num value={catalog ? features : null} width={6} deal /> <span className="full">FEATURES</span>
+              <span className="short">FEAT.</span>
+            </span>
+          )}
           {!compact && (
             <>
               <span className="sh-sep" aria-hidden="true">

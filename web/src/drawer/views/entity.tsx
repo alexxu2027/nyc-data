@@ -80,7 +80,7 @@ function BikeView(p: EntityViewProps) {
       <Readout
         k="STATE"
         v={state ? (BIKE_STATE[state] ?? state.toUpperCase()) : '--'}
-        r={pct == null ? undefined : `${Math.round(pct * 100)}% FULL`}
+        r={pct == null ? undefined : `BIKES IN ${Math.round(pct * 100)}% OF DOCKS`}
       />
       <Series {...p} />
     </>
@@ -165,7 +165,11 @@ function WeatherView(p: EntityViewProps) {
     <>
       <Readout k="TEMPERATURE" v={`${fixed(tf, 1)} °F`} r={`${fixed(tc, 1)} °C`} />
       <Readout k="WIND" v={`${fixed(wind, 1)} MPH`} />
-      <Readout k="PRECIP" v={`${fixed(precip, 1)} MM`} r={rain == null ? undefined : `RAIN ${fixed(rain, 1)} MM`} />
+      <Readout
+        k="PRECIP"
+        v={`${fixed(mmToIn(precip), 2)} IN`}
+        r={rain == null || rain === precip ? undefined : `RAIN ${fixed(mmToIn(rain), 2)} IN`}
+      />
       <Readout k="NOW" v={wet == null ? '--' : wet ? 'PRECIPITATION FALLING' : 'DRY'} />
       <Series {...p} />
     </>
@@ -248,7 +252,8 @@ function StationView(p: EntityViewProps) {
   return (
     <>
       <Readout k="ROUTES" v={routes.length ? routes.map((r) => `[${r}]`).join(' ') : '--'} />
-      <Readout k="ACCESSIBLE" v={ada == null ? '--' : yesNo(ada)} r={structure?.toUpperCase()} />
+      <Readout k="ACCESSIBLE" v={ada == null ? '--' : yesNo(ada)} />
+      {structure && <Readout k="TYPE" v={structureWord(structure)} />}
       {line && <Readout k="LINE" v={line} />}
       <Blank />
       <Heading>SERVICE ALERTS: {p.detail ? alerts.length : '--'}</Heading>
@@ -307,4 +312,16 @@ const VIEWS: Record<string, (p: EntityViewProps) => React.JSX.Element> = {
 export function EntityView(p: EntityViewProps) {
   const View = VIEWS[p.kind] ?? GenericEntity;
   return <View {...p} />;
+}
+
+/** Weather is in °F and MPH, so precipitation is in inches too (UX review B17). */
+function mmToIn(mm: number | null | undefined): number | null {
+  return mm == null ? null : mm / 25.4;
+}
+
+/** The station dataset's "Structure": "Subway" means underground (UX review B16). */
+function structureWord(s: string): string {
+  const w = s.trim().toLowerCase();
+  if (w === 'subway') return 'UNDERGROUND';
+  return s.toUpperCase();
 }

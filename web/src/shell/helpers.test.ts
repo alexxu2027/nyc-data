@@ -156,6 +156,12 @@ describe('rowState', () => {
     expect(rowState(view(), 'degraded', DEF, 0).notes.map((n) => n.text)).toEqual(['FEED FAILING: SEE HEALTH']);
   });
 
+  it('a feed with no data yet shows one plain note and no count (UX review B8)', () => {
+    const r = rowState(view({ count: 0, total: 0 }), 'never', { empty_text: 'No trains reporting', list: false }, 0);
+    expect(r.count).toBeNull();
+    expect(r.notes.map((n) => n.text)).toEqual(['NO DATA COLLECTED YET']);
+  });
+
   it('empty uses the catalog empty_text', () => {
     const r = rowState(view({ count: 0, total: 0 }), 'ok', { empty_text: 'No active alerts for NYC', list: true }, 0);
     expect(r.count).toBe(0);

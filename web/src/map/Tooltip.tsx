@@ -43,6 +43,8 @@ export function Tooltip({ ctl }: { ctl: MapController }) {
           {l}
         </div>
       ))}
+      {/* Say it can be clicked (UX review B14); cameras already say so in their own line. */}
+      {info.layer !== 'cameras' && <div className="nl-tip-l nl-tip-hint">CLICK FOR DETAIL</div>}
     </div>
   );
 }
