@@ -97,7 +97,6 @@ def test_edge_synthetic_skips_and_fallbacks():
 @pytest.mark.parametrize(
     ("case", "match"),
     [
-        ("bad_empty_feed", "gtfs-l: feed has no vehicles"),
         ("bad_stale_header", "gtfs-g: feed header is 20 min old"),
         ("bad_truncated", "truncated"),
         ("bad_missing_feed", "expected the 8 feeds"),
@@ -309,7 +308,58 @@ def test_trip_leaving_before_its_start_is_closed_once(tmp_path):
                 run_once(src, a, None, store, tmp_path / "a", now=lambda t=t: t).rows_written
             )
         closed = store.events_for(SID)[waiting.event_id]
-    assert written == [2, 1, 0, 0, 0, 0]  # opened, closed once, then nothing
+    # opened; kept open through the 75 s close grace; closed once at 90 s; then nothing
+    assert written == [2, 0, 0, 1, 0, 0]
     assert (
         closed["ends_at"] == ts(waiting.starts_at) and "left_feed_before_start" in closed["props"]
     )
+
+
+def test_quiet_line_is_accepted_and_other_lines_update():
+    """Review 2026-11-16 #8: an empty but fresh line feed (a weekend shutdown) used to fail the
+    whole run, taking every line's trains off the map."""
+    real = parse_fixture(SID)
+    quiet = parse_fixture(SID, "edge_quiet_line")
+    l_trains = [e for e in real.events if e.props["route"] == "L"]
+    assert l_trains  # the real capture has L trains...
+    assert not [e for e in quiet.events if e.props["route"] == "L"]  # ...the quiet one has none
+    assert len(quiet.events) == len(real.events) - len(l_trains)
+    assert quiet.complete == {"events"}
+
+
+def test_close_grace_keeps_a_flickering_trip_open(tmp_path):
+    """Review 2026-11-16 #10: a trip missing for one poll was closed and reopened (2 rows and a
+    backward jump). With close_grace_s it stays open; gone for longer, it closes once, at the
+    time it was last seen."""
+    from dataclasses import replace
+
+    from nyclive.collect.pipeline import run_once
+    from nyclive.registry import load_registry
+    from nyclive.sources.base import Adapter, Batch
+
+    src = load_registry().sources[SID]
+    assert src.close_grace_s == 75
+    t0 = datetime(2026, 11, 16, 7, 0, tzinfo=UTC)
+    trip = Event(SID, "20261116:025000_1..S03R", "train", "1 train southbound", t0,
+                 subtype="1", props={"route": "1", "dir": "S", "stop": "142"})  # fmt: skip
+    other = replace(trip, event_id="20261116:026000_2..N08R", title="2 train northbound",
+                    subtype="2", props={"route": "2", "dir": "N", "stop": "201"})  # fmt: skip
+    # seen, missing one poll, back, then gone for good
+    batches = iter([[trip, other], [other], [trip, other]] + [[other]] * 4)
+
+    def parse(raw):
+        return Batch(events=list(next(batches)), complete=frozenset({"events"}))
+
+    written = []
+    with StateStore(tmp_path / "state.db") as store:
+        for i in range(7):
+            t = t0 + timedelta(seconds=30 * i)
+            raw = RawPayload(SID, (RawPart("gtfs", "u", b"", t),))
+            a = Adapter("x", (SID,), lambda ctx, raw=raw: raw, parse)
+            r = run_once(src, a, None, store, tmp_path / "a", now=lambda t=t: t)
+            written.append(r.rows_written)
+        ev = store.events_for(SID)[trip.event_id]
+    # run 2: missing but within grace (nothing written); run 3: back (same payload, nothing);
+    # runs 4-5: missing 30-60 s (grace); run 6: 90 s > 75 s, closed once; run 7: nothing.
+    assert written == [2, 0, 0, 0, 0, 1, 0]
+    assert ev["ends_at"] == ts(t0 + timedelta(seconds=60))  # last seen, not when grace ran out

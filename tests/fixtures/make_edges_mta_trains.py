@@ -161,7 +161,7 @@ def main() -> None:
         "635S; a repeat of the feed's first vehicle (deduped); a deleted entity",
         synthetic,
     )
-    edit("bad_empty_feed", "gtfs-l reduced to its header: no vehicles, no trip updates", empty_feed)
+    edit("edge_quiet_line", "gtfs-l reduced to its header: a line with no trains", empty_feed)
     edit("bad_stale_header", "gtfs-g header timestamp set 20 min before fetched_at", stale_header)
     edit("bad_truncated", "gtfs-jz cut mid-way through its third entity", truncated)
     edit("bad_missing_feed", "gtfs-si part removed (7 of 8 feeds)", missing_feed)

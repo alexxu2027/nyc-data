@@ -293,7 +293,7 @@ An Opus reviewer checked the live app (desktop, phone in an iframe, dark theme) 
   DATA_SOURCES and ROADMAP (Phase 2.5 follow-up 5) are updated.
 - **Plan:** `.orchestrate/notify/plan.md` (local). It reuses the NWS alert path end to end.
   Step 0 gates it: capture ≥ 5 real alerts with a watcher script, because the feed only holds
-  live alerts. Then the adapter, API, catalog and frontend, and ADR-014 (new change kind
+  live alerts. Then the adapter, API, catalog and frontend, and ADR-015 (new change kind
   `notice`). It rides the next collector restart.
 - **Step 0 watcher running** (started 2026-11-16 21:17 UTC, detached, separate from the
   collector): `scripts/watch_notify.py`. It saves fixture cases to
@@ -302,6 +302,14 @@ An Opus reviewer checked the live app (desktop, phone in an iframe, dark theme) 
   has a polygon. Stop it early:
   `Get-CimInstance Win32_Process | ? CommandLine -like '*watch_notify*' | % { Stop-Process -Id $_.ProcessId }`.
   `edge_empty` is already saved.
+
+### Trains hardening before go-live (2026-11-16 evening, ADR-014)
+- **#8:** a quiet line feed (a weekend shutdown) is valid: that line has no trips, and the other
+  lines still update. A missing feed or a stale header is still rejected.
+- **#10:** registry `close_grace_s` (trains: 75 s). A trip missing for one poll stays open; gone
+  longer, it closes once at its last-seen time. That's no close/reopen churn and no backward
+  jump.
+- Both ride tonight's collector restart. The Notify NYC ADR is now ADR-015.
 
 ## Collector: start / stop
 `uv run nyclive collect --keep-awake` starts it (it doesn't survive a reboot). To stop it: Task

@@ -21,7 +21,7 @@ import threading
 import uuid
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field, replace
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -108,7 +108,10 @@ def run_once(
             log.warning("%s: dropped %s", source.id, msg)
         fetched_at = raw.fetched_at
         with WRITE_LOCK:
-            rows = _write(source.id, batch, fetched_at, run_id, store, archive_dir, state)
+            rows = _write(
+                source.id, batch, fetched_at, run_id, store, archive_dir, state,
+                close_grace_s=source.close_grace_s or 0,
+            )  # fmt: skip
             if after_archive:
                 after_archive()
             finished = now()
@@ -174,6 +177,7 @@ def _write(
     store: StateStore,
     archive_dir: Path,
     state: dict,
+    close_grace_s: int = 0,
 ) -> _Rows:
     keyframe = state.get("keyframe_date") != fetched_at.date().isoformat()
     out = _Rows(keyframe=keyframe)
@@ -257,7 +261,16 @@ def _write(
             # future): close once, or every run writes a new version (review 2026-11-16, #1).
             if "closed_reason" in json.loads(prev["props"] or "{}"):
                 continue
-            closed = _closed_version(prev, fetched_at)
+            # Grace (ADR-014): missing for less than close_grace_s keeps it open, so a trip that
+            # drops out of one poll isn't closed and reopened (review 2026-11-16, #10). It then
+            # ends when it was last seen, not when the grace ran out.
+            close_at = fetched_at
+            if close_grace_s and prev.get("last_seen"):
+                last_seen = datetime.fromisoformat(prev["last_seen"])
+                if fetched_at - last_seen < timedelta(seconds=close_grace_s):
+                    continue
+                close_at = last_seen
+            closed = _closed_version(prev, fetched_at, close_at)
             ev_rows.append(closed)
             out.event_state.append(_event_state(closed, prev, fetched_at))
 
@@ -283,14 +296,16 @@ def _event_state(row: dict, prev: dict | None, fetched_at: datetime) -> dict:
     }
 
 
-def _closed_version(prev: dict, fetched_at: datetime) -> dict:
-    """Archive row for an open event that disappeared from a complete feed."""
+def _closed_version(prev: dict, fetched_at: datetime, close_at: datetime | None = None) -> dict:
+    """Archive row for an open event that disappeared from a complete feed. It ends at
+    `close_at` (default: this fetch; with a close grace, when it was last seen)."""
+    close_at = close_at or fetched_at
     props = json.loads(prev["props"] or "{}")
     starts_at = datetime.fromisoformat(prev["starts_at"])
     # An event that leaves the feed before it starts (a cancelled planned outage) ends at its
     # start, so ends_at >= starts_at always holds.
-    ends_at = max(fetched_at, starts_at)
-    props["closed_reason"] = "left_feed" if ends_at == fetched_at else "left_feed_before_start"
+    ends_at = max(close_at, starts_at)
+    props["closed_reason"] = "left_feed" if ends_at == close_at else "left_feed_before_start"
     row = {
         "source": prev["source"], "event_id": prev["event_id"], "category": prev["category"],
         "subtype": prev["subtype"], "title": prev["title"],

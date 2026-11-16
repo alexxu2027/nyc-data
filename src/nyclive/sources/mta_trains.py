@@ -10,8 +10,10 @@ them on the track using config/subway_static.json. Stop ids are platform ids ("A
 the parent station ("A27"). NYCT trip ids start with the origin time in hundredths of a minute
 after midnight of the service day ("148500_1..N03R" = 24:45:00, i.e. 00:45 the next morning),
 which gives `starts_at`. Direction comes from the NYCT extension, else from the trip id
-("..N"/"..S"), else from the platform suffix. A quiet feed (no vehicles and no trip updates) or
-a stale header is rejected so a glitch can't close every open trip.
+("..N"/"..S"), else from the platform suffix. A missing feed or a stale header is rejected so a
+glitch can't close every open trip. A quiet feed (no vehicles, no trip updates) with a fresh
+header is a line with no trains and is accepted; the registry's close_grace_s keeps one empty
+poll from closing its trips.
 """
 
 from __future__ import annotations
@@ -85,8 +87,9 @@ def parse(raw: RawPayload) -> Batch:
 
 
 def _check_feed(name: str, feed: _gtfsrt.FeedMessage, fetched_at: datetime) -> None:
-    if not feed.vehicles and not feed.trip_updates:
-        raise ValueError(f"{name}: feed has no vehicles and no trip updates")
+    # A quiet feed with a fresh header is a line with no trains (a weekend G shutdown), not a
+    # glitch: accepted, so the other lines still update (review 2026-11-16, #8). The registry's
+    # close_grace_s keeps one glitchy empty poll from closing that line's trips.
     if not feed.header.timestamp:
         raise ValueError(f"{name}: feed header has no timestamp")
     age = fetched_at - from_epoch(feed.header.timestamp)

@@ -182,3 +182,24 @@ a rewrite, and the archive must stay small (about 48 MB/day measured before trai
 **Consequences:** subway trains rely on a built static file (the layer says "STATIC GTFS NOT
 BUILT" without it). The pipeline loads every open trip row each 30 s; if that is slow it needs a
 pipeline change after the soak. Radar is coarse at street zoom. FloodNet depth lags up to 45 min.
+
+## ADR-014: Close grace for complete feeds; quiet train lines are valid (2026-11-16)
+**Context:** review findings #8 and #10 (`.orchestrate/p25/review.md`).
+- A complete feed closes every open event missing from a run. For trains that meant a trip
+  dropping out of one 30 s poll was closed and reopened: 2 archive rows, and the dot jumped back.
+- The trains adapter rejected a line-group feed with no vehicles. That happens legitimately
+  during a weekend shutdown, so one quiet line failed every run and took all lines off the map.
+
+**Decision:**
+1. A registry field `close_grace_s` (default None, meaning close at once). The pipeline keeps a
+   missing event open while `fetched_at - last_seen < close_grace_s`. Once missing for longer, it
+   closes once with `ends_at = last_seen` (when it really left), not the fetch that noticed.
+   `mta_subway_realtime` uses 75 s (2.5 polls).
+2. `mta_trains` accepts a quiet feed whose header is fresh: that line has no trips. A missing
+   feed and a stale or absent header are still rejected. The grace keeps one glitchy empty
+   poll from closing a line's trips.
+
+**Consequences:** a vanished trip stays drawn for up to 75 s, within the trains layer's 120 s
+window anyway. Other complete feeds are unchanged until they opt in. The old `bad_empty_feed`
+fixture is now `edge_quiet_line`. The cancel-before-start trip test now closes on its 4th
+poll. Archive semantics (ADR-011) are otherwise unchanged.

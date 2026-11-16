@@ -130,6 +130,7 @@ sources:
     shape: events
     cadence_s: 30
     max_lag_s: 3600
+    close_grace_s: 75
     auth: none
     probe: https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-ace
     status: verified

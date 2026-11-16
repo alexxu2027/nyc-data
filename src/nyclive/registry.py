@@ -32,6 +32,9 @@ class Source:
     notes: str = ""
     adapter: str | None = None  # module in nyclive.sources; None = not collected
     max_lag_s: int | None = None  # data older than this counts as stale in `status`
+    # Complete-feed events missing for less than this are kept open (ADR-014): a trip that
+    # flickers out of one poll isn't closed and reopened. None = close at once.
+    close_grace_s: int | None = None
 
     @property
     def key_env(self) -> str | None:
