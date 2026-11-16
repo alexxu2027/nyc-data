@@ -11,6 +11,14 @@ import { errorText, useAsync } from '../hooks';
 
 const dt = (ts: string) => fmtTime(ts, 'datetime');
 
+/** MTA text names its inline icons in brackets; say what they mean (UX review B13). */
+export function readableText(s: string): string {
+  return s
+    .replace(/\[shuttle bus icon\]/gi, '[BUS]')
+    .replace(/\[accessibility icon\]/gi, '[ACCESSIBLE]')
+    .replace(/\[([a-z ]+) icon\]/gi, (_, w: string) => `[${w.trim().toUpperCase()}]`);
+}
+
 export function Loading({ children = 'LOADING DETAIL…' }: { children?: ReactNode }) {
   return (
     <Line muted>
@@ -71,7 +79,7 @@ function Description({ ev }: { ev: EventSummary }) {
   const fullText = typeof res.data?.props.description === 'string' ? res.data.props.description : null;
   return (
     <>
-      <Text indent>{(full && fullText) || text}</Text>
+      <Text indent>{readableText((full && fullText) || text)}</Text>
       {isTrimmed(text) && (
         <Line indent muted>
           {full && res.loading ? (
@@ -97,11 +105,15 @@ export interface EventItemProps {
   stations?: boolean;
   /** Show description and reason (default true). */
   text?: boolean;
+  /** Lists: the text starts folded behind [MORE] so the list can be scanned (UX review B13). */
+  collapsible?: boolean;
 }
 
 /** One alert, outage or flood in a list: title, status and times, then its text. */
-export function EventItem({ ev, onLocate, stations = true, text = true }: EventItemProps) {
+export function EventItem({ ev, onLocate, stations = true, text = true, collapsible = false }: EventItemProps) {
+  const [open, setOpen] = useState(!collapsible);
   const located = ev.lat != null && ev.lon != null;
+  const hasText = Boolean(ev.props.reason || ev.props.est_return || ev.props.description);
   const reason = typeof ev.props.reason === 'string' ? ev.props.reason : null;
   const est = typeof ev.props.est_return === 'string' ? ev.props.est_return : null;
   return (
@@ -128,9 +140,16 @@ export function EventItem({ ev, onLocate, stations = true, text = true }: EventI
           LINE-WIDE, NOT ON THE MAP
         </Line>
       )}
-      {text && reason && <Readout k="REASON" v={reason} />}
-      {text && est && <Readout k="BACK BY" v={dt(est)} />}
-      {text && <Description ev={ev} />}
+      {text && open && reason && <Readout k="REASON" v={reason} />}
+      {text && open && est && <Readout k="BACK BY" v={dt(est)} />}
+      {text && open && <Description ev={ev} />}
+      {text && collapsible && hasText && (
+        <Line indent muted>
+          <TextButton onClick={() => setOpen(!open)} ariaLabel={open ? `Hide the text of ${ev.title}` : `Show the text of ${ev.title}`}>
+            {open ? 'LESS' : 'MORE'}
+          </TextButton>
+        </Line>
+      )}
     </div>
   );
 }

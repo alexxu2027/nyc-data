@@ -57,15 +57,15 @@ export function TopBar() {
       </nav>
       <div className="sh-actions l">
         <span className="l-main">
-          <span className="hide-phone">
-            <TextButton
-              pressed={panel === 'feed'}
-              onClick={() => flip('feed')}
-              ariaLabel={unread ? `Changes, ${unread} new` : 'Changes'}
-            >
-              {changesLabel(unread)}
-            </TextButton>
-          </span>
+          {/* On phone too (UX review B11): it was the only way in, and hidden there. */}
+          <TextButton
+            pressed={panel === 'feed'}
+            onClick={() => flip('feed')}
+            ariaLabel={unread ? `Changes, ${unread} new` : 'Changes'}
+          >
+            <span className="full">{changesLabel(unread)}</span>
+            <span className="short">{unread > 0 ? `${Math.min(unread, 99)} NEW` : 'CHANGES'}</span>
+          </TextButton>
           <TextButton pressed={panel === 'health'} onClick={() => flip('health')} ariaLabel="Feed health">
             <>
               <FreshDot state={healthDot} /> HEALTH
@@ -74,13 +74,16 @@ export function TopBar() {
           <TextButton pressed={panel === 'about'} onClick={() => flip('about')} ariaLabel="About and sources">
             ABOUT
           </TextButton>
-          <TextButton
-            pressed={theme === 'dark'}
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            ariaLabel="Dark theme"
-          >
-            DARK
-          </TextButton>
+          {/* Phone: the toggle lives in ABOUT, to make room for CHANGES. */}
+          <span className="hide-phone">
+            <TextButton
+              pressed={theme === 'dark'}
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              ariaLabel="Dark theme"
+            >
+              DARK
+            </TextButton>
+          </span>
         </span>
       </div>
     </header>

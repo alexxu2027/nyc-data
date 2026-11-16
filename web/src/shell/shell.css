@@ -256,7 +256,7 @@ button[aria-pressed='true'] .fresh {
 }
 
 .sh-cd {
-  min-width: 5ch;
+  min-width: 10ch; /* "12 MIN AGO" without the line shifting */
 }
 
 /* The change ticker takes what is left of the line and ellipsises. */
@@ -310,6 +310,11 @@ button[aria-pressed='true'] .fresh {
 
 .sh-count {
   display: inline-block;
+}
+
+/* "ON MAP" sits over the count column, clear of the [+] after it. */
+.sh-count-head {
+  padding-right: 4ch;
 }
 
 .sh-slot {

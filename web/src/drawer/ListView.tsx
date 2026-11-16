@@ -49,7 +49,7 @@ function Items({ def, page, onPicked }: { def: LayerDef; page: EventsPage; onPic
             : undefined;
         return (
           <div key={`${ev.source}:${ev.id}`}>
-            <EventItem ev={ev} onLocate={locate} />
+            <EventItem ev={ev} onLocate={locate} collapsible />
             <Blank />
           </div>
         );

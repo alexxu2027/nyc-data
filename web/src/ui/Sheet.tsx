@@ -56,6 +56,8 @@ export interface SheetProps {
   children?: ReactNode;
   /** Extension: reports the visible height in px (0 when closed), e.g. for map insets. */
   onHeight?: (px: number) => void;
+  /** Extra controls on the title line, before [▲] [▼] (e.g. the detail sheet's [CLOSE]). */
+  actions?: ReactNode;
 }
 
 const DRAG_SLOP = 4;
@@ -65,7 +67,7 @@ const DRAG_SLOP = 4;
  * or the title line, or use [▲] / [▼]. Fixed to its containing block (the viewport, or a
  * transformed ancestor). Set --sheet-gap on an ancestor to keep a top bar uncovered.
  */
-export function Sheet({ open, detent, onDetent, title, children, onHeight }: SheetProps) {
+export function Sheet({ open, detent, onDetent, title, children, onHeight, actions }: SheetProps) {
   const sheetRef = useRef<HTMLElement>(null);
   const probes = useRef<Partial<Record<Detent, HTMLDivElement | null>>>({});
   const drag = useRef<{ y0: number; h0: number; y: number; t: number; v: number; moved: boolean } | null>(null);
@@ -193,6 +195,7 @@ export function Sheet({ open, detent, onDetent, title, children, onHeight }: She
             <span className="panel-title">{title}</span>
           </span>
           <span className="l-right">
+            {actions}
             <TextButton ariaLabel="Expand sheet" disabled={detent === 'full'} onClick={() => step('up')}>
               ▲
             </TextButton>

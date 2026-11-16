@@ -56,9 +56,11 @@ export function LayerPanelBody({ expanded, onExpand }: LayerPanelProps) {
 
   return (
     <>
-      <Line muted right={<span>{fmtInt(catalog.layers.length)} LAYERS</span>}>
-        <Num value={visibleCount} width={2} /> ON
+      {/* The count column gets a header (UX review B5): what the numbers count. */}
+      <Line muted right={<span className="sh-count-head">ON MAP</span>}>
+        <Num value={visibleCount} width={2} /> OF {fmtInt(catalog.layers.length)} LAYERS ON
       </Line>
+      <HowToPointer />
       {groups.map((g) => (
         <section key={g.id} aria-label={g.label}>
           <Blank />
@@ -452,5 +454,42 @@ function ListButton({ def }: { def: LayerDef }) {
     >
       {label}
     </TextButton>
+  );
+}
+
+const ABOUT_SEEN_KEY = 'nyclive.about.seen';
+
+function aboutSeen(): boolean {
+  try {
+    return localStorage.getItem(ABOUT_SEEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/** A one-line pointer to the how-to in ABOUT, until ABOUT has been opened once (UX review B1). */
+function HowToPointer() {
+  const panel = useApp((s) => s.panel);
+  const setPanel = useApp((s) => s.setPanel);
+  const [seen, setSeen] = useState(aboutSeen);
+  useEffect(() => {
+    if (panel !== 'about' || seen) return;
+    try {
+      localStorage.setItem(ABOUT_SEEN_KEY, '1');
+    } catch {
+      /* blocked storage: the pointer just stays */
+    }
+    // Remember it in state too, so the line goes at once.
+    const t = setTimeout(() => setSeen(true), 0);
+    return () => clearTimeout(t);
+  }, [panel, seen]);
+  if (seen) return null;
+  return (
+    <Line muted>
+      NEW HERE?{' '}
+      <TextButton onClick={() => setPanel('about')} ariaLabel="How to read this map">
+        HOW TO READ THIS MAP
+      </TextButton>
+    </Line>
   );
 }

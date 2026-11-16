@@ -322,3 +322,10 @@ button.t.drw-link {
 .drw-print {
   display: contents;
 }
+
+/* In a phone sheet the sheet's title line is the header (with its own [CLOSE]): the drawer's
+ * own head and close would repeat it and cost two lines (UX review B19). */
+.bsheet .drawer .panel-head,
+.bsheet .drawer-close {
+  display: none;
+}

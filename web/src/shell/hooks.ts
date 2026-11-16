@@ -80,9 +80,20 @@ export function selectNextRefresh(s: AppState): number | null {
   return min;
 }
 
-export function useVisibleTotals(): { layers: number; features: number; nextAt: number | null } {
+/** The newest successful fetch among visible layers, or null. */
+export function selectLastFetch(s: AppState): number | null {
+  let max: number | null = null;
+  for (const id of s.visible) {
+    const t = s.data[id]?.fetchedAt ?? null;
+    if (t !== null && (max === null || t > max)) max = t;
+  }
+  return max;
+}
+
+export function useVisibleTotals(): { layers: number; features: number; nextAt: number | null; lastAt: number | null } {
   const layers = useApp((s) => s.visible.length);
   const features = useApp(selectVisibleFeatures);
   const nextAt = useApp(selectNextRefresh);
-  return { layers, features, nextAt };
+  const lastAt = useApp(selectLastFetch);
+  return { layers, features, nextAt, lastAt };
 }

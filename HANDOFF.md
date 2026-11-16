@@ -249,6 +249,17 @@ An Opus reviewer checked the live app (desktop, phone in an iframe, dark theme) 
   - Phone status reads `6:17 AM ET | 3,795 ON MAP`.
   - Rule lines clip to whole characters.
   - The YAML changes (Past floods, Citi Bike key) show after `nyclive serve` restarts.
+- **Step 3b, medium clarity ✅:**
+  - ABOUT starts with HOW TO READ THE MAP, and the layer panel shows a one-time `NEW HERE?
+    [HOW TO READ THIS MAP]` pointer until ABOUT is opened (localStorage).
+  - The count column has an `ON MAP` header.
+  - Lagging layers say `DATA FROM 7 D AGO` on the row. Cameras are exempt: their frames are live.
+  - Alerts: the key says each dot is a station, and the not-on-map note no longer contradicts the
+    filtered list.
+  - Phone has `[CHANGES]`; `[DARK]` moves into ABOUT there.
+  - List items fold behind `[MORE]` (486 → 206 lines), and MTA `[… icon]` text becomes `[BUS]` etc.
+  - The status line says `UPDATED 10 S AGO` instead of a countdown.
+  - The phone detail sheet has one header with `[CLOSE]`.
 
 ## Collector: start / stop
 `uv run nyclive collect --keep-awake` starts it (it doesn't survive a reboot). To stop it: Task

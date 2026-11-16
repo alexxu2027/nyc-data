@@ -156,6 +156,20 @@ describe('rowState', () => {
     expect(rowState(view(), 'degraded', DEF, 0).notes.map((n) => n.text)).toEqual(['FEED FAILING: SEE HEALTH']);
   });
 
+  it('lagging data says how old it is on the row (UX review B2)', () => {
+    const now = Date.parse('2026-11-16T12:00:00Z');
+    const meta = (asOf: string): Partial<RowInput> => ({ meta: { data_as_of: asOf, unlocated: 0 } as RowInput['meta'] });
+    const old = rowState(view(meta('2026-11-10T12:00:00Z')), 'ok', { ...DEF, poll_s: 3600 }, now);
+    expect(old.notes.map((x) => x.text)).toContain('DATA FROM 6 D AGO');
+    const fresh = rowState(view(meta('2026-11-16T11:30:00Z')), 'ok', { ...DEF, poll_s: 60 }, now);
+    expect(fresh.notes.some((x) => x.key === 'lag')).toBe(false);
+    const slow = rowState(view(meta('2026-11-16T09:00:00Z')), 'ok', { ...DEF, poll_s: 300 }, now);
+    expect(slow.notes.map((x) => x.text)).toContain('DATA FROM 3 H AGO');
+    // No clock (now = 0): measured against the last fetch.
+    const noClock = rowState(view({ ...meta('2026-11-10T12:00:00Z'), fetchedAt: now }), 'ok', { ...DEF, poll_s: 3600 }, 0);
+    expect(noClock.notes.map((x) => x.text)).toContain('DATA FROM 6 D AGO');
+  });
+
   it('a feed with no data yet shows one plain note and no count (UX review B8)', () => {
     const r = rowState(view({ count: 0, total: 0 }), 'never', { empty_text: 'No trains reporting', list: false }, 0);
     expect(r.count).toBeNull();
@@ -176,7 +190,7 @@ describe('rowState', () => {
   it('truncated and unlocated are spelled out', () => {
     const meta = { ...META, truncated: true, count: 20000, total: 65799, unlocated: 37 };
     const r = rowState(view({ meta, count: 20000, total: 20000 }), 'ok', { empty_text: null, list: true }, 0);
-    expect(r.notes.map((n) => n.text)).toEqual(['SHOWING NEWEST 20,000 OF 65,799', '37 NOT ON MAP · IN LIST']);
+    expect(r.notes.map((n) => n.text)).toEqual(['SHOWING NEWEST 20,000 OF 65,799', 'SOME HAVE NO MAP SPOT: SEE THE LIST']);
     expect(rowState(view({ meta: { ...META, unlocated: 3 } }), 'ok', DEF, 0).notes[0].text).toBe('3 NOT ON MAP');
   });
 });

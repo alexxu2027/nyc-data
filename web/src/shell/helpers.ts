@@ -57,7 +57,7 @@ export interface RowInput {
 }
 
 export interface RowNote {
-  key: 'loading' | 'error' | 'empty' | 'filtered' | 'truncated' | 'unlocated' | 'feed';
+  key: 'loading' | 'error' | 'empty' | 'filtered' | 'truncated' | 'unlocated' | 'feed' | 'lag';
   text: string;
   /** warn = the yellow highlighter (something failed); muted = an honest caveat. */
   tone: 'warn' | 'muted';
@@ -75,6 +75,19 @@ export interface RowState {
 }
 
 const n = (x: number) => x.toLocaleString('en-US');
+
+/** A layer's data counts as lagging past 3 refreshes, and never before an hour. */
+export function lagLimitMs(pollS: number | undefined): number {
+  return Math.max(3 * (pollS ?? 0) * 1000, 3_600_000);
+}
+
+/** "40 MIN", "3 H", "6 D": a coarse age for row notes. */
+export function ago(ms: number): string {
+  const m = Math.round(ms / 60_000);
+  if (m < 90) return `${Math.max(m, 1)} MIN`;
+  const h = Math.round(ms / 3_600_000);
+  return h < 48 ? `${h} H` : `${Math.round(ms / 86_400_000)} D`;
+}
 
 /** "in 2 min" / "2 min ago", coarse and never negative-zero. */
 function rel(ms: number, now: number): string {
@@ -101,7 +114,7 @@ const DOT_TITLES: Record<FreshState, string> = {
 export function rowState(
   v: RowInput,
   health: SourceState | 'unknown',
-  def: Pick<LayerDef, 'empty_text' | 'list'>,
+  def: Pick<LayerDef, 'empty_text' | 'list'> & Partial<Pick<LayerDef, 'poll_s' | 'detail'>>,
   now: number,
 ): RowState {
   const hasData = v.rev > 0;
@@ -144,9 +157,21 @@ export function rowState(
   if (v.meta?.truncated) {
     notes.push({ key: 'truncated', tone: 'muted', text: `SHOWING NEWEST ${n(v.meta.count)} OF ${n(v.meta.total)}` });
   }
+  // Data that is much older than the feed's cadence says so on the row, not only inside [+]:
+  // "FLOODS 80" with a pulse read as "flooding now" for data weeks old (UX review B2).
+  // Rows without a ticking clock (now = 0) measure against their last fetch instead.
+  const asOf = v.meta?.data_as_of ? Date.parse(v.meta.data_as_of) : NaN;
+  const ref = now > 0 ? now : (v.fetchedAt ?? 0);
+  // Cameras are the exception: their as-of is the camera list's, the frames themselves are live.
+  const liveFrames = def.detail?.type === 'entity' && def.detail.kind === 'camera';
+  if (!liveFrames && ref > 0 && Number.isFinite(asOf) && ref - asOf > lagLimitMs(def.poll_s)) {
+    notes.push({ key: 'lag', tone: 'muted', text: `DATA FROM ${ago(ref - asOf)} AGO` });
+  }
   if (v.meta && v.meta.unlocated > 0) {
-    const tail = def.list ? ' · IN LIST' : '';
-    notes.push({ key: 'unlocated', tone: 'muted', text: `${n(v.meta.unlocated)} NOT ON MAP${tail}` });
+    // A listed layer: no number here. The server's count ignores the status filter, so "9 NOT ON
+    // MAP" contradicted the list's filtered "5 NOT ON MAP" (UX review B4/C9).
+    const text = def.list ? 'SOME HAVE NO MAP SPOT: SEE THE LIST' : `${n(v.meta.unlocated)} NOT ON MAP`;
+    notes.push({ key: 'unlocated', tone: 'muted', text });
   }
   const dot: FreshState = health;
   return { dot, dotTitle: DOT_TITLES[dot], count: v.count, notes };

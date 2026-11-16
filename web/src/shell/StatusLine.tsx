@@ -4,12 +4,12 @@
 import { useApp } from '../core';
 import { FeedTicker } from '../feed';
 import { FreshDot, Num } from '../ui';
-import { fmtClock, fmtCountdown, worstState } from './helpers';
+import { fmtClock, worstState } from './helpers';
 import { useNow, useVisibleTotals } from './hooks';
 
 export function StatusLine({ compact = false }: { compact?: boolean }) {
   const now = useNow();
-  const { layers, features, nextAt } = useVisibleTotals();
+  const { layers, features, lastAt } = useVisibleTotals();
   const health = useApp((s) => s.health);
   const healthError = useApp((s) => s.healthError);
   const catalog = useApp((s) => s.catalog);
@@ -50,7 +50,8 @@ export function StatusLine({ compact = false }: { compact?: boolean }) {
                 |
               </span>
               <span>
-                NEXT UPDATE <span className="num sh-cd">{fmtCountdown(nextAt === null ? null : nextAt - now)}</span>
+                {/* How fresh the map is, not a countdown that restarts every 30 s (UX review B15). */}
+                UPDATED <span className="num sh-cd">{lastAt === null ? '--' : fmtSince(now - lastAt)}</span>
               </span>
               {ticker && (
                 <>
@@ -87,4 +88,12 @@ export function StatusLine({ compact = false }: { compact?: boolean }) {
       )}
     </div>
   );
+}
+
+/** "4 S AGO", "2 MIN AGO": coarse on purpose, so the status line doesn't flicker. */
+function fmtSince(ms: number): string {
+  const s = Math.max(0, Math.round(ms / 1000));
+  if (s < 5) return 'JUST NOW';
+  if (s < 60) return `${Math.floor(s / 5) * 5} S AGO`;
+  return `${Math.round(s / 60)} MIN AGO`;
 }

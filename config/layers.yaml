@@ -501,7 +501,7 @@ layers:
     list: true
     detail: {type: entity, kind: subway_station}
     attribution: {text: "MTA Subway Service Alerts", url: "https://new.mta.info/alerts"}
-    legend_title: Alerts at a station
+    legend_title: "Stations with alerts (each dot is a station)"
     filters:
       - key: status
         label: Status

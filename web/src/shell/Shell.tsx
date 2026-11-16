@@ -154,6 +154,12 @@ export function Shell({ map, drawer }: ShellProps) {
             onDetent={(d) => setDrawerDetent({ key: selKey, d })}
             title={selLabel || 'DETAIL'}
             onHeight={setDrawerSheetH}
+            actions={
+              // One header and one way to close (UX review B19): the drawer's own head is hidden here.
+              <TextButton onClick={() => useApp.getState().select(null)} ariaLabel="Close the detail">
+                CLOSE
+              </TextButton>
+            }
           >
             {open && <div className="sh-drawer-sheet">{drawer}</div>}
           </Sheet>
