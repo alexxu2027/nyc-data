@@ -151,6 +151,17 @@ Follow-up (keyless, plan in `.orchestrate/notify/plan.md`):
    CHANGES. The closest official match to a "Citizen"-style live layer.
    Research: `docs/research/late-data-alternatives.md`.
 
+Train polish (after go-live; only if the scheduled-time animation looks off during delays):
+6. **Dwell at the platform:** use GTFS-rt `current_status` (STOPPED_AT vs IN_TRANSIT_TO, already
+   decoded) to park a dwelling train at its stop instead of sliding it on. Small: 3 values,
+   rarely changes the stored event.
+7. **Predicted arrivals as `t1`:** use the trip updates' predicted arrival at the next stop
+   instead of the scheduled run time, so delayed trains slow and wait realistically. This is
+   the closest public stand-in for block tracking: MTA doesn't publish track-circuit data, and
+   its predictions are derived from it. Predictions change almost every poll, so they must stay
+   **out of the change-only archive** (a small live-only value). That's a design change and
+   needs an ADR.
+
 Later (needs weeks of archive, so with or after Phase 3):
 - "Unusual right now": hour-of-week baselines for 311 by type and area, road speeds and empty
   bike docks, flagging large deviations.
