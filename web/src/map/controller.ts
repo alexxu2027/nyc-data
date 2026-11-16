@@ -204,6 +204,10 @@ export class MapController {
     this.styleReady = false;
     this.triedOffline = false;
     if (themeChanged) this.container.parentElement?.setAttribute('data-map-theme', s.theme);
+    // Until style.load, feature-state calls throw ("Style is not done loading"), so forget what
+    // was installed; install() reapplies selection, hover and mask from `want`.
+    this.pulse.setTargets([]);
+    this.resetInstall();
     const theme = s.theme;
     this.map.setStyle(url, {
       diff: false,

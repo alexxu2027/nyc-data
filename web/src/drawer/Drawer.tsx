@@ -133,14 +133,13 @@ function FeatureView({ def, id, back }: { def: LayerDef; id: string; back?: () =
         <Line muted>Not in the current map data (filtered out or gone).</Line>
       )}
       <Blank />
+      {kind && (!(res.error && !res.data) || (kind === 'camera' && props)) ? (
+        // One stable position, so a failed fetch doesn't remount (and restart) the camera frame.
+        <EntityView key="entity" kind={kind} id={id} props={props} detail={entity} rev={rev} />
+      ) : null}
       {res.error && !res.data ? (
-        <>
-          {kind === 'camera' && props ? <EntityView kind={kind} id={id} props={props} detail={undefined} rev={rev} /> : null}
-          <ErrorState error={res.error} onRetry={() => setRetry((r) => r + 1)} />
-        </>
-      ) : kind ? (
-        <EntityView kind={kind} id={id} props={props} detail={entity} rev={rev} />
-      ) : source ? (
+        <ErrorState error={res.error} onRetry={() => setRetry((r) => r + 1)} />
+      ) : kind ? null : source ? (
         <EventView source={source} id={id} props={props} detail={event} />
       ) : (
         <PropsTable props={props} />
