@@ -17,6 +17,7 @@ const chips: Renderer = () => ({ ...emptyRendered(), chips: true });
 export const RENDERERS: Record<string, Renderer> = {
   boroughs,
   nws_alerts: polygonAlerts,
+  city_alerts: polygonAlerts, // Notify NYC (ADR-015): same look and severity colours as NWS
   road_speeds: speedLines,
   complaints_311: clusters,
   subway_stations: (ctx) => points(ctx, { labelOffset: [0.7, 0] }),

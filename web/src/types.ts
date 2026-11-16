@@ -63,7 +63,7 @@ export interface Insets { top: number; right: number; bottom: number; left: numb
 export interface LayerData { status: 'idle' | 'loading' | 'ready' | 'error'; features: LayerFeature[]; meta: LayerMeta | null;
   etag: string | null; rev: number; fetchedAt: number | null; nextAt: number | null; error: string | null;
   changed: string[]; changedAt: number | null }
-export interface ChangeItem { id: string; at: string; kind: 'weather' | 'alert' | 'outage' | 'flood'; source: string;
+export interface ChangeItem { id: string; at: string; kind: 'weather' | 'alert' | 'outage' | 'flood' | 'notice'; source: string;
   title: string; severity: number; layer: string; feature: string | null; lat: number | null; lon: number | null;
   borough: FeatureBorough; ended: boolean }
 export interface ChangesPage { now: string; since: string; items: ChangeItem[] }

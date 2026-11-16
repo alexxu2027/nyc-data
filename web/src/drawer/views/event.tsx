@@ -5,7 +5,7 @@ import { Blank, Line, Readout } from '../../ui';
 import { SeriesChart } from '../charts/SeriesChart';
 import type { Point, Tick } from '../charts/path';
 import { fixed, fmtDuration, fmtRange, num } from '../detail';
-import { Loading, TextBlock, statusLabel } from './common';
+import { Loading, readableText, TextBlock, statusLabel } from './common';
 
 export interface EventViewProps {
   source: string;
@@ -83,6 +83,30 @@ function NwsView({ props, detail }: EventViewProps) {
       <TextBlock label="AREA" text={p.areaDesc ?? props?.area} />
       <TextBlock label="DESCRIPTION" text={p.description} />
       <TextBlock label="INSTRUCTION" text={p.instruction} />
+    </>
+  );
+}
+
+// ---- Notify NYC alert (ADR-015) ---------------------------------------------------------------
+
+function CapView({ props, detail }: EventViewProps) {
+  const p = detail?.props ?? {};
+  const start = detail?.starts_at ?? s(props?.starts_at);
+  const end = detail ? detail.ends_at : (s(props?.ends_at) ?? null);
+  const msg = s(p.msg_type) ?? s(props?.msg_type);
+  return (
+    <>
+      <Readout k="EVENT" v={s(props?.event) ?? detail?.subtype ?? '--'} r={detail ? statusLabel(detail) : s(props?.status)?.toUpperCase()} />
+      {(s(p.severity) || s(p.urgency)) && <Readout k="SEVERITY" v={s(p.severity)?.toUpperCase() ?? '--'} r={s(p.urgency)?.toUpperCase()} />}
+      {start && <Line>{fmtRange(start, end, dt)}</Line>}
+      {p.citywide === true && <Line muted>CITYWIDE: NOT DRAWN ON THE MAP</Line>}
+      {msg === 'Update' && <Line muted>UPDATES AN EARLIER ALERT</Line>}
+      {msg === 'Cancel' && <Line muted>CANCELS AN EARLIER ALERT</Line>}
+      <Readout k="ISSUED BY" v="NYC EMERGENCY MANAGEMENT" />
+      {!detail && <Loading />}
+      <Blank />
+      <TextBlock label="AREA" text={p.area_desc ?? props?.area} />
+      <TextBlock label="DESCRIPTION" text={typeof p.description === 'string' ? readableText(p.description) : p.description} />
     </>
   );
 }
@@ -192,6 +216,7 @@ const VIEWS: Record<string, (p: EventViewProps) => React.JSX.Element> = {
   nyc_311: ComplaintView,
   nyc_collisions: CollisionView,
   nws_alerts: NwsView,
+  notify_nyc: CapView,
   floodnet_events: FloodEventView,
 };
 

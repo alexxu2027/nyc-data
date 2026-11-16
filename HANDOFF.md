@@ -313,6 +313,17 @@ An Opus reviewer checked the live app (desktop, phone in an iframe, dark theme) 
   - The registry has **no `adapter:` yet**, on purpose: the API, catalog and frontend come
     next. It goes live with the catalog entry once the watcher's `real` capture confirms the
     geometry rule.
+- **Also built (not live):**
+  - API: `streets.city_alerts` (not in BUILDERS), CHANGES kind `notice` (CITY), list mapping.
+  - Frontend: `RENDERERS.city_alerts`, tooltip, drawer `CapView`, `KIND_LABEL.notice`.
+  - ADR-015 written.
+- **To go live**, at a collector restart, after the watcher has a `real` capture:
+  1. Copy one watcher case to `tests/fixtures/notify_nyc/real`.
+  2. Add the polygon counts to ADR-015.
+  3. Set `adapter: notify_nyc` in sources.yaml.
+  4. Add the `city_alerts` layer to layers.yaml (plan Step 3), plus
+     `BUILDERS["city_alerts"] = streets.city_alerts`.
+  5. Run the suites, then restart.
 
 ### Trains hardening before go-live (2026-11-16 evening, ADR-014)
 - **#8:** a quiet line feed (a weekend shutdown) is valid: that line has no trips, and the other

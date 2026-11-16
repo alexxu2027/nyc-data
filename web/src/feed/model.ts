@@ -5,6 +5,7 @@ import type { ChangeItem } from '../types';
 
 export const KIND_LABEL: Record<ChangeItem['kind'], string> = {
   weather: 'WEATHER',
+  notice: 'CITY', // Notify NYC (ADR-015)
   alert: 'ALERT',
   outage: 'OUTAGE',
   flood: 'FLOOD',

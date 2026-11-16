@@ -122,6 +122,11 @@ export function tooltipText(layer: string, p: Record<string, unknown>, def?: Lay
         title: str(p.event) || 'Weather alert',
         lines: [str(p.headline) || str(p.area), p.ends_at ? `Until ${when(p.ends_at)}` : '', p.status === 'upcoming' ? 'Upcoming' : ''].filter(Boolean),
       };
+    case 'city_alerts':
+      return {
+        title: str(p.event) || 'City alert',
+        lines: [str(p.headline) || str(p.area), p.ends_at ? `Until ${when(p.ends_at)}` : ''].filter(Boolean),
+      };
     case 'weather':
       return {
         title: name,

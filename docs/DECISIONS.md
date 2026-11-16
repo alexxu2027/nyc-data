@@ -203,3 +203,39 @@ pipeline change after the soak. Radar is coarse at street zoom. FloodNet depth l
 window anyway. Other complete feeds are unchanged until they opt in. The old `bad_empty_feed`
 fixture is now `edge_quiet_line`. The cancel-before-start trip test now closes on its 4th
 poll. Archive semantics (ADR-011) are otherwise unchanged.
+
+## ADR-015: Notify NYC alerts as a city alert layer (2026-11-16)
+**Context:** the city publishes some layers days late (research:
+`docs/research/late-data-alternatives.md`). Notify NYC (NYC Emergency Management) publishes its
+live alerts as a keyless CAP RSS. It's the official, near real time "Citizen-style" source.
+Plan: `.orchestrate/notify/plan.md`.
+
+**Decision:**
+1. Source `notify_nyc`: the RSS (only the alerts active now, one item per language) plus each
+   **English** item's CAP 1.2 file. It's a complete set every 2 min, and an empty channel is
+   normal. Category `city_alert`.
+2. Geometry:
+   - A CAP polygon or circle becomes WKT.
+   - **Citywide** alerts (all five counties named, or a polygon covering ≥ 60% of the city bbox)
+     get none: a city-sized shape would hide every other layer.
+   - **No geocoding:** places named only in text stay off the map. GeoSearch, the keyless
+     option, can't resolve intersections.
+   - Never a borough outline for a street-level incident (unlike NWS, whose alerts really
+     are county-wide).
+3. API layer `city_alerts` (Streets & safety), drawn with the NWS polygon renderer and severity
+   colours. Alerts that can't be drawn count as `unlocated` and are in the list.
+4. CHANGES gets a new kind **`notice`** (label CITY), amending ADR-013's frozen
+   `ChangeItem['kind']` union. A Cancel isn't listed. An item points at its own polygon or
+   nowhere.
+5. A Cancel ends when it was sent. An Update is its own event (the alert it replaces leaves the
+   feed and is closed), with `references` kept.
+
+**Status:** adapter, API pieces and frontend are built and tested on fixtures (2 real, Wayback;
+the rest synthetic).
+- **Go-live switch:** registry `adapter: notify_nyc`, the `city_alerts` catalog entry and its
+  `BUILDERS` line, all together at a collector restart.
+- **Waiting on:** a real capture from `scripts/watch_notify.py`, to record here how many alerts
+  carry a local polygon.
+
+**Consequences:** if most real alerts turn out to be text-only, the layer is mainly a list and
+CHANGES source. Geocoding would need a key (ADR-007), so that's a separate decision.

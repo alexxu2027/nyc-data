@@ -50,3 +50,12 @@ describe('tooltipText subway_trains', () => {
     expect(t.lines).toEqual(['At: Times Sq-42 St']);
   });
 });
+
+describe('tooltipText city_alerts (Notify NYC, ADR-015)', () => {
+  it('names the event, then the headline and when it ends', () => {
+    const t = tooltipText('city_alerts', { event: 'Police Activity', headline: 'Police Activity - Hutchinson River Parkway East (BX)', ends_at: '2026-11-16T23:00:00Z' });
+    expect(t.title).toBe('Police Activity');
+    expect(t.lines[0]).toBe('Police Activity - Hutchinson River Parkway East (BX)');
+    expect(t.lines[1]).toMatch(/^Until /);
+  });
+});
