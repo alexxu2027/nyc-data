@@ -130,6 +130,41 @@ Tasks:
 
 ---
 
+## Phase 2.5: Liveness (added 2026-11-16)
+**Goal:** make it obvious, within seconds of opening the map, that the city is moving.
+
+Tasks (in priority order):
+1. **FloodNet live depth** (ADR-010 ready design; the FloodNet team OK'd polling): a
+   `floodnet_live` adapter (50 stations per batch every 30 min, depth only, change-only). Sensors
+   light up within minutes of flooding.
+2. **Rain radar overlay:** RainViewer tiles (keyless), with an opacity control and a frame time
+   label, as a toggleable layer.
+3. **Live subway trains:** MTA GTFS-realtime (keyless): train positions interpolated along the
+   track shapes between updates, coloured by route.
+4. **"What changed" feed + change pulse:** a short live list of notable new events (alerts, flood
+   trips, new outages, NWS) that flies to each one; dots that changed on the last poll flash
+   briefly (still under reduced motion).
+
+Later (needs weeks of archive, so with or after Phase 3):
+- "Unusual right now": hour-of-week baselines for 311 by type and area, road speeds and empty
+  bike docks, flagging large deviations.
+- A "normal for now" band behind drawer charts (same baselines).
+- Citi Bike empty/full nowcast (30 min).
+- Flood risk shade (surge + rain + FloodNet).
+- NYC Ferry positions; DOT street closures; presets (Commute, Flood watch, Safety);
+  heatmap mode for 311 / collisions; neighbourhood card (needs NTA outlines).
+- Keyed sources (MTA buses, OpenAQ) only if ADR-007 is relaxed.
+
+**Acceptance criteria**
+- [ ] New adapters pass conformance offline; collector restarted on them only after the Phase 1
+  soak passes.
+- [ ] Radar, trains and FloodNet live depth each have a legend, an attribution and an honest empty
+  or stale state.
+- [ ] Trains move smoothly between updates with no jank at city zoom; polling stays ≥ 30 s.
+- [ ] The feed shows new items within one poll; clicking one flies to it and opens the drawer.
+
+---
+
 ## Phase 3: Replay
 **Goal:** scrub back in time over everything archived.
 - Move collectors to an always-on box (RTX 3050 PC or VPS; see ADR-009) **before or at the start
