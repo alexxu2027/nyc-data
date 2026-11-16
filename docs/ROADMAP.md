@@ -209,6 +209,10 @@ labeled set. Layer is visible in live and replay.
   cams and speeds.
 - Extras: subway trains (GTFS-rt protobuf), OpenSky aircraft, Kalshi NYC-high panel, OpenAQ (key),
   511NY traffic incidents (key; `ny511_events`).
+- **"Ask the map"** (key, optional under ADR-007): a question bar answered by a Claude tool loop
+  over our own API, with grounded answers that cite each source's age and highlights on the map.
+  Build after Notify NYC is live and Phase 3 replay exists. Design note:
+  `docs/research/ask-the-map.md`.
 - Candidate layers from DATA_SOURCES "Candidates".
 
 **Acceptance:** each mode answers one stated question in one click. At least 2 extras are live.
