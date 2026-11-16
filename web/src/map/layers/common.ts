@@ -102,8 +102,8 @@ export function circle(ctx: RenderCtx, o: CircleOpts = {}): LayerSpecification {
 }
 
 /**
- * Selection halo for points: a hard offset copy in ink at [2, 2], a paper knockout, and a 2 px
- * ink ring at the marker radius + 6 px. `radius` is the zoomed px radius expression.
+ * Selection halo for points: a paper knockout and a 2 px ink ring at the marker radius + 6 px,
+ * both centred. (No offset shadow: on a thin ring it reads as a stray second line.) `radius` is the zoomed px radius expression.
  */
 export function pointHalo(ctx: RenderCtx, radius: Value, filter?: FilterSpecification): LayerSpecification[] {
   const shown: Expr = ['case', SELECTED, 1, 0];
@@ -112,7 +112,7 @@ export function pointHalo(ctx: RenderCtx, radius: Value, filter?: FilterSpecific
     source: ctx.source,
     ...(filter ? { filter } : {}),
   };
-  const ring = (part: string, color: string, width: number, translate?: [number, number]) =>
+  const ring = (part: string, color: string, width: number) =>
     L({
       ...base,
       id: lid(ctx.def, part),
@@ -123,10 +123,9 @@ export function pointHalo(ctx: RenderCtx, radius: Value, filter?: FilterSpecific
         'circle-stroke-color': color,
         'circle-stroke-width': width,
         'circle-stroke-opacity': shown,
-        ...(translate ? { 'circle-translate': translate } : {}),
       },
     });
-  return [ring('halo-shadow', ctx.t.ink, 2, [2, 2]), ring('halo-knock', ctx.t.paper, 5), ring('halo', ctx.t.ink, 2)];
+  return [ring('halo-knock', ctx.t.paper, 5), ring('halo', ctx.t.ink, 2)];
 }
 
 /** Expanding ring under the marker, for features matching the catalog `pulse` where. */

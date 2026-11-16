@@ -49,6 +49,6 @@ export function speedLines(ctx: RenderCtx): Rendered {
         ...(translate ? { 'line-translate': translate } : {}),
       },
     });
-  r.halo.push(ring('halo-shadow', ctx.t.ink, 2, [2, 2]), ring('halo-knock', ctx.t.paper, 4), ring('halo', ctx.t.ink, 2));
+  r.halo.push(ring('halo-knock', ctx.t.paper, 4), ring('halo', ctx.t.ink, 2));
   return r;
 }
