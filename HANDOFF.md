@@ -303,9 +303,15 @@ An Opus reviewer checked the live app (desktop, phone in an iframe, dark theme) 
   `Get-CimInstance Win32_Process | ? CommandLine -like '*watch_notify*' | % { Stop-Process -Id $_.ProcessId }`.
   `edge_empty` is already saved.
 - **Adapter built (not live):** `sources/notify_nyc.py`.
-  - RSS → English items → CAP files. CAP polygon or circle becomes WKT; citywide alerts (all 5
-    counties, or a polygon covering ≥ 60% of the city bbox) get no geometry; no geocoding.
-    Cancel ends when sent.
+  - RSS → English items → CAP files. CAP polygon or circle becomes WKT; citywide alerts (a
+    polygon covering ≥ 60% of the city bbox) get no geometry; no geocoding. Cancel ends when
+    sent.
+  - **Amended after the first real capture** (GWB crash, 2026-11-16, case
+    `edge_five_counties`; ADR-015 "Findings"):
+    - Notify NYC names all five counties even on local alerts, so the areaDesc no longer makes
+      an alert citywide, and a "(BX)" title tag beats a five-county areaDesc;
+    - every alert is a generic "Civil Emergency Message" at Severe or Extreme, so the type
+      comes from the headline ("Traffic Delays") and the severity is a flat 2.
   - Fixtures: `edge_archived_rss` and `edge_citywide` (real, from the Wayback Machine), plus
     synthetic cases from `tests/fixtures/make_edges_notify_nyc.py`.
   - Shared `sources/_text.py` trimming (NWS uses it too), `timeutil.parse_rfc2822_utc`, and the
@@ -318,8 +324,9 @@ An Opus reviewer checked the live app (desktop, phone in an iframe, dark theme) 
   - Frontend: `RENDERERS.city_alerts`, tooltip, drawer `CapView`, `KIND_LABEL.notice`.
   - ADR-015 written.
 - **To go live**, at a collector restart, after the watcher has a `real` capture:
-  1. Copy one watcher case to `tests/fixtures/notify_nyc/real`.
-  2. Add the polygon counts to ADR-015.
+  1. Copy one watcher case to `tests/fixtures/notify_nyc/real` (`edge_five_counties` is a
+     copy of the first capture, `live_20261116_2226`).
+  2. Add the polygon counts to ADR-015 (1 capture so far: no polygon).
   3. Set `adapter: notify_nyc` in sources.yaml.
   4. Add the `city_alerts` layer to layers.yaml (plan Step 3), plus
      `BUILDERS["city_alerts"] = streets.city_alerts`.
@@ -340,6 +347,13 @@ An Opus reviewer checked the live app (desktop, phone in an iframe, dark theme) 
   - collector log ERROR lines.
   It prints PASS/WAIT/WARN/FAIL per check and `GO-LIVE:` overall. Before the restart it
   reads all WAIT.
+
+### Phase 3 replay: planned (2026-11-16 evening)
+- Plan: `docs/research/phase3-replay.md`, linked from ROADMAP Phase 3. Not started.
+- Core idea: rebuild a state.db-shaped in-memory SQLite as of t from the archive and run the
+  unchanged builders. Replay shows what the map knew at t (rows written ≤ t), which keeps late
+  feeds honest and makes past frames immutable.
+- Step 0 is a 30-day benchmark plus ADR-016. As-of over all of 311's events took 0.14 s today.
 
 ## Collector: start / stop
 `uv run nyclive collect --keep-awake` starts it (it doesn't survive a reboot). To stop it: Task

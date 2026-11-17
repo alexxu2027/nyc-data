@@ -5,15 +5,21 @@ English items (`<author>` "NYCEM [English]") and fetch each one's CAP 1.2 file, 
 area polygon, `expires`, severity and the full text. The RSS is the complete current set, so
 alerts that leave it are closed by the pipeline. An empty channel is normal (most of the day).
 
-Geometry: a CAP `<polygon>` (or `<circle>`) becomes WKT, unless the alert is citywide (all
-five counties named, or a polygon about the size of the city). A city-sized shape would cover
-every other layer, so citywide alerts have no geometry and show in the list and CHANGES. No
+Geometry: a CAP `<polygon>` (or `<circle>`) becomes WKT, unless the alert is citywide (a
+polygon about the size of the city). A city-sized shape would cover every other layer, so
+citywide alerts have no geometry and show in the list and CHANGES. The areaDesc doesn't decide
+it: Notify NYC lists all five counties on local alerts too (a GWB crash, 2026-11-16). No
 geocoding: places named only in text ("FDR Dr and E 10 St") stay off the map (no keyless
 intersection geocoder; research 2026-11-16).
 
 Quirks: CAP times carry offsets. The RSS `pubDate` is RFC 2822. Each language copy has its own
 `guid`, so ids come from the English CAP `identifier`. A `msgType` of Cancel ends the alert
 when it was sent.
+
+Every alert goes out as the generic SAME "Civil Emergency Message" with severity Severe or
+Extreme, even a traffic delay. So for those the type comes from the headline ("Traffic Delays -
+George Washington Bridge" is "Traffic Delays"), and the severity is a flat 2 (CAP's own value
+stays in props).
 """
 
 from __future__ import annotations
@@ -35,6 +41,9 @@ CAP = "{urn:oasis:names:tc:emergency:cap:1.2}"
 ENGLISH = "[English]"
 MAX_CAPS = 25  # CAP files fetched per run; alerts past that are built from their RSS fields
 SEVERITY = {"Extreme": 3, "Severe": 3, "Moderate": 2, "Minor": 1}
+GENERIC_EVENT = "Civil Emergency Message"  # SAME code CEM, on every Notify NYC alert
+GENERIC_SEVERITY = 2
+MSG_PREFIX = re.compile(r"^(?:Update|Cancel|Correction)\s*:\s*", re.IGNORECASE)
 CATEGORY = "city_alert"
 TITLE_PREFIX = re.compile(r"^\s*Notify NYC\s*-\s*", re.IGNORECASE)
 BOROUGH_TAG = re.compile(r"\((MN|BK|QN|BX|SI)\)\s*$")
@@ -167,10 +176,15 @@ def _event(sid: str, it: dict, cap: dict | None) -> Event | None:
     title = c.get("headline") or it["title"] or "Notify NYC alert"
     title = TITLE_PREFIX.sub("", title) or title
     boroughs = _boroughs(c.get("area_desc"), it["title"])
-    citywide = len(boroughs) == len(BOROUGHS)
-    wkt = None if citywide else _wkt(c.get("polygons") or [], c.get("circles") or [])
-    if wkt is not None and _covers_city(wkt):
-        citywide, wkt = True, None
+    wkt = _wkt(c.get("polygons") or [], c.get("circles") or [])
+    citywide = wkt is not None and _covers_city(wkt)
+    if citywide:
+        wkt = None
+    event = c.get("event")
+    generic = event is None or event == GENERIC_EVENT
+    severity = GENERIC_SEVERITY if generic else SEVERITY.get(c.get("severity") or "", 0)
+    if generic:
+        event = _headline_type(title) or event or it["category"]
     props = {
         "area_desc": c.get("area_desc"),
         "urgency": c.get("urgency"),
@@ -191,19 +205,27 @@ def _event(sid: str, it: dict, cap: dict | None) -> Event | None:
         title=title,
         starts_at=starts_at,
         ends_at=ends_at,
-        subtype=c.get("event") or it["category"],
-        severity=SEVERITY.get(c.get("severity") or "", 0),
+        subtype=event,
+        severity=severity,
         geometry_wkt=wkt,
         borough=next(iter(boroughs)) if len(boroughs) == 1 else None,
         props=trim_text_fields(props, _TEXT_FIELDS, PROPS_MAX_BYTES),
     )
 
 
+def _headline_type(title: str) -> str | None:
+    """The alert type from a headline: "Update: Traffic Delays - FDR Drive (MN)" is "Traffic
+    Delays". None when the headline has no " - " part to split off."""
+    head, sep, _ = MSG_PREFIX.sub("", title).partition(" - ")
+    return (head.strip() or None) if sep else None
+
+
 def _boroughs(area_desc: str | None, title: str) -> set[str]:
-    """Boroughs named in the CAP areaDesc ("Bronx,Kings,…"), else the title's "(BX)" tag."""
+    """Boroughs named in the CAP areaDesc ("Bronx,Kings,…"). The title's "(BX)" tag wins when
+    the areaDesc names none or all five (Notify NYC sends local alerts to every county)."""
     found = {b for b in (borough_code(x) for x in (area_desc or "").split(",")) if b}
-    if not found and (m := BOROUGH_TAG.search(title)):
-        found.add(m.group(1))
+    if len(found) in (0, len(BOROUGHS)) and (m := BOROUGH_TAG.search(title)):
+        return {m.group(1)}
     return found
 
 

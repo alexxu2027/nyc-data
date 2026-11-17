@@ -184,6 +184,8 @@ Later (needs weeks of archive, so with or after Phase 3):
 
 ## Phase 3: Replay
 **Goal:** scrub back in time over everything archived.
+Plan: `docs/research/phase3-replay.md` (rebuild state.db as of t from the archive and run the
+unchanged builders; replay shows what the map knew at t).
 - Move collectors to an always-on box (RTX 3050 PC or VPS; see ADR-009) **before or at the start
   of this phase**.
 - `/api/layers/{id}/at?t=` and `/api/timeline` via DuckDB on Parquet.

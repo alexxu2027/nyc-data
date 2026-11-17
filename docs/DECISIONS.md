@@ -216,8 +216,9 @@ Plan: `.orchestrate/notify/plan.md`.
    normal. Category `city_alert`.
 2. Geometry:
    - A CAP polygon or circle becomes WKT.
-   - **Citywide** alerts (all five counties named, or a polygon covering ≥ 60% of the city bbox)
-     get none: a city-sized shape would hide every other layer.
+   - **Citywide** alerts (a polygon covering ≥ 60% of the city bbox) get none: a city-sized
+     shape would hide every other layer. The areaDesc doesn't decide it (amended 2026-11-16,
+     see Findings).
    - **No geocoding:** places named only in text stay off the map. GeoSearch, the keyless
      option, can't resolve intersections.
    - Never a borough outline for a street-level incident (unlike NWS, whose alerts really
@@ -230,12 +231,22 @@ Plan: `.orchestrate/notify/plan.md`.
 5. A Cancel ends when it was sent. An Update is its own event (the alert it replaces leaves the
    feed and is closed), with `references` kept.
 
-**Status:** adapter, API pieces and frontend are built and tested on fixtures (2 real, Wayback;
-the rest synthetic).
+**Findings from real captures** (amended 2026-11-16, first watcher capture, `edge_five_counties`):
+- A GWB crash ("Traffic Delays - George Washington Bridge") came with **no polygon** and an
+  areaDesc naming **all five counties**. So "all five counties" is how Notify NYC addresses
+  everything, not a sign of a citywide alert. Now: citywide only by polygon size, and a
+  title tag like "(BX)" beats a five-county areaDesc for the borough.
+- It was a SAME "Civil Emergency Message" at severity **Extreme**, as was the Jul 14 air-quality
+  alert (Severe). CAP's event and severity carry no signal here. For generic CEM alerts the type
+  comes from the headline ("Traffic Delays"), and the severity is a flat 2. CAP's own severity
+  stays in props.
+
+**Status:** adapter, API pieces and frontend are built and tested on fixtures (3 real: 2 from the
+Wayback Machine, 1 watcher capture; the rest synthetic).
 - **Go-live switch:** registry `adapter: notify_nyc`, the `city_alerts` catalog entry and its
   `BUILDERS` line, all together at a collector restart.
-- **Waiting on:** a real capture from `scripts/watch_notify.py`, to record here how many alerts
-  carry a local polygon.
+- **Waiting on:** more watcher captures (1 so far, with no polygon), to record here how many
+  alerts carry a local polygon.
 
 **Consequences:** if most real alerts turn out to be text-only, the layer is mainly a list and
 CHANGES source. Geocoding would need a key (ADR-007), so that's a separate decision.

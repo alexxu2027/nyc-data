@@ -34,7 +34,8 @@ def test_archived_rss_only_english_and_rss_fallback():
     assert e.geometry_wkt is None and e.ends_at is None
     assert e.starts_at == datetime(2026, 2, 12, 1, 9, 6, tzinfo=UTC)  # the English item's pubDate
     assert e.props["has_cap"] is False and e.props["rss_category"] == "Transport"
-    assert e.category == "city_alert" and e.severity == 0
+    assert e.category == "city_alert" and e.severity == 2  # no CAP: the flat Notify NYC level
+    assert e.subtype == "Traffic Delays"  # from the headline
 
 
 def test_citywide_alert_has_no_geometry():
@@ -44,11 +45,38 @@ def test_citywide_alert_has_no_geometry():
     e = b.events[0]
     assert e.event_id == "2625738456985519"
     assert e.props["citywide"] is True and e.geometry_wkt is None and e.borough is None
-    assert e.severity == 3  # Severe
-    assert e.subtype == "Civil Emergency Message"
+    assert e.severity == 2 and e.props["severity"] == "Severe"  # generic CEM: flat level
+    assert e.subtype == "Canadian Wildfires Air Quality"
     assert e.title.startswith("Canadian Wildfires Air Quality")
     assert e.ends_at is not None and e.ends_at > e.starts_at  # CAP expires
     assert e.props["description"].startswith("Notification issued")
+
+
+def test_five_counties_without_a_polygon_is_not_citywide():
+    """Real capture 2026-11-16: a GWB crash sent to all five counties as an Extreme CEM."""
+    b = parse("edge_five_counties")
+    assert len(b.events) == 1
+    e = b.events[0]
+    assert e.props["citywide"] is False and e.geometry_wkt is None and e.borough is None
+    assert e.subtype == "Traffic Delays" and e.title == "Traffic Delays - George Washington Bridge"
+    assert e.severity == 2 and e.props["severity"] == "Extreme"
+    assert e.ends_at > e.starts_at
+
+
+def test_five_counties_with_a_local_polygon_draws():
+    """The areaDesc no longer decides citywide: a small polygon still draws."""
+    from dataclasses import replace
+
+    raw = load_fixture(SID, "edge_local_polygon")
+    parts = tuple(
+        replace(p, content=p.content.replace(
+            b"<areaDesc>Bronx<", b"<areaDesc>Bronx,Kings,New York,Queens,Staten Island<"
+        )) if p.name.startswith("cap-") else p
+        for p in raw.parts
+    )  # fmt: skip
+    e = notify_nyc.parse(replace(raw, parts=parts)).events[0]
+    assert e.props["citywide"] is False and e.geometry_wkt.startswith("POLYGON")
+    assert e.borough == "BX"  # all five counties named, so the title's (BX) tag decides
 
 
 def test_local_polygon_draws_in_lon_lat_order():
