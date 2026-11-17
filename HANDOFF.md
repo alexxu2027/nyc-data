@@ -4,9 +4,14 @@ _Last updated: 2026-11-17_
 
 > **NEXT SESSION:** Phases 1, 2 and 2.5 are done. **Notify NYC is live** (2026-11-17 05:57 UTC;
 > the collector runs 17 sources). Next, in order:
-> 1. Move the collector and server to **Alex's gaming PC** (setting it up in a few days;
->    ADR-009 option a). Then start Phase 3 replay (`docs/research/phase3-replay.md`); its 30-day
->    acceptance needs the always-on box.
+> 1. **Always-on hosting** (ADR-009 decision, step-by-step in DEV_SETUP "Always-on hosting"):
+>    - the **Surface Laptop 3** becomes the main server (wipe, power settings, install, move
+>      `data/`, auto-start, then Cloudflare Tunnel + Vercel);
+>    - then the **gaming PC** as helper and standby (Syncthing archive copy, takeover script,
+>      later the CV worker).
+>
+>    Then Phase 3 replay (`docs/research/phase3-replay.md`); its 30-day acceptance starts once
+>    the Surface is running.
 > 2. Optional: once a full day has passed, confirm the trains budget with `golive_check.py`. It
 >    WARNs at ~6.3 MB/day because it counts uncompacted files. Measured 2026-11-17:
 >    - 37 B per stop-change raw, **16.8 B after the real compaction** (13.3 if sorted by trip);
@@ -426,7 +431,7 @@ Manager → end the `python.exe` running `nyclive collect`, or in PowerShell:
 Restart it after adding or changing adapters. Logs: `data/logs/collect.log`.
 
 ## Open decisions
-- ADR-009 hosting: **option (a), the gaming PC** (Alex is setting it up, 2026-11-17).
+- ADR-009 hosting: **decided 2026-11-17:** Surface Laptop 3 main, gaming PC helper/standby, Vercel website.
 - ADR-010 FloodNet live: **the FloodNet team OK'd polling (2026-11-16).** Building the
   `floodnet_live` adapter (ADR-010 "ready design": 50 stations per batch every 30 min, depth only,
   change-only) is open work. Adding it means restarting the collector, so do it after the soak passes.

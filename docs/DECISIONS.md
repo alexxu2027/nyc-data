@@ -67,6 +67,18 @@ Cloudflare Pages. Free, and the GPU is available for CV, but home uptime and pow
 (c) Hybrid: VPS collects 24/7, the PC runs CV.
 **Leaning:** (a) to start, adding (b) if uptime under 95%.
 
+**Decision (2026-11-17):** a home variant of (c), with no VPS.
+- **Main server:** Alex's idle **Surface Laptop 3** (i5, 16 GB, Wi-Fi, ~5–8 W) runs the
+  collector, API and Cloudflare Tunnel 24/7.
+- **Helper:** the **gaming PC** runs the Phase 4 CV worker and keeps a Syncthing copy of the
+  archive, as a warm standby with a takeover script.
+- **Website:** static on **Vercel**, with `/api/*` rewritten to the tunnel.
+- **One collector at a time:** no double polling, and one archive writer.
+
+Why: the cost is a few watts; the gaming PC stays free for gaming (60–100 W idle if it were
+left on); and the CV still gets the GPU. Revisit with a VPS, or a used SFF desktop with Alex's
+32 GB DDR4, if the Surface's uptime falls under 95%. Steps: DEV_SETUP "Always-on hosting".
+
 ## ADR-010: FloodNet live data (decided 2026-11-15 after the Phase 1 spike)
 **Context:** Open Data events lag about 2 weeks. The live dashboard uses the undocumented FieldKit
 API (project 174, public project list).
