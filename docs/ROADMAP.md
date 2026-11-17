@@ -17,7 +17,7 @@ bottom.
 
 ---
 
-## Phase 1: Collectors & archive ⏭ next
+## Phase 1: Collectors & archive ✅ (2026-11-17)
 **Goal:** every Phase 1 source is polled on schedule, normalized and archived, so history starts
 accumulating.
 
@@ -85,20 +85,21 @@ the running collector.
   compacted file.
 - [x] (`test_failing_source_degrades_and_backs_off_others_keep_writing`) Isolation test: a fake adapter that always raises goes `degraded`; the other sources keep
   writing.
-- [ ] ⏳ (started 2026-11-15 01:48 UTC; check with `uv run python scripts/soak_report.py`) Soak: 48 h of `nyclive collect --keep-awake` in total, including at least one unbroken 24 h
+- [x] (PASS 2026-11-17 01:56 UTC: 48.1 h in one unbroken span crossing two midnights, all
+  sources ≥ 95% ok, no gaps; `scripts/soak_report.py`) Soak: 48 h of `nyclive collect --keep-awake` in total, including at least one unbroken 24 h
   run (it must cross a UTC midnight). From `runs`, every source has ≥ 95% successful scheduled runs
   while the collector was up, and the process never exits on its own.
 - [x] `nyclive status` prints last success, consecutive failures, rows in last run and data lag per
   source.
-- [ ] ⏳ (provisional at 2.6 h: ≈ 48 MB/day incl. the one-off 311 backfill; CPU 0.10%; final
-  numbers come from `scripts/soak_report.py` after the soak) Measured archive growth ≤ 150 MB/day after compaction, one file per closed day partition, and
+- [x] (soak: 3.3 MB on the first full ordinary day, 7.6 MB on the day with the 311 backfill;
+  one file per closed partition; CPU 0.05% of the machine) Measured archive growth ≤ 150 MB/day after compaction, one file per closed day partition, and
   collector CPU < 5% average. Measured numbers replace the estimates in ARCHITECTURE §5.
 - [x] (Gate A: 2,519 stations in 0.27 s) As-of smoke: Citi Bike state at a chosen minute comes from one day partition, ≥ 2,000
   stations, < 2 s.
 
 ---
 
-## Phase 2: Live map (MVP)
+## Phase 2: Live map (MVP) ✅ (2026-11-16)
 **Goal:** a reviewer opens the app and sees a live, filterable NYC map.
 
 Tasks:
@@ -173,7 +174,8 @@ Later (needs weeks of archive, so with or after Phase 3):
 - Keyed sources (MTA buses, OpenAQ) only if ADR-007 is relaxed.
 
 **Acceptance criteria**
-- [ ] New adapters pass conformance offline; collector restarted on them only after the Phase 1
+- [x] (restarted 2026-11-17 01:57 UTC; `scripts/golive_check.py` all PASS but the 24 h trains
+  budget) New adapters pass conformance offline; collector restarted on them only after the Phase 1
   soak passes.
 - [ ] Radar, trains and FloodNet live depth each have a legend, an attribution and an honest empty
   or stale state.

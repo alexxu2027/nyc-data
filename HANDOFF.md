@@ -1,16 +1,18 @@
 # HANDOFF: start here
 
-_Last updated: 2026-11-16_
+_Last updated: 2026-11-17_
 
-> **NEXT SESSION:** Phase 2.5 is built, reviewed and fixed (2026-11-16 morning; see "Pre-go-live
-> fixes" below). It is NOT live yet. Next, in order:
-> 1. When `scripts/soak_report.py` says `SOAK: PASS` (earliest Nov 16 ~8:50 PM ET), close Phase 1.
-> 2. Restart the collector (the trains open-events fix is done). Watch the first `floodnet_live`
->    run (~2.3 min, 18 requests): with the #6 fix, its 48 h backfill must NOT fill the feed panel.
->    Watch the trains; after 24 h, measure the trains archive (budget ~6 MB/day).
-> 3. Then the Phase 2.5 browser acceptance on live data. While doing it, watch review findings
->    #8 and #10 (below): they need live MTA behaviour to judge.
-> Use `uv run --no-sync` while the soak runs. Also restart `nyclive serve` to pick up the API fixes.
+> **NEXT SESSION:** Phase 1 is closed: the soak passed 2026-11-17 01:56 UTC (48.1 h, no gaps,
+> 3.3 MB/day). Phase 2.5 is **live**: the collector restarted 01:57 UTC on 16 sources, and
+> `scripts/golive_check.py` passes everything except the 24 h trains budget. Next, in order:
+> 1. After ~24 h, re-run `golive_check.py` for the trains budget (first-hour extrapolation
+>    ≈ 25 MB/day vs ~6, inflated by the first run).
+> 2. Phase 2.5 browser acceptance on live data (the 3 unticked boxes in ROADMAP), watching
+>    review findings #8 and #10 (below).
+> 3. Notify NYC go-live once the watcher has a few captures (1 so far; see below).
+> The collector and `nyclive serve` now run in their own minimized windows (started with
+> `Start-Process`, `uv run --no-sync`), not from a Claude shell. The collector's stderr goes to
+> `data/logs/collect.stderr.log`.
 
 This file is the session-to-session log: where the project stands, what to do next, and gotchas
 learned the hard way. Read it first, then `docs/ROADMAP.md`.
@@ -347,6 +349,28 @@ An Opus reviewer checked the live app (desktop, phone in an iframe, dark theme) 
   - collector log ERROR lines.
   It prints PASS/WAIT/WARN/FAIL per check and `GO-LIVE:` overall. Before the restart it
   reads all WAIT.
+
+### Live polish after go-live (2026-11-17 night, from Alex's look at live trains)
+- **Train catch-up** (`map/layers/trains.ts`): we learn a train left its stop 0-60 s late, so
+  each poll used to make ~40-80 trains lurch forward (median 188 m, up to 4.4 km, measured on
+  the live feed). Now a train whose new run joins its track carries on from where it's drawn
+  and arrives at the scheduled t1 (never faster than 60% of the run time). Only non-joining runs
+  (express skips; ~1%) ease 1.5 s. The controller no longer flashes un-eased positions.
+- **Smoother trains:** ticks 250 ms below z12, 50 ms at z12-14, 33 ms from z14, with
+  backpressure (a frame is skipped while MapLibre still loads the last one).
+- **Train labels** always draw and never hide street names (`overlap` on `label()`).
+- **Subway lines:** faint (30%) track in each line's colour under the trains, from
+  `GET /api/static/subway_lines` (built from `config/subway_static.json`, ETag-cached, ~140 KB).
+- **Train drawer** (`drawer/views/train.tsx`): plain words (route bullet, trunk line, going to,
+  between X and Y, next stop with an ETA, MTA update age, what the estimate means) plus the
+  route's active service changes. No hex codes, trip ids or raw times.
+- **Alert rings** (`map/pulse.ts`): continuous ease-out at up to 30 fps, faded out before each
+  restart (was 8 stepped frames per 2.4 s).
+- **Layer rows** glide open and shut (`ui/SmoothHeight.tsx`), and LOADING shows only after
+  400 ms, so a quick toggle doesn't flash and jump.
+- **Light theme softened:** paper `#f5f4ef`, ink `#1d1d1b` (15:1, was 19:1), charcoal inverted
+  panels. Print stays black on white.
+- Watcher: a second capture `live_20261117_0048` arrived (not yet reviewed or committed).
 
 ### Phase 3 replay: planned (2026-11-16 evening)
 - Plan: `docs/research/phase3-replay.md`, linked from ROADMAP Phase 3. Not started.

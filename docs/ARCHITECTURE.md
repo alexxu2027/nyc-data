@@ -153,13 +153,22 @@ Keeping only three shapes gives the API and UI three generic renderers instead o
 missed night can't leave thousands of part files. Partition dates are the UTC date of
 `fetched_at`. Full rules, including crash safety: ADR-011.
 
-**Measured so far** (2026-11-15, `scripts/soak_report.py` at 2.6 h, 14 sources; provisional
-until the soak ends): archive 5.3 MB, ≈ 48 MB/day extrapolated. That figure is inflated by the
-one-off 311 first-run backfill (4.2 MB of 50k rows); Citi Bike status is ≈ 0.5 MB after 2.6 h.
-Collector CPU is 0.10% of the machine (1.1% of one core) under x64 emulation. Final per-day
-numbers replace the table below once closed days exist.
+**Measured in the Phase 1 soak** (48.1 h, 2026-11-15 01:48 → 11-17 01:56 UTC, 14 sources,
+`scripts/soak_report.py`):
+- **Archive per closed day:** 3.3 MB on 2026-11-16, the first full ordinary day. 7.6 MB on
+  2026-11-15, which includes the one-off 311 first-run backfill (4.2 MB of 50k rows). Total after
+  two days: 11 MB.
+- **By source (MB, whole soak):** 311 5.5 · Citi Bike status 4.4 · DOT speeds 0.3 · Citi Bike
+  stations 0.3 · collector runs 0.2 · collisions 0.2 · FloodNet events 0.2 · everything else ≤ 0.1.
+- **CPU:** 0.05% of the machine (0.6% of one core) under x64 emulation.
+- **Reliability:** one unbroken span, no collector gaps, every source ≥ 95% successful runs.
+- **Added after the soak (2026-11-17):** subway trains (first-hour extrapolation ≈ 25 MB/day,
+  inflated by the first run's all-new trips; re-measure after 24 h) and FloodNet live (12 MB
+  fetched on the first run's 48 h backfill).
 
-**Budget (original estimates):**
+So the original estimates below were about 10× high. Disk is not a constraint.
+
+**Budget (original estimates, kept for comparison):**
 | Source | Raw volume | Stored (changed rows, Parquet) |
 |---|---|---|
 | Citi Bike status | 1 MB/min | ≈ 20–40 MB/day |
