@@ -1,7 +1,7 @@
 """The city_alerts builder and Notify NYC in CHANGES (ADR-015), on real pipeline state.
 
-The layer isn't in the catalog yet (it goes live with the registry adapter), so the builder is
-called directly rather than through /api/layers.
+The builder is called directly on purpose-built pipeline state (the layer is also in the catalog
+and tested through /api/layers in test_layers.py).
 """
 
 import sqlite3

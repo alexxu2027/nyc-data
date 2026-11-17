@@ -23,6 +23,7 @@ BUILDERS: dict[str, Callable[[Ctx], LayerResult]] = {
     "flood_events": water.flood_events,
     "weather": water.weather,
     "tide_gauge": water.tide_gauge,
+    "city_alerts": streets.city_alerts,
 }
 
 # Default and maximum `limit` per layer (None = everything).

@@ -1,7 +1,6 @@
 """notify_nyc adapter (Notify NYC CAP RSS), plan .orchestrate/notify/plan.md, ADR-015.
 
-The registry has no `adapter:` for notify_nyc yet (it goes live with the catalog entry once the
-watcher's real captures settle the geometry rule), so these tests load the module directly.
+Live since 2026-11-17 (registry `adapter: notify_nyc`); the tests load the module directly.
 """
 
 from datetime import UTC, datetime

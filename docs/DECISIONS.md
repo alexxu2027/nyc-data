@@ -243,10 +243,11 @@ Plan: `.orchestrate/notify/plan.md`.
 
 **Status:** adapter, API pieces and frontend are built and tested on fixtures (3 real: 2 from the
 Wayback Machine, 1 watcher capture; the rest synthetic).
-- **Go-live switch:** registry `adapter: notify_nyc`, the `city_alerts` catalog entry and its
-  `BUILDERS` line, all together at a collector restart.
-- **Waiting on:** more watcher captures (1 so far, with no polygon), to record here how many
-  alerts carry a local polygon.
+- **Live 2026-11-17** (registry `adapter: notify_nyc`, catalog `city_alerts`, `BUILDERS`).
+  Switched on after 2 watcher captures instead of the planned 8 (Alex agreed). Both were
+  text-only, with **0 polygons**: the GWB crash, and FDNY activity at W 31 St & 8 Av (MN). So
+  the layer is mainly a list and CHANGES source, as the Consequences below expected. `real`
+  is the FDNY capture. The watcher keeps running (to 36 h) to collect more cases.
 
 **Consequences:** if most real alerts turn out to be text-only, the layer is mainly a list and
 CHANGES source. Geocoding would need a key (ADR-007), so that's a separate decision.

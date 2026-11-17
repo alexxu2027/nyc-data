@@ -254,11 +254,12 @@ sources:
     auth: none
     probe: https://feeds.everbridge.net/feeds/453003085617722/rss/rss.xml
     expect: CAP RSS Feed
-    status: partial
-    verified_on: 2026-11-16
+    status: verified
+    verified_on: 2026-11-17
+    adapter: notify_nyc
     notes: >
-      Planned (no adapter yet; plan in .orchestrate/notify/plan.md, research in
-      docs/research/late-data-alternatives.md). RSS of the alerts active now, one item per
+      Adapter notify_nyc (ADR-015, live 2026-11-17; plan in .orchestrate/notify/plan.md, research
+      in docs/research/late-data-alternatives.md). RSS of the alerts active now, one item per
       language (keep `NYCEM [English]`), each with a CAP 1.2 enclosure (area polygon, expires,
       severity). Often empty: items drop out when they expire, so poll every 2 min.
 

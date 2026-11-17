@@ -131,7 +131,7 @@ Tasks:
 
 ---
 
-## Phase 2.5: Liveness (added 2026-11-16)
+## Phase 2.5: Liveness (added 2026-11-16) ✅ (2026-11-17)
 **Goal:** make it obvious, within seconds of opening the map, that the city is moving.
 
 Tasks (in priority order):
@@ -147,7 +147,7 @@ Tasks (in priority order):
    briefly (still under reduced motion).
 
 Follow-up (keyless, plan in `.orchestrate/notify/plan.md`):
-5. **Notify NYC alerts:** a `notify_nyc` adapter for the city's official CAP RSS (traffic and
+5. ✅ (live 2026-11-17, ADR-015) **Notify NYC alerts:** a `notify_nyc` adapter for the city's official CAP RSS (traffic and
    transit disruptions, fires, outages, police/FDNY activity) as an alert layer that also feeds
    CHANGES. The closest official match to a "Citizen"-style live layer.
    Research: `docs/research/late-data-alternatives.md`.
@@ -177,10 +177,12 @@ Later (needs weeks of archive, so with or after Phase 3):
 - [x] (restarted 2026-11-17 01:57 UTC; `scripts/golive_check.py` all PASS but the 24 h trains
   budget) New adapters pass conformance offline; collector restarted on them only after the Phase 1
   soak passes.
-- [ ] Radar, trains and FloodNet live depth each have a legend, an attribution and an honest empty
+- [x] (Alex, 2026-11-17) Radar, trains and FloodNet live depth each have a legend, an attribution and an honest empty
   or stale state.
-- [ ] Trains move smoothly between updates with no jank at city zoom; polling stays ≥ 30 s.
-- [ ] The feed shows new items within one poll; clicking one flies to it and opens the drawer.
+- [x] (Alex, 2026-11-17, after the catch-up and tick fixes) Trains move smoothly between updates
+  with no jank at city zoom; polling stays ≥ 30 s.
+- [x] (Alex, 2026-11-17) The feed shows new items within one poll; clicking one flies to it and
+  opens the drawer.
 
 ---
 

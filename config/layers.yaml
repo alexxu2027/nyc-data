@@ -88,6 +88,40 @@ layers:
       - {label: Upcoming, shape: dash, color: ink}
 
   # ------------------------------------------------------------------ streets & safety
+  - id: city_alerts
+    label: City alerts (Notify NYC)
+    short: City alerts
+    group: streets
+    kind: polygon
+    sources: [notify_nyc]
+    default: true
+    poll_s: 120
+    z: 11
+    list: true
+    detail: {type: event, source: notify_nyc}
+    empty_text: "NO ACTIVE CITY ALERTS"
+    attribution: {text: "NYC Emergency Management (Notify NYC)", url: "https://a858-nycnotify.nyc.gov/"}
+    legend_title: City alerts (most are listed, not drawn)
+    filters:
+      - key: status
+        label: Status
+        type: enum
+        apply: client
+        prop: status
+        options: [{value: active, label: In effect}, {value: upcoming, label: Upcoming}]
+        default: [active, upcoming]
+    style:
+      color: {prop: severity, scale: match, stops: [[0, "#9e9e9e"], [1, "#f0e442"], [2, "#e69f00"], [3, "#d55e00"]], default: "#e69f00"}
+      fill_opacity: 0.22
+      width: {value: 2}
+      pulse: {prop: severity, op: gte, value: 3}
+      dash: {prop: status, op: eq, value: upcoming}
+      label: {prop: event, min_zoom: 12}
+    legend:
+      - {label: City alert area, shape: fill, color: "#e69f00"}
+      - {label: Severe (rare), shape: fill, color: "#d55e00"}
+      - {label: Upcoming, shape: dash, color: ink}
+
   - id: road_speeds
     label: Road speeds (DOT)
     short: Speeds

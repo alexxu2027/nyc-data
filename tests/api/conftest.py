@@ -29,7 +29,8 @@ NOW = datetime(2026, 11, 15, 3, 30, tzinfo=UTC)
 RAN_AT = NOW - timedelta(minutes=2)
 REG = load_registry()
 COLLECTED = sorted(s.id for s in REG.sources.values() if s.adapter)
-CASES = {"nws_alerts": "edge_no_ends"}
+# Polygon layers need a case that draws: the real Notify NYC capture is text-only (ADR-015).
+CASES = {"nws_alerts": "edge_no_ends", "notify_nyc": "edge_local_polygon"}
 
 # Synthetic ids
 NULL_BK = "syn-null-bk"  # bike station in Brooklyn with no borough column

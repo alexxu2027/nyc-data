@@ -2,14 +2,18 @@
 
 _Last updated: 2026-11-17_
 
-> **NEXT SESSION:** Phase 1 is closed: the soak passed 2026-11-17 01:56 UTC (48.1 h, no gaps,
-> 3.3 MB/day). Phase 2.5 is **live**: the collector restarted 01:57 UTC on 16 sources, and
-> `scripts/golive_check.py` passes everything except the 24 h trains budget. Next, in order:
-> 1. After ~24 h, re-run `golive_check.py` for the trains budget (first-hour extrapolation
->    ≈ 25 MB/day vs ~6, inflated by the first run).
-> 2. Phase 2.5 browser acceptance on live data (the 3 unticked boxes in ROADMAP), watching
->    review findings #8 and #10 (below).
-> 3. Notify NYC go-live once the watcher has a few captures (1 so far; see below).
+> **NEXT SESSION:** Phases 1, 2 and 2.5 are done. **Notify NYC is live** (2026-11-17 05:57 UTC;
+> the collector runs 17 sources). Next, in order:
+> 1. Move the collector and server to **Alex's gaming PC** (setting it up in a few days;
+>    ADR-009 option a). Then start Phase 3 replay (`docs/research/phase3-replay.md`); its 30-day
+>    acceptance needs the always-on box.
+> 2. Optional: once a full day has passed, confirm the trains budget with `golive_check.py`. It
+>    WARNs at ~6.3 MB/day because it counts uncompacted files. Measured 2026-11-17:
+>    - 37 B per stop-change raw, **16.8 B after the real compaction** (13.3 if sorted by trip);
+>    - ~240k stop-changes/day scaled to daytime service;
+>    - so **~4 MB/day compacted**, under the ~6 MB budget.
+> 3. Let the Notify watcher finish (it stops by 2026-11-18 09:17 UTC), then add its captures as
+>    edge cases.
 > The collector and `nyclive serve` now run in their own minimized windows (started with
 > `Start-Process`, `uv run --no-sync`), not from a Claude shell. The collector's stderr goes to
 > `data/logs/collect.stderr.log`.
@@ -422,7 +426,7 @@ Manager → end the `python.exe` running `nyclive collect`, or in PowerShell:
 Restart it after adding or changing adapters. Logs: `data/logs/collect.log`.
 
 ## Open decisions
-- ADR-009 hosting (decide in Phase 3).
+- ADR-009 hosting: **option (a), the gaming PC** (Alex is setting it up, 2026-11-17).
 - ADR-010 FloodNet live: **the FloodNet team OK'd polling (2026-11-16).** Building the
   `floodnet_live` adapter (ADR-010 "ready design": 50 stations per batch every 30 min, depth only,
   change-only) is open work. Adding it means restarting the collector, so do it after the soak passes.
