@@ -27,6 +27,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  align-items: flex-end; /* the wider sun readout must not stretch the chip groups */
   pointer-events: none;
 }
 
@@ -220,4 +221,38 @@
 
 .nl-tip-hint {
   color: var(--muted);
+}
+
+/* The sun readout under the 3D / SUN chips (ADR-017): a small ledger card. */
+.nl-hint {
+  color: var(--muted);
+}
+
+.nl-sun {
+  align-self: flex-end;
+  pointer-events: auto;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  padding: 0 1ch;
+  white-space: nowrap;
+  line-height: var(--line);
+  text-align: right;
+}
+
+/* Theme crossfade (map/xfade.ts): a snapshot of the old map, faded out over the new one. */
+.nl-xfade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 1;
+  transition: opacity 1.2s ease;
+}
+
+.nl-xfade.out {
+  opacity: 0;
 }

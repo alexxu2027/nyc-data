@@ -2,7 +2,7 @@
 // and the theme toggle.
 import { useApp } from '../core';
 import { useUnread } from '../feed';
-import type { BoroughCode, PanelId } from '../types';
+import type { BoroughCode, PanelId, Theme, ThemeMode } from '../types';
 import { Chip, FreshDot, TextButton } from '../ui';
 import { changesLabel, worstState } from './helpers';
 
@@ -20,7 +20,8 @@ export function TopBar() {
   const setBoroughs = useApp((s) => s.setBoroughs);
   const toggleBorough = useApp((s) => s.toggleBorough);
   const theme = useApp((s) => s.theme);
-  const setTheme = useApp((s) => s.setTheme);
+  const themeMode = useApp((s) => s.themeMode);
+  const setThemeMode = useApp((s) => s.setThemeMode);
   const panel = useApp((s) => s.panel);
   const setPanel = useApp((s) => s.setPanel);
   const health = useApp((s) => s.health);
@@ -77,15 +78,26 @@ export function TopBar() {
           {/* Phone: the toggle lives in ABOUT, to make room for CHANGES. */}
           <span className="hide-phone">
             <TextButton
-              pressed={theme === 'dark'}
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              ariaLabel="Dark theme"
+              pressed={themeMode !== 'light'}
+              onClick={() => setThemeMode(nextThemeMode(themeMode))}
+              ariaLabel={`Theme: ${themeMode}. Click for ${nextThemeMode(themeMode)}`}
             >
-              DARK
+              {themeLabel(themeMode, theme)}
             </TextButton>
           </span>
         </span>
       </div>
     </header>
   );
+}
+
+/** The theme control cycles LIGHT → DARK → AUTO. */
+export function nextThemeMode(m: ThemeMode): ThemeMode {
+  return m === 'light' ? 'dark' : m === 'dark' ? 'auto' : 'light';
+}
+
+/** "LIGHT", "DARK", or "AUTO: DAY" / "AUTO: NIGHT". */
+export function themeLabel(m: ThemeMode, shown: Theme): string {
+  if (m !== 'auto') return m.toUpperCase();
+  return `AUTO: ${shown === 'dark' ? 'NIGHT' : 'DAY'}`;
 }

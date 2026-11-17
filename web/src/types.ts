@@ -5,6 +5,8 @@ export type FeatureBorough = BoroughCode | 'XX' | null;
 export type LayerKind = 'point' | 'line' | 'polygon' | 'cluster' | 'raster';
 export type SourceState = 'ok' | 'stale' | 'degraded' | 'never';
 export type Theme = 'light' | 'dark';
+/** What the theme control is set to: a theme, or AUTO (follows the sun, core/autoTheme.ts). */
+export type ThemeMode = Theme | 'auto';
 export type PanelId = 'layers' | 'health' | 'about' | 'feed';
 export type ColorValue = string; // '#rrggbb' | 'ink' | 'paper' | 'muted'
 export type WhereOp = 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in';

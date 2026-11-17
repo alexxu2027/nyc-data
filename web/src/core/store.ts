@@ -1,19 +1,8 @@
 // The app store (plan §4). Units talk only through it.
 import { create, type StoreApi, type UseBoundStore } from 'zustand';
-import type {
-  BoroughCode,
-  Catalog,
-  FeedState,
-  FilterOverrides,
-  FilterValue,
-  Health,
-  Insets,
-  LayerData,
-  PanelId,
-  Selection,
-  Theme,
-  ViewState,
-} from '../types';
+import type { BoroughCode, Catalog, FeedState, FilterOverrides, FilterValue, Health, Insets, LayerData, PanelId, Selection, Theme, ThemeMode, ViewState } from '../types';
+import { autoTheme } from './autoTheme';
+import { sunClock } from './sun';
 import { isDefaultValue } from './filters';
 
 export interface AppState {
@@ -26,8 +15,13 @@ export interface AppState {
   view: ViewState;
   viewOrigin: 'url' | 'map' | 'ui';
   selection: Selection;
+  /** The theme shown now (AUTO picks it from the sun). */
   theme: Theme;
+  /** The theme control: LIGHT, DARK or AUTO (URL-backed as `theme`). */
+  themeMode: ThemeMode;
   panel: PanelId | null;
+  /** View mode (ADR-017): the sun and its shadows. 3D buildings follow the map's tilt. */
+  scene: Scene;
   // runtime
   data: Record<string, LayerData>;
   health: Health | null;
@@ -50,10 +44,18 @@ export interface AppState {
   select(s: Selection): void;
   setHover(h: { layer: string; id: string } | null): void;
   setTheme(t: Theme): void;
+  setThemeMode(m: ThemeMode): void;
   setPanel(p: PanelId | null): void;
   setInsets(i: Insets): void;
   setOpacity(id: string, v: number): void;
+  setScene(p: Partial<Scene>): void;
 }
+
+export interface Scene {
+  sun: boolean;
+}
+
+export const SCENE_OFF: Scene = { sun: false };
 
 export const BOROUGH_ORDER: BoroughCode[] = ['MN', 'BK', 'QN', 'BX', 'SI'];
 
@@ -113,9 +115,11 @@ type Data = Omit<
   | 'select'
   | 'setHover'
   | 'setTheme'
+  | 'setThemeMode'
   | 'setPanel'
   | 'setInsets'
   | 'setOpacity'
+  | 'setScene'
 >;
 
 export function initialData(): Data {
@@ -129,7 +133,9 @@ export function initialData(): Data {
     viewOrigin: 'url',
     selection: null,
     theme: 'light',
+    themeMode: 'light',
     panel: null,
+    scene: SCENE_OFF,
     data: {},
     health: null,
     healthError: null,
@@ -209,6 +215,22 @@ export const useApp: UseBoundStore<StoreApi<AppState>> = create<AppState>()((set
   setTheme(t) {
     applyThemeToDocument(t);
     set({ theme: t });
+  },
+  setThemeMode(m) {
+    if (m !== 'auto') {
+      set({ themeMode: m });
+      get().setTheme(m);
+      return;
+    }
+    // AUTO: the theme follows the sun, and so do the light and shadows.
+    const s = get();
+    set({ themeMode: 'auto', scene: { ...s.scene, sun: true } });
+    get().setTheme(autoTheme(sunClock(), s.view.lat, s.view.lng, s.theme));
+  },
+  setScene(p) {
+    const cur = get().scene;
+    const next = { ...cur, ...p };
+    if (next.sun !== cur.sun) set({ scene: next });
   },
   setPanel(p) {
     set({ panel: p });

@@ -250,3 +250,50 @@ Wayback Machine, 1 watcher capture; the rest synthetic).
 
 **Consequences:** if most real alerts turn out to be text-only, the layer is mainly a list and
 CHANGES source. Geocoding would need a key (ADR-007), so that's a separate decision.
+
+## ADR-017: 3D buildings, the sun and computed shadows (2026-11-17)
+**Context:** Alex asked for 3D buildings, the sun's place in the sky and the shadows it casts.
+Plan and research: `docs/research/3d-sun-shadows.md`.
+
+**Decision:**
+1. **No new data:** building heights come from the basemap tiles we already load
+   (OpenMapTiles `building`: `render_height`, `render_min_height`, `hide_3d`). The sun is
+   computed (NOAA formulas, `web/src/core/sun.ts`). Keyless, so ADR-007 holds.
+2. **3D follows the tilt; SUN is a view mode** (amended 2026-11-17, after Alex found a 3D
+   button awkward):
+   - As in Apple Maps on a phone, tilting past 8° fades the buildings in (solid by 25°), and
+     flattening fades them out. There is no button.
+   - SUN is a map control (URL `sun=1`). Neither is a catalog layer.
+   - **Gestures**, after Apple Maps (twist rotates, Option + arrows) and Google Maps (Ctrl+drag):
+     - drag pans; scroll or pinch zooms;
+     - Ctrl + two-finger scroll tilts (Ctrl must be physically held: a trackpad pinch also
+       sets ctrlKey, and stays zoom), as do Alt/Option + scroll and two fingers up on touch;
+     - Shift + scroll or Option + ←/→ rotates, and so does a twist on touch and in Safari
+       (Chrome, Edge and Firefox don't report a trackpad twist; a sideways-swipe stand-in was
+       tried and dropped because it made scrolling janky);
+     - right- or Ctrl-drag does both;
+     - N sets north up and flat. The map always opens top-down: tilt and rotation aren't
+       kept in links (2026-11-17).
+
+     Browsers don't expose a trackpad tilt gesture, so tilt needs a modifier (`map/gestures.ts`).
+3. **The style light follows the sun** when SUN is on.
+4. **Shadows are computed in the browser and rasterised:** each visible building's footprint
+   is swept away from the sun by height × cot(altitude), drawn on one canvas (so overlaps
+   merge), and shown as a raster under the extrusions and data. MapLibre has no cast shadows,
+   and the libraries that do are keyed or heavy (research note).
+
+5. **Lighting follows the sun: theme AUTO** (amended 2026-11-17):
+   - The theme control cycles LIGHT → DARK → AUTO (URL `theme=auto`). AUTO shows light by day
+     and dark at night, from the sun at the map centre: dark below −4°, light above −2°, and
+     in between it keeps the current theme so it can't flicker. It also turns SUN on.
+   - Switches fade. The page's colour tokens are registered `@property` colours, so they
+     transition over 1.2 s (after the first paint, never with reduced motion). The basemap
+     swap crossfades under a snapshot of the old map (`map/xfade.ts`). Map tokens are fixed
+     per theme, not read from the mid-fade CSS.
+   - Dark mode draws the sunlit ground as a faint warm glow; shadows darker than the dark map
+     didn't show.
+   - Light mode dims every basemap colour toward a warm off-white (`basemap.dimColor`).
+
+**Consequences:** shadows are an estimate (OSM heights, no trees or terrain, ground and lower
+roofs only). They cost a recompute per settled move and per minute at z ≥ 15. Phase 3 replay
+can drive the sun from its time bar.

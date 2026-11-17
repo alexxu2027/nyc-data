@@ -372,6 +372,42 @@ An Opus reviewer checked the live app (desktop, phone in an iframe, dark theme) 
   panels. Print stays black on white.
 - Watcher: a second capture `live_20261117_0048` arrived (not yet reviewed or committed).
 
+### 3D buildings, the sun and shadows (2026-11-17 night, ADR-017)
+- **3D follows the tilt** (no button, like Apple Maps): buildings fade in from 8° to 25° of
+  tilt. `SUN` is the one control (the light follows the sun; shadows from z15; readout
+  `SUN 22° UP · SW / SETS 4:37 PM ET`). URL `sun=1`. The map always opens top-down: tilt and
+  rotation aren't read from or written to the URL.
+- **Code:** `core/sun.ts` (NOAA; tests cross-check an independent formula), `map/shadows.ts`
+  (canvas rasteriser: sweep away from the sun, shortest first, erase own roof),
+  `map/scene.ts`, and `basemap.sceneLayers`.
+- **Perf:** 30–51 ms per recompute for ~9k parts in Midtown.
+- **Debug:** `window.__nlSunTime = Date.parse('2026-11-17T19:00Z')` shows shadows at night.
+- **Rotate and tilt** (`map/gestures.ts`):
+  - Ctrl + scroll tilts (only with the Ctrl key physically held: a pinch also sets ctrlKey and
+    stays zoom), as does Alt/Option + scroll; Shift + scroll or Option + ←/→ rotates;
+    Option + ↑/↓ tilts;
+    Safari's rotate gesture rotates (sideways-swipe rotate was tried and removed: janky);
+  - MapLibre's own: touch twist and two-finger tilt, right- or Ctrl-drag, Shift + arrows;
+  - a one-time hint at zoom ≥ 15 (localStorage `nl.rotateHintDone`);
+  - N sets north up and flat.
+- **Lighting AUTO** (theme control LIGHT → DARK → AUTO, `theme=auto`): light by day, dark
+  after dusk (sun below −4°, back above −2°), with SUN on. Switches fade: the CSS tokens are
+  `@property` colours, and the map crossfades under a snapshot (`map/xfade.ts`). Logic:
+  `core/autoTheme.ts` (rule) and `core/autoThemeSync.ts` (store).
+- **Dark-mode shadows** draw the sunlit ground as a warm glow (drawShadows `invert`).
+- **Sun simulator** (`core/sunSim.ts`, console `nlSun`):
+  - `nlSun.at('2026-11-17 14:00')` (New York time), `nlSun.timelapse({ from, hours, seconds })`
+    (default today 5 AM + 16 h in 40 s), `nlSun.stop()`, `nlSun.live()`;
+  - the light, shadows, AUTO theme and readout redraw on `SUN_CLOCK_EVENT`, and the readout
+    says `SIMULATED …`;
+  - it is the seam Phase 3 replay will drive.
+- **Light mode** is quieter: paper `#ecebe4`, and the basemap's whites are dimmed toward
+  `LIGHT_WHITE` (`basemap.dimColor`).
+- **Map workers:** MapLibre 6 defaults to **1** worker outside Safari, which made zooming a
+  tilted map lag. `setWorkerCount(workerCountFor(cores))` gives half the cores, 2–4.
+  Buildings fade in and grow over z14 → z15.
+  Plan and measurements: `docs/research/3d-sun-shadows.md`.
+
 ### Phase 3 replay: planned (2026-11-16 evening)
 - Plan: `docs/research/phase3-replay.md`, linked from ROADMAP Phase 3. Not started.
 - Core idea: rebuild a state.db-shaped in-memory SQLite as of t from the archive and run the

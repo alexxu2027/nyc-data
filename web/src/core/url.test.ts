@@ -11,6 +11,7 @@ const base: UrlState = {
   selection: null,
   theme: 'light',
   panel: null,
+  scene: { sun: false },
 };
 
 const states: Array<[string, UrlState]> = [
@@ -37,11 +38,7 @@ const states: Array<[string, UrlState]> = [
   ],
   ['list mode', { ...base, selection: { mode: 'list', layer: 'subway_alerts' } }],
   ['dark theme + panel', { ...base, theme: 'dark', panel: 'health' }],
-  [
-    'bearing and pitch',
-    { ...base, view: { lng: -73.9857, lat: 40.7484, zoom: 12.35, bearing: 15, pitch: 30 } },
-  ],
-  ['negative bearing', { ...base, view: { ...base.view, bearing: -42.5, pitch: 0 } }],
+  ['another centre and zoom', { ...base, view: { lng: -73.9857, lat: 40.7484, zoom: 12.35, bearing: 0, pitch: 0 } }],
   ['t=live preserved', { ...base, t: 'live' }],
 ];
 
@@ -62,11 +59,12 @@ describe('url round trip', () => {
       selection: { mode: 'feature', layer: 'cameras', id: 'a:b' },
       theme: 'dark',
       panel: 'health',
+      scene: { sun: true },
       t: 'live',
     };
     expect(serializeUrl(s, catalog)).toBe(
       '?layers=road_speeds,complaints_311,citibike,cameras&borough=BK,QN&f.citibike.ebikes=1&f.citibike.state=empty,low' +
-        '&f.complaints_311.window=48h&c=-73.98570,40.74840&z=12.35&b=15.0&p=30.0&sel=cameras:a%3Ab&theme=dark&panel=health&t=live',
+        '&f.complaints_311.window=48h&c=-73.98570,40.74840&z=12.35&sel=cameras:a%3Ab&theme=dark&panel=health&sun=1&t=live',
     );
   });
 
@@ -88,10 +86,18 @@ describe('url round trip', () => {
     expect(parseUrl('?layers=', catalog).visible).toEqual([]);
   });
 
+  it('always opens top-down and north up: tilt and rotation are neither read nor written', () => {
+    const u = parseUrl('?c=-73.98,40.75&z=15&b=30&p=45&3d=1', catalog);
+    expect(u.view.bearing).toBe(0);
+    expect(u.view.pitch).toBe(0);
+    const tilted = { ...base, view: { ...base.view, bearing: 30, pitch: 45 } };
+    expect(serializeUrl(tilted, catalog)).not.toMatch(/[?&][bp]=/);
+  });
+
   it('drops unknown layers, keys and values silently', () => {
     const u = parseUrl(
       '?layers=citibike,nope,cameras,citibike&borough=BK,XX,zz&f.nope.x=1&f.citibike.zzz=1&f.citibike.state=empty,bogus' +
-        '&f.complaints_311.window=99h&f.citibike.ebikes=maybe&c=abc,40&z=wat&b=x&p=&sel=nope:1&list=citibike&theme=neon&panel=x&t=1999&foo=bar',
+        '&f.complaints_311.window=99h&f.citibike.ebikes=maybe&c=abc,40&z=wat&b=x&p=&sel=nope:1&list=citibike&theme=neon&panel=x&3d=yes&sun=2&t=1999&foo=bar',
       catalog,
     );
     expect(u).toEqual({
@@ -102,6 +108,7 @@ describe('url round trip', () => {
       selection: null,
       theme: 'light',
       panel: null,
+      scene: { sun: false },
     });
   });
 

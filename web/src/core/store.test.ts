@@ -77,7 +77,7 @@ describe('startUrlSync', () => {
     const spy = vi.spyOn(history, 'replaceState');
     const stop = startUrlSync(catalog, 'live');
     useApp.getState().setBoroughs(['BK']);
-    useApp.getState().setTheme('dark');
+    useApp.getState().setThemeMode('dark');
     vi.advanceTimersByTime(249);
     expect(spy).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);

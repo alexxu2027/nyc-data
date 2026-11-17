@@ -27,6 +27,12 @@ export function AboutBody() {
       <Line>THE DOT BESIDE A LAYER SAYS HOW CURRENT ITS FEED IS: ● FRESH ◐ STALE ✕ FAILING ◌ NO DATA YET.</Line>
       <Line>CHANGES LISTS NEW ALERTS, OUTAGES AND FLOODS FROM THE LAST 12 H.</Line>
       <Line>LIVE: THE MAP REFRESHES BY ITSELF. NOTHING TO RELOAD.</Line>
+      <Line>TILT THE MAP AND THE BUILDINGS RISE IN 3D. SUN LIGHTS THEM FROM WHERE THE SUN IS NOW AND, FROM STREET ZOOM, DRAWS THEIR SHADOWS.</Line>
+      <Line muted>SHADOWS ARE AN ESTIMATE FROM OPENSTREETMAP HEIGHTS: NO TREES OR HILLS.</Line>
+      <Line>THEME AUTO FOLLOWS THE REAL SUN: LIGHT BY DAY, DARK AFTER DUSK, WITH THE SHADOWS MOVING THROUGH THE DAY.</Line>
+      <Line>MOVE: DRAG. ZOOM: SCROLL OR PINCH.</Line>
+      <Line>TILT: CTRL + SCROLL (OR ALT/OPTION + SCROLL), OR DRAG TWO FINGERS UP. ROTATE: SHIFT + SCROLL, OPTION + ← →, OR TWIST TWO FINGERS (TOUCH, SAFARI).</Line>
+      <Line>RIGHT-DRAG OR CTRL + DRAG TILTS AND ROTATES AT ONCE. N SETS NORTH UP AND FLAT. THE MAP OPENS TOP-DOWN.</Line>
       <Blank />
       <Line muted>HOUSE RULES</Line>
       <Line>NO KEYS AND NO ACCOUNTS: EVERY FEED IS PUBLIC AND KEYLESS.</Line>
@@ -71,14 +77,18 @@ export function AboutBody() {
 
 /** The theme toggle (the top bar has it on desktop; on phone it lives only here). */
 function ThemeLine() {
-  const theme = useApp((s) => s.theme);
-  const setTheme = useApp((s) => s.setTheme);
+  const mode = useApp((s) => s.themeMode);
+  const setMode = useApp((s) => s.setThemeMode);
   return (
     <Line muted>
       THEME:{' '}
-      <TextButton pressed={theme === 'dark'} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} ariaLabel="Dark theme">
-        DARK
-      </TextButton>
+      {(['light', 'dark', 'auto'] as const).map((m) => (
+        <span key={m}>
+          <TextButton pressed={mode === m} onClick={() => setMode(m)} ariaLabel={`${m} theme`}>
+            {m.toUpperCase()}
+          </TextButton>{' '}
+        </span>
+      ))}
     </Line>
   );
 }

@@ -10,6 +10,7 @@ import {
   type MapGeoJSONFeature,
   type MapMouseEvent,
   type StyleSpecification,
+  setWorkerCount,
   setWorkerUrl,
 } from 'maplibre-gl';
 // MapLibre 6 finds its worker next to its own module, which Vite's dependency pre-bundling
@@ -24,9 +25,21 @@ import { renderLayer, sourceId, type Rendered } from './layers';
 import type { LiveHandle } from './layers/common';
 import { ChangeFlash, flashLayer } from './changePulse';
 import { Pulse } from './pulse';
+import { SceneView } from './scene';
+import { TrackpadGestures } from './gestures';
+import { ThemeCrossFade } from './xfade';
 import { readTokens, type ThemeTokens } from './styleToPaint';
 
+/** Map workers for a machine: half its logical cores, at least 2 and at most 4. */
+export function workerCountFor(cores: number | undefined): number {
+  return Math.max(2, Math.min(4, Math.floor((cores || 4) / 2)));
+}
+
 setWorkerUrl(workerUrl);
+// MapLibre 6 uses one worker outside Safari, so every tile (3D building geometry included,
+// re-cut at each zoom past the tiles' z14) and the trains' 30 fps updates queued on one thread:
+// zooming a tilted map lagged (2026-11-17). Half the cores, 2 to 4.
+setWorkerCount(workerCountFor(typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : 4));
 
 export interface HoverInfo {
   layer: string;
@@ -88,6 +101,10 @@ export class MapController {
   private readonly container: HTMLElement;
   private readonly pulse: Pulse;
   private readonly flash: ChangeFlash;
+  /** 3D buildings and the sun (ADR-017). */
+  readonly scene: SceneView;
+  private readonly gestures: TrackpadGestures;
+  private readonly xfade: ThemeCrossFade;
   /** changedAt of the last poll flashed per layer (ADR-013 change pulse). */
   private flashedAt = new Map<string, number | null>();
   private readonly ro: ResizeObserver | null;
@@ -141,6 +158,9 @@ export class MapController {
     this.lastView = v;
     this.pulse = new Pulse(this.map);
     this.flash = new ChangeFlash(this.map);
+    this.scene = new SceneView(this.map);
+    this.gestures = new TrackpadGestures(this.map);
+    this.xfade = new ThemeCrossFade(this.map);
 
     this.map.on('style.load', this.onStyleLoad);
     this.map.on('error', this.onError);
@@ -167,6 +187,9 @@ export class MapController {
     this.ro?.disconnect();
     this.pulse.destroy();
     this.flash.destroy();
+    this.scene.destroy();
+    this.gestures.destroy();
+    this.xfade.clear();
     cancelAnimationFrame(this.moveRaf);
     this.map.remove();
   }
@@ -222,6 +245,8 @@ export class MapController {
     const url = (s.catalog?.basemaps ?? FALLBACK_BASEMAPS)[s.theme];
     if (url === this.basemapUrl && s.theme === this.theme && this.basemapUrl) return;
     const themeChanged = s.theme !== this.theme;
+    // A theme switch on a drawn map crossfades (map/xfade.ts) instead of snapping.
+    if (themeChanged && this.styleReady) this.xfade.begin();
     this.theme = s.theme;
     this.basemapUrl = url;
     this.tokens = readTokens(s.theme);
@@ -254,6 +279,7 @@ export class MapController {
     const layers = this.map.getStyle().layers ?? [];
     if (layers.length <= 1 && !this.triedOffline && this.basemapUrl) return;
     this.styleReady = true;
+    this.xfade.ready();
     this.tokens = readTokens(this.theme);
     // setStyle(diff: false) dropped every source and layer of ours, and their feature-state.
     this.resetInstall();
@@ -588,7 +614,8 @@ export class MapController {
   }
 
   resetNorth(): void {
-    this.map.easeTo({ bearing: 0, pitch: 0, duration: 300 });
+    // North up and flat (the buildings fade out with the tilt).
+    this.map.easeTo({ bearing: 0, pitch: 0, duration: 400 });
   }
 
   /** Bearing in whole degrees, for the compass chip (read with useSyncExternalStore). */

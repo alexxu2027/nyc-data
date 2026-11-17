@@ -4,6 +4,8 @@
 import { api, ApiError } from './api';
 import { startHealthPolling, startPolling } from './poll';
 import { useApp } from './store';
+import { startAutoTheme } from './autoThemeSync';
+import { installSunSim } from './sunSim';
 import { applyUrlState, parseUrl, serializeUrl, startUrlSync } from './url';
 
 export function boot(): () => void {
@@ -26,6 +28,11 @@ export function boot(): () => void {
       }
       disposers.push(startPolling());
       disposers.push(startUrlSync(catalog, u.t));
+      disposers.push(startAutoTheme());
+      disposers.push(installSunSim()); // `nlSun` in the console: simulate the sun (core/sunSim.ts)
+      // Theme colours fade only after the first paint, so opening a dark link doesn't fade in
+      // from light (styles/tokens.css, :root[data-fade]).
+      requestAnimationFrame(() => requestAnimationFrame(() => (document.documentElement.dataset.fade = '1')));
     })
     .catch((e: unknown) => {
       if (disposed) return;

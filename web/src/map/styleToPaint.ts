@@ -11,7 +11,7 @@ export interface ThemeTokens {
 }
 
 /** Fallbacks that match styles/tokens.css, used when the DOM cannot tell us (tests). */
-export const LIGHT_TOKENS: ThemeTokens = { ink: '#1d1d1b', paper: '#f5f4ef', muted: '#5c5b56', faint: '#d2d0c8' }; // = styles/tokens.css
+export const LIGHT_TOKENS: ThemeTokens = { ink: '#1d1d1b', paper: '#ecebe4', muted: '#57564f', faint: '#cfcdc4' }; // = styles/tokens.css
 export const DARK_TOKENS: ThemeTokens = { ink: '#f2f2f2', paper: '#0a0a0a', muted: '#a6a6a6', faint: '#3d3d3d' };
 
 /** A paint value: a literal or an expression. */
@@ -244,14 +244,11 @@ export function styleToPaint(def: LayerDef, t: ThemeTokens): Paint {
   };
 }
 
-/** Theme tokens from computed CSS variables on <html>; falls back per theme name. */
+/**
+ * The map's theme tokens: the fixed values of styles/tokens.css. They used to be read from the
+ * page's computed CSS, but the tokens now fade between themes (core/autoTheme.ts), so a read
+ * mid-fade would paint the map in an in-between colour.
+ */
 export function readTokens(theme: 'light' | 'dark'): ThemeTokens {
-  const fb = theme === 'dark' ? DARK_TOKENS : LIGHT_TOKENS;
-  if (typeof document === 'undefined' || typeof getComputedStyle !== 'function') return fb;
-  const cs = getComputedStyle(document.documentElement);
-  const read = (name: string, d: string) => {
-    const v = cs.getPropertyValue(name).trim();
-    return v || d;
-  };
-  return { ink: read('--ink', fb.ink), paper: read('--paper', fb.paper), muted: read('--muted', fb.muted), faint: read('--faint', fb.faint) };
+  return theme === 'dark' ? DARK_TOKENS : LIGHT_TOKENS;
 }

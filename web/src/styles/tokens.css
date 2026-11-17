@@ -10,16 +10,81 @@
  * line in px), --pad-x, --gw (gutter width), --col-panel, --col-drawer.
  */
 
+/* Registered so the theme colours can fade (AUTO at dusk and dawn, or the theme control):
+   a plain custom property would snap. The fade starts only after the first paint
+   (core/boot.ts sets data-fade), and reduced motion snaps. */
+@property --ink {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #1d1d1b;
+}
+@property --paper {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #ecebe4;
+}
+@property --gutter {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #7c7a73;
+}
+@property --faint {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #cfcdc4;
+}
+@property --muted {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #57564f;
+}
+@property --inv-ink {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #ececea;
+}
+@property --inv-paper {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #1f1f1d;
+}
+@property --inv-gutter {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #77756f;
+}
+@property --inv-faint {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #403f3b;
+}
+@property --inv-muted {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #a6a6a6;
+}
+
+:root[data-fade] {
+  transition: --ink 1.2s ease, --paper 1.2s ease, --gutter 1.2s ease, --faint 1.2s ease, --muted 1.2s ease, --inv-ink 1.2s ease, --inv-paper 1.2s ease, --inv-gutter 1.2s ease, --inv-faint 1.2s ease, --inv-muted 1.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-fade] {
+    transition: none;
+  }
+}
+
 :root,
 [data-theme='light'] {
-  /* Softened 2026-11-17: a warm off-white paper and a near-black ink (15:1) instead of pure
-     #fff / #111 (19:1), which glared on screen. Print keeps pure black on white (below). */
+  /* Softened 2026-11-17 (twice): a warm off-white paper and a near-black ink (14:1) instead of
+     pure #fff / #111 (19:1), which glared on screen; the basemap's whites are dimmed to match
+     (map/basemap.ts). Print keeps pure black on white (below). */
   color-scheme: light;
   --ink: #1d1d1b;
-  --paper: #f5f4ef;
-  --gutter: #86847e; /* line numbers: 3.4:1, as before */
-  --faint: #d2d0c8; /* empty slots, rules, off states */
-  --muted: #5c5b56; /* hints and secondary readouts: 6.2:1 on paper */
+  --paper: #ecebe4;
+  --gutter: #7c7a73; /* line numbers: 3.6:1 */
+  --faint: #cfcdc4; /* empty slots, rules, off states */
+  --muted: #57564f; /* hints and secondary readouts: 6.2:1 on paper */
 
   --inv-ink: #ececea;
   --inv-paper: #1f1f1d;

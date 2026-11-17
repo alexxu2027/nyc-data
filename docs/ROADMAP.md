@@ -228,6 +228,10 @@ labeled set. Layer is visible in live and replay.
   over our own API, with grounded answers that cite each source's age and highlights on the map.
   Build after Notify NYC is live and Phase 3 replay exists. Design note:
   `docs/research/ask-the-map.md`.
+- ✅ (2026-11-17) **3D buildings and the sun:** `3D` and `SUN` map modes. Buildings are
+  extruded from the basemap's OSM heights; the light follows the real sun; ground shadows are
+  computed in the browser. Plan: `docs/research/3d-sun-shadows.md`, ADR-017. Next: drive the
+  sun from the Phase 3 time bar.
 - Candidate layers from DATA_SOURCES "Candidates".
 
 **Acceptance:** each mode answers one stated question in one click. At least 2 extras are live.

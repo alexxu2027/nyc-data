@@ -1,12 +1,16 @@
 // URL query format (plan §5). `parseUrl` and `serializeUrl` are pure; `startUrlSync` wires them
 // to the store and `history`.
-import type { BoroughCode, Catalog, FilterOverrides, FilterValue, LayerDef, PanelId, Selection, Theme, ViewState } from '../types';
+import type { BoroughCode, Catalog, FilterOverrides, FilterValue, LayerDef, PanelId, Selection, ThemeMode, ViewState } from '../types';
+import { autoTheme } from './autoTheme';
+import { sunClock } from './sun';
 import { isDefaultValue } from './filters';
 import { type AppState, BOROUGH_ORDER, applyThemeToDocument, orderBoroughs, orderLayers, useApp } from './store';
 
 /** §5 `UrlState`, plus the reserved Phase 3 time param `t` (only `live` today), which is parsed
  * and preserved. It is optional and omitted when absent. */
-export type UrlState = Pick<AppState, 'visible' | 'boroughs' | 'filters' | 'view' | 'selection' | 'theme' | 'panel'> & {
+export type UrlState = Pick<AppState, 'visible' | 'boroughs' | 'filters' | 'view' | 'selection' | 'panel' | 'scene'> & {
+  /** The theme control (LIGHT, DARK or AUTO), not the theme AUTO happens to show. */
+  theme: ThemeMode;
   t?: 'live';
 };
 
@@ -104,10 +108,8 @@ export function parseUrl(search: string, catalog: Catalog): UrlState {
   }
   const z = num(q.get('z'));
   if (z !== null) view.zoom = round(Math.min(catalog.view.max_zoom, Math.max(catalog.view.min_zoom, z)), 2);
-  const b = num(q.get('b'));
-  if (b !== null) view.bearing = round(((((b + 180) % 360) + 360) % 360) - 180, 1);
-  const p = num(q.get('p'));
-  if (p !== null) view.pitch = round(Math.min(85, Math.max(0, p)), 1);
+  // The map always opens top-down and north up (2026-11-17): tilt and rotation (`p`, `b` in
+  // older links) are a moment's view, not part of what a link shares.
 
   let selection: Selection = null;
   const sel = q.get('sel');
@@ -122,11 +124,14 @@ export function parseUrl(search: string, catalog: Catalog): UrlState {
   const list = q.get('list');
   if (!selection && list && byId.get(list)?.list && visible.includes(list)) selection = { mode: 'list', layer: list };
 
-  const theme: Theme = q.get('theme') === 'dark' ? 'dark' : 'light';
+  const rawTheme = q.get('theme');
+  const theme: ThemeMode = rawTheme === 'dark' || rawTheme === 'auto' ? rawTheme : 'light';
   const rawPanel = q.get('panel');
   const panel = PANELS.includes(rawPanel as PanelId) ? (rawPanel as PanelId) : null;
 
-  const out: UrlState = { visible, boroughs, filters, view, selection, theme, panel };
+  const scene = { sun: q.get('sun') === '1' };
+
+  const out: UrlState = { visible, boroughs, filters, view, selection, theme, panel, scene };
   if (q.get('t') === 'live') out.t = 'live';
   return out;
 }
@@ -155,25 +160,24 @@ export function serializeUrl(s: UrlState, catalog: Catalog): string {
 
   add('c', `${round(s.view.lng, 5).toFixed(5)},${round(s.view.lat, 5).toFixed(5)}`);
   add('z', round(s.view.zoom, 2).toFixed(2));
-  const bearing = round(s.view.bearing, 1);
-  if (bearing !== 0) add('b', bearing.toFixed(1));
-  const pitch = round(s.view.pitch, 1);
-  if (pitch !== 0) add('p', pitch.toFixed(1));
 
   const sel = s.selection;
   if (sel && byId.has(sel.layer)) {
     if (sel.mode === 'feature') add('sel', `${sel.layer}:${enc(sel.id)}`);
     else if (byId.get(sel.layer)?.list) add('list', sel.layer);
   }
-  if (s.theme === 'dark') add('theme', 'dark');
+  if (s.theme !== 'light') add('theme', s.theme);
   if (s.panel) add('panel', s.panel);
+  if (s.scene.sun) add('sun', '1');
   if (s.t === 'live') add('t', 'live');
   return `?${parts.join('&')}`;
 }
 
 /** Push a parsed URL state into the store (view origin `url`). */
 export function applyUrlState(u: UrlState): void {
-  applyThemeToDocument(u.theme);
+  const prev = useApp.getState().theme;
+  const theme = u.theme === 'auto' ? autoTheme(sunClock(), u.view.lat, u.view.lng, prev) : u.theme;
+  applyThemeToDocument(theme);
   useApp.setState({
     visible: u.visible,
     boroughs: u.boroughs,
@@ -181,8 +185,10 @@ export function applyUrlState(u: UrlState): void {
     view: u.view,
     viewOrigin: 'url',
     selection: u.selection,
-    theme: u.theme,
+    theme,
+    themeMode: u.theme,
     panel: u.panel,
+    scene: u.theme === 'auto' ? { ...u.scene, sun: true } : u.scene,
   });
 }
 
@@ -193,8 +199,9 @@ export function urlStateOf(s: AppState, t?: 'live'): UrlState {
     filters: s.filters,
     view: s.view,
     selection: s.selection,
-    theme: s.theme,
+    theme: s.themeMode,
     panel: s.panel,
+    scene: s.scene,
   };
   if (t) u.t = t;
   return u;
@@ -222,8 +229,9 @@ export function startUrlSync(catalog: Catalog, initialT?: 'live', debounceMs = 2
       s.filters === prev.filters &&
       s.view === prev.view &&
       s.selection === prev.selection &&
-      s.theme === prev.theme &&
-      s.panel === prev.panel
+      s.themeMode === prev.themeMode &&
+      s.panel === prev.panel &&
+      s.scene === prev.scene
     )
       return;
     if (timer) clearTimeout(timer);
