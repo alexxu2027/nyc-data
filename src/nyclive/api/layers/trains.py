@@ -14,6 +14,7 @@ stop with `at_stop: true`. Only trips seen in the last 120 s are shown.
 
 from __future__ import annotations
 
+import itertools
 import json
 import re
 from collections import Counter
@@ -106,6 +107,51 @@ def load_static(path: Path | None = None) -> Static | None:
     static = Static.from_doc(doc)
     _cache[str(path)] = (mtime, static)
     return static
+
+
+def route_of_shape(shape: str) -> str:
+    """'1..N03R' -> '1', 'SI.N03R' -> 'SI'."""
+    return shape.partition(".")[0]
+
+
+def subway_lines(static: Static | None) -> dict[str, Any]:
+    """The track as a FeatureCollection for the faint line under the trains: one LineString
+    per stop pair (both directions drawn once), coloured by the route that runs it most
+    (by stop patterns). Static, so it's built once per static file."""
+    if static is None:
+        return {"type": "FeatureCollection", "features": []}
+    hit = _lines_cache.get(id(static))
+    if hit is not None:
+        return hit
+    use: dict[tuple[str, str], Counter] = {}
+    for shape, stops in static.patterns.items():
+        route = route_of_shape(shape)
+        for a, b in itertools.pairwise(stops):
+            use.setdefault(tuple(sorted((a, b))), Counter())[route] += 1
+    feats, done = [], set()
+    for key in sorted(static.segments):
+        a, _, b = key.partition(">")
+        pair = tuple(sorted((a, b)))
+        if pair in done:
+            continue
+        done.add(pair)
+        routes = use.get(pair) or Counter()
+        top = routes.most_common(1)[0][0] if routes else None
+        info = static.routes.get(top or "") or FALLBACK_ROUTE
+        feats.append({
+            "type": "Feature",
+            "geometry": {"type": "LineString", "coordinates": static.segments[key]["c"]},
+            "properties": {"color": info.get("color") or FALLBACK_ROUTE["color"],
+                           "line": info.get("line") or FALLBACK_ROUTE["line"],
+                           "routes": sorted(routes)},
+        })  # fmt: skip
+    out = {"type": "FeatureCollection", "features": feats}
+    _lines_cache.clear()
+    _lines_cache[id(static)] = out
+    return out
+
+
+_lines_cache: dict[int, dict[str, Any]] = {}
 
 
 def shape_of(event_id: str) -> str:

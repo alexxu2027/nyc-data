@@ -205,3 +205,35 @@ def test_600_trains_build_fast(tmp_path):
     assert len(result.features) + result.unlocated == 600
     assert lines > 400
     assert best < 0.150
+
+
+def test_subway_lines_one_feature_per_stop_pair(small_static, tmp_path):
+    """The faint track under the trains: each pair once, coloured by the route that runs it."""
+    settings = write_db(tmp_path, [])
+    client = TestClient(create_app(settings, now=lambda: NOW, web_dist=None))
+    r = client.get("/api/static/subway_lines")
+    assert r.status_code == 200 and r.headers["etag"]
+    feats = r.json()["features"]
+    assert len(feats) == 2  # 101>103 and 104>106
+    by_routes = {tuple(f["geometry"]["coordinates"][0]): f["properties"] for f in feats}
+    assert by_routes[(-73.99, 40.75)] == {"color": "#d82233", "line": "123", "routes": ["1"]}
+    again = client.get("/api/static/subway_lines", headers={"If-None-Match": r.headers["etag"]})
+    assert again.status_code == 304
+
+
+def test_subway_lines_draw_both_directions_once():
+    seg = {"c": [[0, 0], [1, 1]], "s": 60}
+    static = trains.Static.from_doc({
+        "routes": {"4": {"color": "#00933c", "line": "456"}, "5": {"color": "#00933c", "line": "456"}},
+        "patterns": {"4..N01R": ["a", "b"], "4..S01R": ["b", "a"], "5..N01R": ["a", "b"]},
+        "segments": {"a>b": seg, "b>a": {"c": [[1, 1], [0, 0]], "s": 60}},
+    })  # fmt: skip
+    (f,) = trains.subway_lines(static)["features"]
+    assert f["properties"] == {"color": "#00933c", "line": "456", "routes": ["4", "5"]}
+
+
+def test_subway_lines_real_static_is_small():
+    lines = trains.subway_lines(trains.load_static())
+    assert len(lines["features"]) > 400
+    assert all(f["properties"]["routes"] for f in lines["features"])
+    assert len(json.dumps(lines)) < 400_000

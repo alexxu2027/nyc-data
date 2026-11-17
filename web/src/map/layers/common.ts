@@ -27,7 +27,10 @@ export interface RenderCtx {
 
 export interface ExtraSource {
   id: string;
-  build(features: LayerFeature[]): FeatureCollection;
+  /** Rebuilt from the layer's features on every poll. */
+  build?(features: LayerFeature[]): FeatureCollection;
+  /** Or static data MapLibre loads once from this API path (`/api/...`); never rebuilt. */
+  url?: string;
   /** Extra options for this source (e.g. `{promoteId: 'id'}`). */
   spec?: Partial<GeoJSONSourceSpecification>;
 }
@@ -171,7 +174,7 @@ export function pulseCircle(ctx: RenderCtx, extraFilter?: FilterSpecification): 
         'circle-color': TRANSPARENT,
         'circle-opacity': 0,
         'circle-stroke-color': ctx.paint.color,
-        'circle-stroke-width': 2,
+        'circle-stroke-width': rest['circle-stroke-width'],
         'circle-stroke-opacity': rest['circle-stroke-opacity'],
       },
     }),
@@ -221,6 +224,8 @@ export interface LabelOpts {
   source?: string;
   part?: string;
   placement?: 'point' | 'line';
+  /** Always drawn, and never hides other labels (moving labels: trains). */
+  overlap?: boolean;
 }
 
 export function label(ctx: RenderCtx, o: LabelOpts): LayerSpecification {
@@ -241,6 +246,7 @@ export function label(ctx: RenderCtx, o: LabelOpts): LayerSpecification {
       ...(o.placement ? { 'symbol-placement': o.placement } : {}),
       ...(o.offset ? { 'text-offset': o.offset } : {}),
       ...(o.anchor ? { 'text-anchor': o.anchor } : {}),
+      ...(o.overlap ? { 'text-allow-overlap': true, 'text-ignore-placement': true } : {}),
     },
     paint: {
       'text-color': o.color ?? ctx.t.ink,

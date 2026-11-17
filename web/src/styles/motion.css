@@ -240,3 +240,16 @@
     transition: none !important;
   }
 }
+
+/* SmoothHeight (ui/SmoothHeight.tsx): the height glides; clip vertically only, so the gutter
+   numbers hanging off each row's left edge stay visible. */
+.smooth-h {
+  clip-path: inset(0 -100vw);
+  transition: height 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .smooth-h {
+    transition: none;
+  }
+}

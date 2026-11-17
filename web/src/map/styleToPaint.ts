@@ -11,7 +11,7 @@ export interface ThemeTokens {
 }
 
 /** Fallbacks that match styles/tokens.css, used when the DOM cannot tell us (tests). */
-export const LIGHT_TOKENS: ThemeTokens = { ink: '#111111', paper: '#ffffff', muted: '#595959', faint: '#c9c9c9' };
+export const LIGHT_TOKENS: ThemeTokens = { ink: '#1d1d1b', paper: '#f5f4ef', muted: '#5c5b56', faint: '#d2d0c8' }; // = styles/tokens.css
 export const DARK_TOKENS: ThemeTokens = { ink: '#f2f2f2', paper: '#0a0a0a', muted: '#a6a6a6', faint: '#3d3d3d' };
 
 /** A paint value: a literal or an expression. */

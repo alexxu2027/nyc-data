@@ -17,10 +17,26 @@ const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() !=
 export const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 
 /** The headline for a feature, from its properties alone (the instant header). */
+/** Shown routes for a few express / shuttle ids ("6X" is the 6 express, "GS" the 42 St shuttle). */
+export const ROUTE_NAME: Record<string, string> = { '5X': '5 express', '6X': '6 express', '7X': '7 express', FX: 'F express', GS: '42 St shuttle', FS: 'Franklin Av shuttle', H: 'Rockaway Park shuttle', SI: 'SIR', SS: 'SIR' };
+
+/** "F train", "6 express train", "42 St shuttle". */
+export function trainName(route: string): string {
+  const named = ROUTE_NAME[route];
+  if (named) return /shuttle|SIR/.test(named) ? named : `${named} train`;
+  return `${route} train`;
+}
+
 export function featureTitle(props: Partial<FeatureProps> | undefined, fallback: string): string {
   if (!props) return fallback;
   const street = str(props.street);
   if (str(props.title) === 'Collision' && street) return `Collision on ${street}`;
+  // A subway train: "F train to Coney Island-Stillwell Av" (not its trip id).
+  const route = str(props.route);
+  if (route && 'next_name' in props) {
+    const head = str(props.headsign);
+    return `${trainName(route)}${head ? ` to ${head}` : ''}`;
+  }
   return (
     str(props.name) ??
     str(props.headline) ??

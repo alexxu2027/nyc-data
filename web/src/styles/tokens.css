@@ -12,18 +12,20 @@
 
 :root,
 [data-theme='light'] {
+  /* Softened 2026-11-17: a warm off-white paper and a near-black ink (15:1) instead of pure
+     #fff / #111 (19:1), which glared on screen. Print keeps pure black on white (below). */
   color-scheme: light;
-  --ink: #111111;
-  --paper: #ffffff;
-  --gutter: #8a8a8a; /* line numbers */
-  --faint: #c9c9c9; /* empty slots, rules, off states */
-  --muted: #595959; /* hints and secondary readouts: 7:1 on paper */
+  --ink: #1d1d1b;
+  --paper: #f5f4ef;
+  --gutter: #86847e; /* line numbers: 3.4:1, as before */
+  --faint: #d2d0c8; /* empty slots, rules, off states */
+  --muted: #5c5b56; /* hints and secondary readouts: 6.2:1 on paper */
 
-  --inv-ink: #f2f2f2;
-  --inv-paper: #0a0a0a;
-  --inv-gutter: #747474;
-  --inv-faint: #3d3d3d;
-  --inv-muted: #a6a6a6; /* 8:1 on #0a0a0a */
+  --inv-ink: #ececea;
+  --inv-paper: #1f1f1d;
+  --inv-gutter: #77756f;
+  --inv-faint: #403f3b;
+  --inv-muted: #a6a6a6; /* 6.8:1 on #1f1f1d */
 }
 
 [data-theme='dark'] {

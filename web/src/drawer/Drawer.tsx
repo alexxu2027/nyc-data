@@ -11,6 +11,7 @@ import { ListView } from './ListView';
 import { ErrorState } from './views/common';
 import { EntityView } from './views/entity';
 import { EventView } from './views/event';
+import { TrainView } from './views/train';
 import './drawer.css';
 
 const NO_FEATURES: LayerFeature[] = [];
@@ -148,6 +149,8 @@ function FeatureView({ def, id, back }: { def: LayerDef; id: string; back?: () =
         <ErrorState error={res.error} onRetry={() => setRetry((r) => r + 1)} />
       ) : kind ? null : source ? (
         <EventView source={source} id={id} props={props} detail={event} />
+      ) : def.id === 'subway_trains' ? (
+        <TrainView props={props} />
       ) : (
         <PropsTable props={props} />
       )}

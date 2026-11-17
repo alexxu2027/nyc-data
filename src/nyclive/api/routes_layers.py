@@ -7,11 +7,11 @@ from typing import Any
 from fastapi import APIRouter, Request
 from fastapi.responses import Response
 
-from nyclive.api.cache import conditional
+from nyclive.api.cache import conditional, entry_for
 from nyclive.api.db import reading
 from nyclive.api.errors import bad_request, not_found
 from nyclive.api.geo import BBox, intersects, parse_bbox
-from nyclive.api.layers import BUILDERS, LIMITS, MAX_LIMIT
+from nyclive.api.layers import BUILDERS, LIMITS, MAX_LIMIT, trains
 from nyclive.api.layers.common import Ctx, iso, last_success
 from nyclive.model import BOROUGHS
 
@@ -59,6 +59,19 @@ def _keep(feat: dict, boroughs: tuple[str, ...] | None, bbox: BBox | None) -> bo
         if b is not None and b not in boroughs:
             return False
     return bbox is None or intersects(feat["geometry"], bbox)
+
+
+_lines_entry: dict[int, object] = {}
+
+
+@router.get("/static/subway_lines", summary="Subway track as faint lines under the trains")
+def subway_lines(request: Request) -> Response:
+    lines = trains.subway_lines(trains.load_static())
+    entry = _lines_entry.get(id(lines))
+    if entry is None:
+        _lines_entry.clear()
+        entry = _lines_entry[id(lines)] = entry_for(lines)
+    return conditional(request, entry)
 
 
 @router.get("/layers/{layer_id}", summary="One layer as a GeoJSON FeatureCollection")

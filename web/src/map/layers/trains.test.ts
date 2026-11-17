@@ -2,7 +2,7 @@ import { validateStyleMin, type StyleSpecification } from '@maplibre/maplibre-gl
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LayerDef, LayerFeature } from '../../types';
 import { LIGHT_TOKENS, styleToPaint } from '../styleToPaint';
-import { dataAsOf, ease, FREEZE_AFTER_MS, positionAt, positions, progressAt, tickMs, trains, tween, TWEEN_MS } from './trains';
+import { CATCH_UP_FLOOR, catchUp, dataAsOf, ease, FREEZE_AFTER_MS, metres, motionAt, positionAt, positions, progressAt, tickMs, TRACK_OPACITY, TRACK_URL, trains, tween, TWEEN_MS } from './trains';
 
 const T0 = '2026-11-16T08:00:00Z';
 const T1 = '2026-11-16T08:02:00Z';
@@ -97,12 +97,12 @@ describe('tween', () => {
 
 describe('tickMs', () => {
   it('steps by zoom', () => {
-    expect(tickMs(10)).toBe(1000);
-    expect(tickMs(11.99)).toBe(1000);
-    expect(tickMs(12)).toBe(250);
-    expect(tickMs(13.9)).toBe(250);
-    expect(tickMs(14)).toBe(100);
-    expect(tickMs(17)).toBe(100);
+    expect(tickMs(10)).toBe(250);
+    expect(tickMs(11.99)).toBe(250);
+    expect(tickMs(12)).toBe(50);
+    expect(tickMs(13.9)).toBe(50);
+    expect(tickMs(14)).toBe(33);
+    expect(tickMs(17)).toBe(33);
   });
 });
 
@@ -127,13 +127,23 @@ describe('trains renderer', () => {
   const r = trains({ def, paint: styleToPaint(def, LIGHT_TOKENS), t: LIGHT_TOKENS, source: 'nl-subway_trains' });
 
   it('draws dots and labels on the derived position source, with a live hook', () => {
-    expect(r.extra?.map((x) => x.id)).toEqual(['nl-subway_trains-pos']);
-    expect(r.extra?.[0].spec).toEqual({ promoteId: 'id' });
+    expect(r.extra?.map((x) => x.id)).toEqual(['nl-subway_trains-track', 'nl-subway_trains-pos']);
+    expect(r.extra?.[1].spec).toEqual({ promoteId: 'id' });
     expect(r.hit).toEqual(['nl-subway_trains-dot']);
     expect(typeof r.live).toBe('function');
-    for (const l of [...r.layers, ...r.halo]) expect((l as { source: string }).source).toBe('nl-subway_trains-pos');
+    for (const l of [...r.layers.slice(1), ...r.halo]) expect((l as { source: string }).source).toBe('nl-subway_trains-pos');
     const lab = r.layers.find((l) => l.type === 'symbol') as { minzoom?: number };
     expect(lab.minzoom).toBe(13);
+  });
+
+  it('draws the subway lines first (under the dots), faint, from the static track url', () => {
+    const track = r.layers[0] as { id: string; type: string; source: string; paint: Record<string, unknown> };
+    expect(track).toMatchObject({ id: 'nl-subway_trains-track', type: 'line', source: 'nl-subway_trains-track' });
+    expect(track.paint['line-opacity']).toBe(TRACK_OPACITY);
+    expect(TRACK_OPACITY).toBeLessThanOrEqual(0.4);
+    expect(r.extra?.[0]).toEqual({ id: 'nl-subway_trains-track', url: TRACK_URL });
+    expect(TRACK_URL).toBe('/api/static/subway_lines');
+    expect(r.hit).not.toContain(track.id); // not clickable
   });
 
   it('produces a valid style', () => {
@@ -143,6 +153,7 @@ describe('trains renderer', () => {
       sources: {
         'nl-subway_trains': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
         'nl-subway_trains-pos': { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, promoteId: 'id' },
+        'nl-subway_trains-track': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
       },
       layers: [...r.layers, ...r.halo],
     };
@@ -150,7 +161,7 @@ describe('trains renderer', () => {
   });
 
   it('extra build gives Point features', () => {
-    const fc = r.extra![0].build([line(TRACK)]);
+    const fc = r.extra![1].build!([line(TRACK)]);
     expect(fc.features[0].geometry.type).toBe('Point');
   });
 });
@@ -179,5 +190,101 @@ describe('train animator under reduced motion', () => {
     vi.advanceTimersByTime(FREEZE_AFTER_MS + 10_000);
     expect(pushed.at(-1)).toEqual([true]);
     live.destroy();
+  });
+});
+
+// ---- catch-up runs (2026-11-17): late data never makes a train lurch -------------------------
+const NEXT: Array<[number, number]> = [
+  [0.01, 0.01],
+  [0.02, 0.01],
+];
+
+describe('catchUp', () => {
+  const near = (a: number[], b: number[]) => {
+    expect(a[0]).toBeCloseTo(b[0], 6);
+    expect(a[1]).toBeCloseTo(b[1], 6);
+  };
+  // The new run began 30 s before we learned of it.
+  const late = (offsetS = -30, runS = 120) => {
+    const s = t1 + offsetS * 1000;
+    return line(NEXT, { t0: new Date(s).toISOString(), t1: new Date(s + runS * 1000).toISOString(), run_s: runS });
+  };
+
+  it('starts where the train is drawn and arrives at the scheduled t1', () => {
+    const old = line(TRACK);
+    const next = late();
+    const from = positionAt(old, t1) as [number, number]; // waiting at the stop
+    const m = catchUp(old, next, from, t1)!;
+    expect(m).not.toBeNull();
+    near(motionAt(m, t1), from); // no jump on arrival of the data
+    expect(m.end).toBe(Date.parse(next.properties.t1 as string));
+    near(motionAt(m, m.end), [0.02, 0.01]);
+    // The clock alone would have put it 30 s (a quarter of the run) down the track already.
+    expect(metres(positionAt(next, t1)!, from)).toBeGreaterThan(200);
+  });
+
+  it('finishes the run it was on first when it is short of the stop', () => {
+    const old = line(TRACK);
+    const half = t0 + 60_000;
+    const from = positionAt(old, half) as [number, number]; // the middle vertex
+    const m = catchUp(old, late(), from, half)!;
+    near(motionAt(m, half), from);
+    // The path goes through the old run's end before the new track.
+    expect(m.track.coords.some((c) => c[0] === 0.01 && c[1] === 0.01)).toBe(true);
+    near(motionAt(m, m.end), [0.02, 0.01]);
+  });
+
+  it('a run that does not join is left to the ease', () => {
+    const far = line([
+      [0.5, 0.5],
+      [0.6, 0.5],
+    ]);
+    expect(catchUp(line(TRACK), far, [0.01, 0.01], t1)).toBeNull();
+    expect(catchUp(line(TRACK), pt(0.01, 0.01), [0.01, 0.01], t1)).toBeNull();
+  });
+
+  it('never compresses a run below CATCH_UP_FLOOR of its scheduled time', () => {
+    const next = late(-200, 120); // learned after it should already have arrived
+    const m = catchUp(line(TRACK), next, [0.01, 0.01], t1)!;
+    expect(m.end).toBe(t1 + CATCH_UP_FLOOR * 120_000);
+  });
+});
+
+describe('train animator on new data', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('a train that moved on to the next run carries on without a jump', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(t1);
+    const def = { id: 'subway_trains', kind: 'point', style: { radius: { value: 4 } } } as unknown as LayerDef;
+    const r = trains({ def, paint: styleToPaint(def, LIGHT_TOKENS), t: LIGHT_TOKENS, source: 'nl-subway_trains' });
+    const pushed: number[][][] = [];
+    const src = {
+      setData: (fc: { features: Array<{ geometry: { coordinates: number[] } }> }) => {
+        pushed.push(fc.features.map((f) => f.geometry.coordinates));
+      },
+    };
+    const map = new Proxy({ getSource: () => src, getZoom: () => 12 } as Record<string, unknown>, {
+      get: (o, k: string) => (k in o ? o[k] : () => undefined),
+    });
+    const live = r.live!({ map, def, source: 'nl-subway_trains', beforeId: undefined, reducedMotion: () => false } as never);
+    live.update([line(TRACK, { seen_at: T1 })], true);
+    const before = pushed.at(-1)![0]; // at the stop
+    const s = t1 - 30_000;
+    live.update([line(NEXT, { t0: new Date(s).toISOString(), t1: new Date(s + 120_000).toISOString(), seen_at: T1 })], true);
+    expect(metres(pushed.at(-1)![0], before)).toBeLessThan(1);
+    vi.advanceTimersByTime(90_000); // the scheduled arrival
+    expect(metres(pushed.at(-1)![0], [0.02, 0.01])).toBeLessThan(1);
+    live.destroy();
+  });
+});
+
+describe('train labels', () => {
+  it('always draw and never hide other labels (no blinking, street names stay put)', () => {
+    const def = { id: 'subway_trains', kind: 'point', style: { radius: { value: 4 } } } as unknown as LayerDef;
+    const r = trains({ def, paint: styleToPaint(def, LIGHT_TOKENS), t: LIGHT_TOKENS, source: 'nl-subway_trains' });
+    const lab = r.layers.find((l) => l.type === 'symbol') as { layout: Record<string, unknown> };
+    expect(lab.layout['text-allow-overlap']).toBe(true);
+    expect(lab.layout['text-ignore-placement']).toBe(true);
   });
 });

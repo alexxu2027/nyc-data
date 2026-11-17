@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api, applyClientFilters, fmtAgo, fmtInt, fmtTime, useApp, useLayerHealth, useLayerView } from '../core';
 import type { FilterDef, FilterValue, LayerDef, LegendItem } from '../types';
-import { Banner, Blank, Check, FreshDot, Line, Num, Radio, Readout, Swatch, TextButton, type FreshState } from '../ui';
+import { Banner, Blank, Check, FreshDot, Line, Num, Radio, Readout, SmoothHeight, Swatch, TextButton, useAfter, type FreshState } from '../ui';
 import {
   allEnum,
   controlValue,
@@ -130,16 +130,19 @@ function LayerRow({ def, open, onExpand }: { def: LayerDef; open: boolean; onExp
           )
         }
       />
-      {v.visible &&
-        (def.kind === 'raster' ? (
-          <RasterControls def={def} />
-        ) : needsClock ? (
-          <RowNotesTicking def={def} health={health} />
-        ) : (
-          <RowNotes def={def} health={health} now={0} />
-        ))}
-      {v.visible && !open && <MiniKey def={def} />}
-      {open && <Expanded def={def} />}
+      {/* Notes, colour key and [+] glide open and shut instead of jolting the list. */}
+      <SmoothHeight>
+        {v.visible &&
+          (def.kind === 'raster' ? (
+            <RasterControls def={def} />
+          ) : needsClock ? (
+            <RowNotesTicking def={def} health={health} />
+          ) : (
+            <RowNotes def={def} health={health} now={0} />
+          ))}
+        {v.visible && !open && <MiniKey def={def} />}
+        {open && <Expanded def={def} />}
+      </SmoothHeight>
     </div>
   );
 }
@@ -216,7 +219,10 @@ function RowNotesTicking({ def, health }: { def: LayerDef; health: ReturnType<ty
 
 function RowNotes({ def, health, now }: { def: LayerDef; health: ReturnType<typeof useLayerHealth>; now: number }) {
   const v = useLayerView(def.id);
-  const notes = rowState(v, health, def, now).notes;
+  const all = rowState(v, health, def, now).notes;
+  // A quick load never flashes LOADING: the line shows only once a load has taken a while.
+  const slow = useAfter(LOADING_AFTER_MS, all.some((n) => n.key === 'loading'));
+  const notes = slow ? all : all.filter((n) => n.key !== 'loading');
   if (!notes.length) return null;
   return (
     <div className="sh-ind" role="status">
@@ -226,6 +232,9 @@ function RowNotes({ def, health, now }: { def: LayerDef; health: ReturnType<type
     </div>
   );
 }
+
+/** How long a layer loads before its row says LOADING. */
+export const LOADING_AFTER_MS = 400;
 
 function Note({ note }: { note: RowNote }) {
   if (note.tone === 'warn') {

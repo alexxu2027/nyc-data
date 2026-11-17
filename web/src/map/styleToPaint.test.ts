@@ -45,16 +45,16 @@ const number = (v: Value, props: Record<string, unknown> = {}, zoom = 12, state:
 
 describe('colour tokens', () => {
   it('resolve per theme', () => {
-    expect(resolveColor('ink', LIGHT_TOKENS)).toBe('#111111');
+    expect(resolveColor('ink', LIGHT_TOKENS)).toBe(LIGHT_TOKENS.ink);
     expect(resolveColor('ink', DARK_TOKENS)).toBe('#f2f2f2');
-    expect(resolveColor('paper', LIGHT_TOKENS)).toBe('#ffffff');
+    expect(resolveColor('paper', LIGHT_TOKENS)).toBe(LIGHT_TOKENS.paper);
     expect(resolveColor('paper', DARK_TOKENS)).toBe('#0a0a0a');
     expect(resolveColor('muted', DARK_TOKENS)).toBe('#a6a6a6');
     expect(resolveColor('#d55e00', DARK_TOKENS)).toBe('#d55e00');
   });
 
   it('constant scales use the theme', () => {
-    expect(scaleToExpr({ value: 'ink' }, 'color', LIGHT_TOKENS, 'ink')).toBe('#111111');
+    expect(scaleToExpr({ value: 'ink' }, 'color', LIGHT_TOKENS, 'ink')).toBe(LIGHT_TOKENS.ink);
     expect(scaleToExpr({ value: 'ink' }, 'color', DARK_TOKENS, 'ink')).toBe('#f2f2f2');
     expect(styleToPaint(def('subway_stations'), DARK_TOKENS).color).toBe('#f2f2f2');
     expect(styleToPaint(def('flood_sensors'), DARK_TOKENS).color).toBe('#0072b2');
@@ -64,7 +64,7 @@ describe('colour tokens', () => {
     const s: Scale = { prop: 'k', scale: 'match', stops: [['a', 'ink'], ['b', 'paper']], default: 'muted' };
     const light = scaleToExpr(s, 'color', LIGHT_TOKENS, 'ink');
     const dark = scaleToExpr(s, 'color', DARK_TOKENS, 'ink');
-    expect(color(light, { k: 'a' })).toBe('#111111');
+    expect(color(light, { k: 'a' })).toBe(LIGHT_TOKENS.ink);
     expect(color(dark, { k: 'a' })).toBe('#f2f2f2');
     expect(color(dark, { k: 'b' })).toBe('#0a0a0a');
     expect(color(dark, { k: 'zzz' })).toBe('#a6a6a6');

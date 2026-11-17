@@ -2,7 +2,7 @@
 // drawer prints its rows, counts deal, the boot log). The CSS lives in styles/motion.css; these
 // only decide *when* something moves, so every motion has a cause and never replays on a plain
 // re-render. Reduced motion is handled in CSS (every animation stops on its finished frame).
-import { useLayoutEffect, useState, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useState, type RefObject } from 'react';
 
 /** Gap between printed rows. */
 export const PRINT_STAGGER_MS = 45;
@@ -85,4 +85,16 @@ export function useChangeKey(value: unknown): number {
   const key = st.value != null && value != null ? st.key + 1 : st.key;
   setSt({ value, key });
   return key;
+}
+
+/** True once `active` has stayed true for `ms` (false again as soon as it isn't). */
+export function useAfter(ms: number, active: boolean): boolean {
+  const [done, setDone] = useState(false);
+  if (!active && done) setDone(false); // adjust during render, not in an effect
+  useEffect(() => {
+    if (!active) return;
+    const t = setTimeout(() => setDone(true), ms);
+    return () => clearTimeout(t);
+  }, [active, ms]);
+  return active && done;
 }

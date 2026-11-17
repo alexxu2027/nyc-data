@@ -197,8 +197,12 @@ export class MapController {
       inst.features = w.features;
       const src = this.map.getSource(sourceId(id)) as GeoJSONSource | undefined;
       void src?.setData(fc(w.features));
-      for (const x of inst.rendered.extra ?? []) {
-        (this.map.getSource(x.id) as GeoJSONSource | undefined)?.setData(x.build(w.features));
+      // A live hook owns its derived sources (trains): pushing the raw build first would flash
+      // one frame of un-eased positions before the hook redraws.
+      if (!inst.live) {
+        for (const x of inst.rendered.extra ?? []) {
+          if (x.build) (this.map.getSource(x.id) as GeoJSONSource | undefined)?.setData(x.build(w.features));
+        }
       }
       inst.live?.update(w.features, w.visible);
     }
@@ -327,11 +331,9 @@ export class MapController {
       }
       for (const x of rendered.extra ?? []) {
         if (!map.getSource(x.id)) {
-          map.addSource(x.id, {
-            type: 'geojson',
-            data: features ? x.build(features) : EMPTY,
-            ...x.spec,
-          } as GeoJSONSourceSpecification);
+          // A static url loads once (absolute: MapLibre fetches it from a worker).
+          const data = x.url ? new URL(x.url, window.location.href).href : features && x.build ? x.build(features) : EMPTY;
+          map.addSource(x.id, { type: 'geojson', data, ...x.spec } as GeoJSONSourceSpecification);
         }
       }
       const ids: string[] = [];
