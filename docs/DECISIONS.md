@@ -260,6 +260,12 @@ Wayback Machine, 1 watcher capture; the rest synthetic).
   text-only, with **0 polygons**: the GWB crash, and FDNY activity at W 31 St & 8 Av (MN). So
   the layer is mainly a list and CHANGES source, as the Consequences below expected. `real`
   is the FDNY capture. The watcher keeps running (to 36 h) to collect more cases.
+- **Watcher done 2026-11-18.** All 7 distinct alerts came with **0 polygons** and an areaDesc
+  naming all five counties: traffic delays, FDNY activity, a water condition, a three-alarm
+  fire and a waterbody advisory. Three became cases: `edge_nyc_tag`, `edge_two_alerts` and
+  `edge_five_counties_tagged`. One change came out of it: a headline that is only a type and
+  an area tag ("Waterbody Advisory (NYC)") gives its type from the headline, and **"(NYC)"
+  with no shape counts as citywide**, so the detail says it isn't drawn.
 
 **Consequences:** if most real alerts turn out to be text-only, the layer is mainly a list and
 CHANGES source. Geocoding would need a key (ADR-007), so that's a separate decision.

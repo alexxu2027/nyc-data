@@ -1,0 +1,20 @@
+{
+  "source_id": "notify_nyc",
+  "captured_at": "2026-11-17T12:13:58.810594+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "rss",
+      "url": "https://feeds.everbridge.net/feeds/453003085617722/rss/rss.xml",
+      "file": "rss.bin",
+      "fetched_at": "2026-11-17T12:13:56.226338+00:00"
+    },
+    {
+      "name": "cap-2833202557402221",
+      "url": "https://feeds.everbridge.net/feeds/453003085617722/cap/6afc44dbfad59296140bb81d.xml",
+      "file": "cap-2833202557402221.bin",
+      "fetched_at": "2026-11-17T12:13:58.810594+00:00"
+    }
+  ],
+  "note": "Notify NYC - Waterbody Advisory (NYC) | Alert, area 'Bronx,Kings,New York,Queens,Staten Island', 0 polygon(s) / 0 pts, 0 circle(s)"
+}

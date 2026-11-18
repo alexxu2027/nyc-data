@@ -54,8 +54,10 @@ _Last updated: 2026-11-18_
 >    - 37 B per stop-change raw, **16.8 B after the real compaction** (13.3 if sorted by trip);
 >    - ~240k stop-changes/day scaled to daytime service;
 >    - so **~4 MB/day compacted**, under the ~6 MB budget.
-> 3. Let the Notify watcher finish (it stops by 2026-11-18 09:17 UTC), then add its captures as
->    edge cases.
+> 3. ~~Notify watcher~~ done 2026-11-18. It caught 7 alerts, all text-only. They became
+>    `edge_nyc_tag`, `edge_two_alerts` and `edge_five_counties_tagged`, and "(NYC)" with no shape
+>    now counts as citywide (ADR-015). The raw captures moved to `data/notify_captures/` (not
+>    committed).
 > The collector and `nyclive serve` now run in their own minimized windows (started with
 > `Start-Process`, `uv run --no-sync`), not from a Claude shell. The collector's stderr goes to
 > `data/logs/collect.stderr.log`.

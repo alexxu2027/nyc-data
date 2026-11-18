@@ -8,7 +8,8 @@ alerts that leave it are closed by the pipeline. An empty channel is normal (mos
 Geometry: a CAP `<polygon>` (or `<circle>`) becomes WKT, unless the alert is citywide (a
 polygon about the size of the city). A city-sized shape would cover every other layer, so
 citywide alerts have no geometry and show in the list and CHANGES. The areaDesc doesn't decide
-it: Notify NYC lists all five counties on local alerts too (a GWB crash, 2026-11-16). No
+it: Notify NYC lists all five counties on local alerts too (a GWB crash, 2026-11-16). An alert
+with no shape whose title ends "(NYC)" is citywide too (a waterbody advisory, 2026-11-17). No
 geocoding: places named only in text ("FDR Dr and E 10 St") stay off the map (no keyless
 intersection geocoder; research 2026-11-16).
 
@@ -47,6 +48,8 @@ MSG_PREFIX = re.compile(r"^(?:Update|Cancel|Correction)\s*:\s*", re.IGNORECASE)
 CATEGORY = "city_alert"
 TITLE_PREFIX = re.compile(r"^\s*Notify NYC\s*-\s*", re.IGNORECASE)
 BOROUGH_TAG = re.compile(r"\((MN|BK|QN|BX|SI)\)\s*$")
+# Any trailing area tag, including "(NYC)" for the whole city ("Waterbody Advisory (NYC)").
+AREA_TAG = re.compile(r"\s*\((NYC|MN|BK|QN|BX|SI)\)\s*$")
 # The five boroughs' bounding box; a polygon covering most of it is "citywide".
 CITY_BBOX = (-74.26, 40.49, -73.70, 40.92)
 CITYWIDE_SHARE = 0.6
@@ -177,7 +180,12 @@ def _event(sid: str, it: dict, cap: dict | None) -> Event | None:
     title = TITLE_PREFIX.sub("", title) or title
     boroughs = _boroughs(c.get("area_desc"), it["title"])
     wkt = _wkt(c.get("polygons") or [], c.get("circles") or [])
-    citywide = wkt is not None and _covers_city(wkt)
+    # Citywide: a city-sized shape, or no shape at all and a title tagged "(NYC)" (real capture
+    # 2026-11-17: "Waterbody Advisory (NYC)", no polygon). A local shape always draws.
+    tag = AREA_TAG.search(it["title"] or "") or AREA_TAG.search(title)
+    citywide = (wkt is not None and _covers_city(wkt)) or (
+        wkt is None and tag is not None and tag.group(1) == "NYC"
+    )
     if citywide:
         wkt = None
     event = c.get("event")
@@ -215,9 +223,15 @@ def _event(sid: str, it: dict, cap: dict | None) -> Event | None:
 
 def _headline_type(title: str) -> str | None:
     """The alert type from a headline: "Update: Traffic Delays - FDR Drive (MN)" is "Traffic
-    Delays". None when the headline has no " - " part to split off."""
-    head, sep, _ = MSG_PREFIX.sub("", title).partition(" - ")
-    return (head.strip() or None) if sep else None
+    Delays", and a headline that is only a type and an area tag, "Waterbody Advisory (NYC)", is
+    "Waterbody Advisory". None for anything else."""
+    text = MSG_PREFIX.sub("", title)
+    head, sep, _ = text.partition(" - ")
+    if sep:
+        return head.strip() or None
+    if m := AREA_TAG.search(text):
+        return text[: m.start()].strip() or None
+    return None
 
 
 def _boroughs(area_desc: str | None, title: str) -> set[str]:

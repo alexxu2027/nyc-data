@@ -153,3 +153,43 @@ def test_fetch_gets_rss_then_english_caps_only():
     out = notify_nyc.fetch(FetchContext(source=None, http=FakeHttp(), cursor=None, now=now))
     assert got[0] == notify_nyc.RSS_URL and len(got) == 2  # the Spanish twin's CAP isn't fetched
     assert [p.name for p in out.parts] == ["rss", "cap-900001"]
+
+
+# ---- real captures from the Notify watcher (scripts/watch_notify.py, 2026-11-16 to 18) -----
+def test_nyc_tag_without_a_polygon_is_citywide():
+    """2026-11-17: "Waterbody Advisory (NYC)", all five counties, no shape, no " - " part."""
+    b = parse("edge_nyc_tag")
+    assert len(b.events) == 1
+    e = b.events[0]
+    assert e.title == "Waterbody Advisory (NYC)"
+    assert e.subtype == "Waterbody Advisory"  # not the generic "Civil Emergency Message"
+    assert e.props["citywide"] is True and e.geometry_wkt is None and e.borough is None
+    assert e.severity == 2
+
+
+def test_two_alerts_at_once_are_two_events():
+    """2026-11-17: a Queens traffic delay alongside the still-running waterbody advisory."""
+    ev = {e.event_id: e for e in parse("edge_two_alerts").events}
+    assert set(ev) == {"2834920544291719", "2833202557402221"}
+    gcp = ev["2834920544291719"]
+    assert gcp.title == "Traffic Delays - Grand Central Parkway (QN)" and gcp.borough == "QN"
+    assert gcp.subtype == "Traffic Delays" and gcp.props["citywide"] is False
+    assert ev["2833202557402221"].props["citywide"] is True
+
+
+def test_five_counties_with_a_borough_tag_takes_the_tag():
+    """2026-11-18: a Bronx three-alarm fire sent to all five counties, tagged "(BX)"."""
+    e = parse("edge_five_counties_tagged").events[0]
+    assert e.title == "Three Alarm Fire - Jerome Avenue & Goble Place (BX)"
+    assert e.borough == "BX" and e.subtype == "Three Alarm Fire"
+    assert e.props["citywide"] is False and e.geometry_wkt is None
+    assert e.props["area_desc"].count(",") == 4  # all five counties named
+
+
+def test_headline_type_forms():
+    ht = notify_nyc._headline_type
+    assert ht("Traffic Delays - FDR Drive (MN)") == "Traffic Delays"
+    assert ht("Update: Traffic Delays - FDR Drive (MN)") == "Traffic Delays"
+    assert ht("Waterbody Advisory (NYC)") == "Waterbody Advisory"
+    assert ht("Update: Waterbody Advisory (NYC)") == "Waterbody Advisory"
+    assert ht("Something happened") is None
