@@ -10,9 +10,10 @@ import { Banner, Line, Panel, Sheet, TextButton, useIsPhone, FreshDot, type Dete
 import { AboutBody } from './AboutPanel';
 import { Dialog } from './Dialog';
 import { HealthBody } from './HealthPanel';
+import { LayerDrawer, LayersButton } from './LayerDrawer';
 import { LayerPanelBody } from './LayerPanel';
 import { StatusLine } from './StatusLine';
-import { TopBar } from './TopBar';
+import { BoroughChips, TopBar } from './TopBar';
 import './shell.css';
 
 export interface ShellProps {
@@ -55,16 +56,16 @@ export function Shell({ map, drawer }: ShellProps) {
     });
   }, []);
 
-  // Phone sheets: the layer sheet starts at peek so the map shows; the drawer sheet opens at
-  // half for every new selection.
-  const [layerDetent, setLayerDetent] = useState<Detent>('peek');
+  // Phone: layers open in a drawer from the left (LayerDrawer.tsx); details own the bottom
+  // sheet, which opens at half for every new selection.
+  const [layersOpen, setLayersOpen] = useState(false);
+  const closeLayers = useCallback(() => setLayersOpen(false), []);
   const selKey = selectionKey(selection);
   const [drawerDetent, setDrawerDetent] = useState<{ key: string; d: Detent }>({ key: '', d: 'half' });
   const drawerD: Detent = drawerDetent.key === selKey ? drawerDetent.d : 'half';
 
   // ---- Insets: what the overlays cover, for map controls and flyTo padding --------------
   const [drawerW, setDrawerW] = useState(0);
-  const [layerSheetH, setLayerSheetH] = useState(0);
   const [drawerSheetH, setDrawerSheetH] = useState(0);
   const drawerRef = useCallback((el: HTMLDivElement | null) => {
     if (!el) return;
@@ -78,12 +79,19 @@ export function Shell({ map, drawer }: ShellProps) {
   const open = selection !== null;
   useEffect(() => {
     if (isPhone) {
-      const bottom = Math.max(layerSheetH, open ? drawerSheetH : 0);
-      setInsets({ top: 0, right: 0, bottom: Math.round(bottom), left: 0 });
+      setInsets({ top: 0, right: 0, bottom: Math.round(open ? drawerSheetH : 0), left: 0 });
     } else {
       setInsets({ top: 0, right: open ? Math.round(drawerW + DRAWER_GAP) : 0, bottom: 0, left: 0 });
     }
-  }, [isPhone, open, drawerW, layerSheetH, drawerSheetH, setInsets]);
+  }, [isPhone, open, drawerW, drawerSheetH, setInsets]);
+
+  // Anything that wants the map closes the layers drawer: a new selection (a row's LIST, a
+  // feed item) or a panel (CHANGES / HEALTH / ABOUT). Adjusted during render, not in an effect.
+  const [seen, setSeen] = useState({ selKey, panel });
+  if (seen.selKey !== selKey || seen.panel !== panel) {
+    setSeen({ selKey, panel });
+    if (layersOpen && (selKey || panel)) setLayersOpen(false);
+  }
 
   // The "what changed" feed polls for the whole session (it waits for the map's first answer).
   useEffect(() => startFeedPolling(), []);
@@ -123,6 +131,7 @@ export function Shell({ map, drawer }: ShellProps) {
         )}
         <main className="sh-map" aria-label="Map">
           {map}
+          {isPhone && <LayersButton open={layersOpen} onOpen={() => setLayersOpen(true)} />}
           {bootError && !catalog && <BootError message={bootError} />}
           {!isPhone && open && (
             <div ref={drawerRef} className="sh-drawer float deal" aria-label={`Detail: ${selLabel}`} role="region">
@@ -136,18 +145,23 @@ export function Shell({ map, drawer }: ShellProps) {
       {!isPhone && <StatusLine />}
       {isPhone && (
         <>
-          <Sheet
-            open
-            detent={layerDetent}
-            onDetent={setLayerDetent}
-            title={<PhoneTitle />}
-            onHeight={setLayerSheetH}
+          <LayerDrawer
+            open={layersOpen}
+            onClose={closeLayers}
+            head={
+              <>
+                <div className="l sh-ldrawer-boro">
+                  <span className="l-main">
+                    <BoroughChips segmented />
+                  </span>
+                </div>
+                <StatusLine compact />
+              </>
+            }
+            footer={<FreshLegend />}
           >
-            <StatusLine compact />
-            <Panel numbered footer={<FreshLegend />}>
-              <LayerPanelBody expanded={expanded} onExpand={onExpand} />
-            </Panel>
-          </Sheet>
+            <LayerPanelBody expanded={expanded} onExpand={onExpand} />
+          </LayerDrawer>
           <Sheet
             open={open}
             detent={drawerD}
@@ -168,13 +182,6 @@ export function Shell({ map, drawer }: ShellProps) {
       )}
     </div>
   );
-}
-
-/** The phone layer sheet's title: a compact status ("LAYERS 6 ON"). */
-function PhoneTitle() {
-  const on = useApp((s) => s.visible.length);
-  const catalog = useApp((s) => s.catalog);
-  return <>LAYERS {catalog ? `${on} ON` : ''}</>;
 }
 
 /** Every symbol gets a legend: the freshness dots used on the rows. */

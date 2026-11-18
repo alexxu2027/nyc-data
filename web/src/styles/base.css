@@ -469,8 +469,10 @@ button.t[aria-disabled='true']:hover {
 
 /* ---- Readouts and live numbers ---------------------------------------------------------- */
 
+/* The right-hand note drops to its own line when the row is too narrow, rather than running off
+ * the edge (2026-11-18: "BIKES IN 94% OF DOCKS" at 768 px). */
 .ro {
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   justify-content: flex-start;
   column-gap: 1ch;
 }
@@ -481,12 +483,14 @@ button.t[aria-disabled='true']:hover {
   text-transform: uppercase;
 }
 
+/* Values wrap rather than being cut (2026-11-18: nothing may hide information). Short live
+ * numbers still sit on one line; only long text values take a second line. */
 .ro > .ro-v {
-  flex: 1 1 auto;
+  /* A 12ch basis: a long value wraps beside its key (not under it), and the right-hand note
+   * only drops to the next line when the value would have less than 12ch. */
+  flex: 1 1 12ch;
   min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 .ro > .ro-r {
@@ -607,7 +611,7 @@ button.t[aria-disabled='true']:hover {
   z-index: var(--z-sheet);
   pointer-events: none;
   /* Detent heights. Override --sheet-gap on an ancestor to keep a top bar visible. */
-  --sheet-peek: calc(var(--line) * 2 + 1px);
+  --sheet-peek: calc(var(--line) * 2 + 1px + var(--safe-b)); /* clear the iPhone home bar */
   --sheet-half: 50%;
   --sheet-full: calc(100% - var(--sheet-gap, calc(var(--line) * 2)));
 }
@@ -637,6 +641,7 @@ button.t[aria-disabled='true']:hover {
   color: var(--ink);
   border-top: 1px solid var(--ink);
   box-shadow: 0 -3px 0 var(--ink);
+  padding-bottom: var(--safe-b);
   pointer-events: auto;
   overflow: hidden;
 }

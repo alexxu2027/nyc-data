@@ -8,6 +8,15 @@
   background: var(--paper);
   color: var(--ink);
   --sh-top-h: calc(var(--line) * 2);
+  /* The top bar's full height: its two lines plus the Dynamic Island / notch above them. */
+  --sh-top-full: calc(var(--sh-top-h) + 1px + var(--safe-t));
+  /* Landscape iPhone: keep the side panel and controls out of the notch and the home bar. The
+   * phone layout leaves the bottom to its sheets, which pad themselves (styles/base.css). */
+  padding: 0 var(--safe-r) var(--safe-b) var(--safe-l);
+}
+
+.shell.phone {
+  padding-bottom: 0;
 }
 
 /* ---- Top bar ------------------------------------------------------------------------- */
@@ -20,8 +29,8 @@
   align-items: center;
   justify-content: space-between;
   column-gap: 3ch;
-  height: calc(var(--sh-top-h) + 1px);
-  padding: 0 var(--pad-x);
+  height: var(--sh-top-full);
+  padding: var(--safe-t) var(--pad-x) 0;
   border-bottom: 1px solid var(--ink);
   background: var(--paper);
 }
@@ -203,6 +212,7 @@ button[aria-pressed='true'] .fresh {
 
 .sh-status-main {
   display: inline-flex;
+  flex: 1 1 auto; /* the LATEST ticker takes what is left */
   align-items: baseline;
   column-gap: 2ch;
   min-width: 0;
@@ -416,9 +426,8 @@ button.sh-src[aria-expanded='true'] .fresh {
 .sh-src-name {
   flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  white-space: normal; /* names wrap rather than cut (2026-11-18) */
+  overflow-wrap: anywhere;
 }
 
 .sh-src-age {
@@ -437,33 +446,200 @@ button.sh-src[aria-expanded='true'] .fresh {
 
 .shell.phone {
   --sh-top-h: calc(var(--line) * 2);
-  --sheet-gap: calc(var(--sh-top-h) + 1px);
+  --sheet-gap: var(--sh-top-full);
 }
 
+/* One line: the title chip and the actions. The borough filter lives in the layers drawer. */
 .phone .sh-top {
-  flex-wrap: wrap;
-  align-content: flex-start;
-  row-gap: 0;
   column-gap: 1ch;
 }
 
 .phone .sh-title {
-  order: 1;
   flex: 1 1 auto;
-}
-
-.phone .sh-actions {
-  order: 2;
 }
 
 .phone .sh-actions button.t {
   padding: 0 0.25ch;
 }
 
-.phone .sh-boro {
-  order: 3;
-  flex: 1 0 100%;
+/* ---- Phone layers: a button on the map, a drawer from the left (LayerDrawer.tsx) -------- */
+
+.sh-layers-btn {
+  position: absolute;
+  top: 12px;
+  left: calc(12px + var(--safe-l));
+  z-index: 2; /* over the canvas, level with the map controls */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8ch;
+  height: 30px;
+  padding: 0 1.1ch;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  font: inherit;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sh-layers-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.sh-layers-btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.sh-layers-ico {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 12px;
+  height: 10px;
+}
+
+.sh-layers-ico > i {
+  display: block;
+  height: 2px;
+  background: currentColor;
+}
+
+.sh-layers-boro {
+  color: var(--muted);
+}
+
+.sh-ldrawer {
+  --ld-ms: 220ms;
+  position: fixed;
+  top: var(--sh-top-full);
+  bottom: 0;
+  left: 0;
+  z-index: calc(var(--z-sheet) + 2); /* over an open detail sheet */
+  display: flex;
+  flex-direction: column;
+  width: min(calc(100vw - 36px), 46ch); /* a strip of map stays visible: tap it to close */
+  padding-left: var(--safe-l);
+  padding-bottom: var(--safe-b);
+  background: var(--paper);
+  color: var(--ink);
+  border-right: 1px solid var(--ink);
+  box-shadow: 3px 0 0 var(--ink);
+  outline: none;
+  touch-action: pan-y; /* the list scrolls; a sideways swipe closes */
+  transform: translateX(calc(-100% - 4px));
+  visibility: hidden;
+  /* Closing: slide out, then hide (so it leaves the tab order and the screen reader). */
+  transition:
+    transform var(--ld-ms) cubic-bezier(0.4, 0, 1, 1),
+    visibility 0s linear var(--ld-ms);
+}
+
+.sh-ldrawer[data-open='true'] {
+  transform: none;
+  visibility: visible;
+  transition: transform var(--ld-ms) cubic-bezier(0, 0, 0.2, 1);
+}
+
+.sh-ldrawer.dragging {
+  transition: none;
+}
+
+.sh-ldrawer-head {
+  flex: none;
+  border-bottom: 1px solid var(--ink);
+}
+
+.sh-ldrawer-head > .l {
+  padding: 0 var(--pad-x);
+  counter-increment: none;
+}
+
+.sh-ldrawer-head > .l:first-child {
+  padding-top: calc(var(--line) / 2);
+  padding-bottom: calc(var(--line) / 2);
+  box-sizing: content-box;
+}
+
+.sh-ldrawer-head .sh-status {
+  border-top: 0;
+}
+
+/* The drawer is narrower than the old sheet: drop the "|" so "N ON MAP" fits. */
+.sh-ldrawer-head .sh-sep {
+  display: none;
+}
+
+.sh-ldrawer > .panel {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.sh-ldrawer .panel-foot {
+  border-top: 1px solid var(--ink);
+}
+
+/* Boroughs as one ruled strip: the chips share their borders and split the width. */
+.sh-ldrawer-boro {
+  padding-bottom: calc(var(--line) / 2) !important;
+  box-sizing: content-box;
+}
+
+.sh-ldrawer-boro > .l-main {
+  display: flex;
+  flex: 1 1 auto;
   min-width: 0;
+}
+
+.sh-seg {
+  display: flex;
+  flex: 1 1 auto;
+}
+
+.sh-seg > span {
+  display: flex;
+  flex: 1 1 0;
+}
+
+.sh-seg .chip {
+  flex: 1 1 0;
+  margin: -1px 0 -1px -1px;
+  padding: 0;
+  text-align: center;
+}
+
+.sh-seg > .chip:first-child {
+  margin-left: 0;
+}
+
+/* The map behind the drawer: a light ink wash; a tap on it closes the drawer. */
+.sh-scrim {
+  position: fixed;
+  top: var(--sh-top-full);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: calc(var(--z-sheet) + 1);
+  background: color-mix(in srgb, var(--ink) 16%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+
+.sh-scrim[data-open='true'] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sh-ldrawer,
+  .sh-ldrawer[data-open='true'],
+  .sh-scrim {
+    transition: none;
+  }
 }
 
 .phone .sh-status {
@@ -472,7 +648,7 @@ button.sh-src[aria-expanded='true'] .fresh {
 
 .phone .sh-dialog {
   position: fixed;
-  top: calc(var(--sh-top-h) + 1px);
+  top: var(--sh-top-full);
   left: 0;
   right: 0;
   bottom: 0;
@@ -483,10 +659,11 @@ button.sh-src[aria-expanded='true'] .fresh {
   border-right: 0;
   border-bottom: 0;
   box-shadow: none;
+  padding-bottom: var(--safe-b);
 }
 
 .phone .sh-boot {
-  top: calc(var(--sh-top-h) + 1px);
+  top: var(--sh-top-full);
 }
 
 /* ---- Motion: still frames ------------------------------------------------------------ */
@@ -592,6 +769,16 @@ button.sh-src[aria-expanded='true'] .fresh {
 
 .sh-minikey-t {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal; /* a caption: wrap rather than cut (2026-11-18) */
+}
+
+.sh-minikey.wrap {
+  display: flex;
+  align-items: baseline;
+  white-space: normal;
+  overflow: visible;
+}
+
+.l > .l-main:has(> .sh-minikey.wrap) {
+  flex: 1 1 0;
 }

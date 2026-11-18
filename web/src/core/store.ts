@@ -98,8 +98,13 @@ export function orderBoroughs(b: Iterable<BoroughCode>): BoroughCode[] {
   return out.length === BOROUGH_ORDER.length ? [] : out; // all five = all
 }
 
+/** The page paper per theme (styles/tokens.css), for the browser and iPhone status-bar tint. */
+export const THEME_PAPER: Record<Theme, string> = { light: '#ecebe4', dark: '#0a0a0a' };
+
 export function applyThemeToDocument(t: Theme): void {
-  if (typeof document !== 'undefined') document.documentElement.dataset.theme = t;
+  if (typeof document === 'undefined') return;
+  document.documentElement.dataset.theme = t;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_PAPER[t]);
 }
 
 type Data = Omit<

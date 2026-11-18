@@ -20,16 +20,17 @@ function Row({ it, fresh, onOpen }: { it: ChangeItem; fresh: boolean; onOpen: (i
   const where = it.feature !== null || it.lat !== null ? '' : ' (not on the map)';
   return (
     <Line
-      nowrap
       onClick={() => onOpen(it)}
       title={`${fmtTime(it.at, 'datetime')}: ${itemText(it)}${it.ended ? ' (ended)' : ''}${where}`}
       right={<span className="num muted">{hhmm(it.at)}</span>}
     >
+      <span className="fd-row">
       <span className={!fresh && it.ended ? 'fd-mark ended' : 'fd-mark'} aria-label={fresh ? 'New: ' : it.ended ? 'Ended: ' : undefined}>
         {fresh ? 'NEW' : it.ended ? 'ENDED' : ''}
       </span>
       <span className="fd-kind">{KIND_LABEL[it.kind] ?? it.kind.toUpperCase()}</span>
       <span className={it.ended ? 'fd-title ended' : 'fd-title'}>{it.title}</span>
+      </span>
     </Line>
   );
 }

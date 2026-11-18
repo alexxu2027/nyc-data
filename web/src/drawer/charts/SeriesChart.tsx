@@ -2,12 +2,15 @@
 // gutter keeps counting), strokes read --ink / --muted / --faint, and nothing here hard-codes a
 // colour. No chart library.
 import { useLayoutEffect, useRef, useState, type PointerEvent } from 'react';
+import { useHoverless } from '../../ui/hooks';
 import { fmtTime } from '../../core';
 import { niceExtent, seriesPath, xScale, yScale, type Point, type Tick } from './path';
 
 export interface ChartSeries {
   key: string;
   label: string;
+  /** A shorter label for the hover readout when the full one does not fit (OBSERVED -> OBS). */
+  short?: string;
   points: Point[];
   /** solid = primary, dash = reference (prediction, docks), dot = subset (e-bikes). */
   style?: 'solid' | 'dash' | 'dot';
@@ -53,6 +56,8 @@ function valueAtX(points: Point[], x: number): number | null {
 
 const GLYPH: Record<string, string> = { solid: '──', dash: '╌╌', dot: '··' };
 
+/** Width of one axis-label character (.sc-axis is 11 px mono). */
+const AXIS_CH_PX = 6.6;
 const FALLBACK_W = 360;
 const FALLBACK_LINE = 27;
 const PAD_T = 7;
@@ -117,6 +122,7 @@ export function SeriesChart({
           aria-label={label}
           data-points={values.length}
           onPointerMove={onMove}
+          onPointerDown={onMove}
           onPointerLeave={() => setHx(null)}
         >
           <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
@@ -176,7 +182,11 @@ export function SeriesChart({
         <div className="l sc-axis" aria-hidden="true">
           {ticks.map((t, i) => {
             const pct = to === from ? 0 : ((t.at - from) / (to - from)) * 100;
-            const edge = pct <= 2 ? 'start' : pct >= 98 ? 'end' : i === 0 && pct < 8 ? 'start' : 'mid';
+            // A centred label that would cross either edge is pinned to it instead (2026-11-18:
+            // "60 MIN" near the right edge was cut by a few px). 11 px mono is ~6.6 px a char.
+            const half = (t.label.length * AXIS_CH_PX) / 2;
+            const left = (pct / 100) * w;
+            const edge = left - half < 0 || (i === 0 && pct < 8) ? 'start' : left + half > w ? 'end' : 'mid';
             return (
               <span key={t.at} className={`sc-t ${edge}`} style={{ left: `${pct}%` }}>
                 {t.label}
@@ -185,24 +195,99 @@ export function SeriesChart({
           })}
         </div>
       )}
-      {!empty && (
-        <div className="l" aria-live="off">
-          <span className="sc-read">
-            {ht == null ? (
-              <span className="muted">HOVER THE CHART FOR VALUES</span>
-            ) : (
-              <>
-                <span className="sc-rx">{fmtX(ht)}</span>
-                {hv.map(({ s, v }) => (
-                  <span key={s.key} className="sc-rv">
-                    {GLYPH[s.style ?? 'solid']} {s.label} {v == null ? '--' : fmtV(s.key, v)}
-                  </span>
-                ))}
-              </>
-            )}
-          </span>
-        </div>
-      )}
+      {!empty && <HoverReadout ht={ht} hv={hv} fmtX={fmtX} fmtV={fmtV} width={w} />}
     </>
+  );
+}
+
+/**
+ * How compact the hover readout is. It stays ONE line (it is a single reading: wrapping it would
+ * push the page, and cutting it hid the last value, e.g. the tide's PREDICTED). When the full
+ * line does not fit, it steps down until it does:
+ *   0  1:45 AM ET   ── OBSERVED 3.81 FT   ╌╌ PREDICTED 3.72 FT
+ *   1  1:45 AM  ── OBSERVED 3.81 FT  ╌╌ PREDICTED 3.72 FT      (no zone, tighter gaps)
+ *   2  1:45 AM  ── OBS 3.81 FT  ╌╌ PRED 3.72 FT                (short labels)
+ *   3  1:45 AM  OBS 3.81 FT  PRED 3.72 FT                      (no line glyphs)
+ *   4  1:45 AM  ── 3.81 FT  ╌╌ 3.72 FT                         (glyphs only: the ledger below
+ *                                                               says which line is which)
+ *   5  ── 3.81 ╌╌ 3.72                                         (values only)
+ */
+export const READOUT_LEVELS = 6;
+
+export function readoutParts(
+  level: number,
+  time: string,
+  items: Array<{ glyph: string; label: string; short?: string; value: string }>,
+): { time: string | null; items: string[] } {
+  const t = level >= 5 ? null : level >= 1 ? time.replace(/ ET$/, '') : time;
+  return {
+    time: t,
+    items: items.map(({ glyph, label, short, value }) => {
+      const name = level >= 2 ? (short ?? label) : label;
+      const v = level >= 5 ? value.replace(/ [^\d\s]+$/, '') : value;
+      if (level >= 4) return `${glyph} ${v}`;
+      if (level === 3) return `${name} ${v}`;
+      return `${glyph} ${name} ${v}`;
+    }),
+  };
+}
+
+function HoverReadout({
+  ht,
+  hv,
+  fmtX,
+  fmtV,
+  width,
+}: {
+  ht: number | null;
+  hv: Array<{ s: ChartSeries; v: number | null }>;
+  fmtX: (t: number) => string;
+  fmtV: (key: string, v: number) => string;
+  width: number;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const hoverless = useHoverless();
+  // The level only steps down while a reading shows (so the line doesn't jump as the numbers
+  // change width); it starts over for a new hover or a new chart width.
+  const [fit, setFit] = useState({ level: 0, width, hovering: false });
+  const hovering = ht != null;
+  if (fit.width !== width || fit.hovering !== hovering) setFit({ level: 0, width, hovering });
+  const level = fit.width === width && fit.hovering === hovering ? fit.level : 0;
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || level >= READOUT_LEVELS - 1) return;
+    if (el.scrollWidth > el.clientWidth + 1) setFit((f) => ({ ...f, level: f.level + 1 }));
+  }, [level, ht, width]); // bounded: at most READOUT_LEVELS - 1 steps
+
+  if (ht == null) {
+    return (
+      <div className="l" aria-live="off">
+        <span className="sc-read muted">{hoverless ? 'TOUCH THE CHART FOR VALUES' : 'HOVER THE CHART FOR VALUES'}</span>
+      </div>
+    );
+  }
+  const parts = readoutParts(
+    level,
+    fmtX(ht),
+    hv.map(({ s, v }) => ({
+      glyph: GLYPH[s.style ?? 'solid'],
+      label: s.label,
+      short: s.short,
+      value: v == null ? '--' : fmtV(s.key, v),
+    })),
+  );
+  const gap = level >= 1 ? 'tight' : '';
+  return (
+    <div className="l" aria-live="off">
+      <span ref={ref} className={`sc-read ${gap}`} data-level={level}>
+        {parts.time && <span className="sc-rx">{parts.time}</span>}
+        {parts.items.map((t, i) => (
+          <span key={hv[i].s.key} className="sc-rv">
+            {t}
+          </span>
+        ))}
+      </span>
+    </div>
   );
 }

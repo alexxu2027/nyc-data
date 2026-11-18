@@ -103,9 +103,7 @@ button.t.drw-link {
   text-decoration: underline;
   text-underline-offset: 3px;
   text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal; /* wrap rather than cut (2026-11-18) */
   max-width: 100%;
 }
 
@@ -210,6 +208,15 @@ button.t.drw-link {
 
 .sc-rv {
   margin-right: 1.5ch;
+}
+
+.sc-read.tight .sc-rx,
+.sc-read.tight .sc-rv {
+  margin-right: 1ch;
+}
+
+.sc-read > :last-child {
+  margin-right: 0;
 }
 
 .sc-row {

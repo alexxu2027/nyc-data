@@ -1,6 +1,6 @@
 // The layer panel (U4): groups, one row per layer, an expandable block with the legend,
 // filters, timing, notes, attribution and actions. Reads and writes only the store.
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api, applyClientFilters, fmtAgo, fmtInt, fmtTime, useApp, useLayerHealth, useLayerView } from '../core';
 import type { FilterDef, FilterValue, LayerDef, LegendItem } from '../types';
 import { Banner, Blank, Check, FreshDot, Line, Num, Radio, Readout, SmoothHeight, Swatch, TextButton, useAfter, type FreshState } from '../ui';
@@ -504,7 +504,8 @@ function HowToPointer() {
   );
 }
 
-/** Room for the mini key's labels in the 44ch column, after its indent. */
+/** Room for the mini key's labels in the 44ch column, after its indent (a first guess; the
+ * row measures itself and falls back when the labels don't fit, e.g. the phone drawer). */
 const MINIKEY_CH = 38;
 
 const KEY_SHAPES = new Set<LegendItem['shape']>(['circle', 'ring', 'square', 'line', 'dash', 'fill']);
@@ -515,32 +516,39 @@ const KEY_SHAPES = new Set<LegendItem['shape']>(['circle', 'ring', 'square', 'li
  */
 function MiniKey({ def }: { def: LayerDef }) {
   const items = (def.legend ?? []).filter((it) => KEY_SHAPES.has(it.shape) && it.color !== undefined).slice(0, 5);
+  const ref = useRef<HTMLSpanElement>(null);
+  const guess = items.reduce((n, it) => n + it.label.length + 5, 0) <= MINIKEY_CH;
+  const [overflow, setOverflow] = useState(false);
+  // The labels when they fit the column; otherwise the swatches and what they mean, wrapping if
+  // needed, so no item is ever cut in half (2026-11-18: they were cut at the column's edge).
+  const fits = guess && !overflow;
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (fits && el && el.scrollWidth > el.clientWidth + 1) setOverflow(true);
+  }, [fits]);
   if (def.kind === 'raster' || items.length < 2) return null;
-  // Labels when they fit the column; otherwise the swatches and what they mean, so no item is
-  // ever cut in half (the full key is one [+] away).
-  const fits = items.reduce((n, it) => n + it.label.length + 5, 0) <= MINIKEY_CH;
   const all = items.map((it) => it.label).join(' · ');
   return (
     <div className="sh-ind">
-      <Line muted nowrap title={all}>
-        <span className="sh-minikey">
-          {fits ? (
-            items.map((it) => (
+      <Line muted nowrap={fits} title={all}>
+        {fits ? (
+          <span ref={ref} className="sh-minikey">
+            {items.map((it) => (
               <span key={it.label}>
                 <Swatch shape={it.shape} color={it.color} glyph={it.glyph} /> {it.label}
               </span>
-            ))
-          ) : (
-            <>
-              <span className="sh-minikey-sw">
-                {items.map((it) => (
-                  <Swatch key={it.label} shape={it.shape} color={it.color} glyph={it.glyph} />
-                ))}
-              </span>
-              <span className="sh-minikey-t">{(def.legend_title ?? 'COLOUR KEY IN [+]').toUpperCase()}</span>
-            </>
-          )}
-        </span>
+            ))}
+          </span>
+        ) : (
+          <span className="sh-minikey wrap">
+            <span className="sh-minikey-sw">
+              {items.map((it) => (
+                <Swatch key={it.label} shape={it.shape} color={it.color} glyph={it.glyph} />
+              ))}
+            </span>
+            <span className="sh-minikey-t">{(def.legend_title ?? 'COLOUR KEY IN [+]').toUpperCase()}</span>
+          </span>
+        )}
       </Line>
     </div>
   );

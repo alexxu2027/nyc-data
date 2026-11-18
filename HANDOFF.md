@@ -1,6 +1,43 @@
 # HANDOFF: start here
 
-_Last updated: 2026-11-17_
+_Last updated: 2026-11-18_
+
+> **2026-11-18, phone / iPhone pass (not yet committed):**
+> - **iPhone basics:**
+>   - Safe areas: the top bar clears the Dynamic Island, and the sheets clear the home bar
+>     (`--safe-*` tokens in tokens.css, `--sh-top-full`).
+>   - Home-screen icon, `manifest.json` and Apple meta tags (web/public/).
+>   - The `theme-color` meta follows the theme shown.
+> - **Phone layout reworked** after Alex's feedback that the stacked bottom sheets were "janky and
+>   confusing":
+>   - The top bar is one line.
+>   - Boroughs moved into the layers drawer as a joined strip.
+>   - A `≡ LAYERS n` button on the map's top-left opens the layers as a **drawer from the left**
+>     (shell/LayerDrawer.tsx). It closes on CLOSE, a tap on the map, Esc, a swipe left, or a
+>     new selection or panel.
+>   - Details alone use the bottom sheet.
+>   - Desktop is unchanged.
+> - **Checking it:**
+>   - Tested in a 402-px iframe harness (`web/dist/_phone.html`, which is not committed and gets
+>     wiped by every build).
+>   - To try it on a phone over Wi-Fi: `nyclive serve --host 0.0.0.0`, then go to the laptop's
+>     LAN IP on port 8000.
+>   - Still to do on a real iPhone: the swipe-to-close, and the status-bar look in home-screen
+>     mode.
+> - **Cut-off text sweep (same day):** a scripted audit loaded every layer's list and feature
+>   detail, plus CHANGES, HEALTH and ABOUT, at 1280, 768 and 402 px. It flagged any text cut
+>   off by overflow, an ellipsis or the viewport edge, and hovered every chart.
+>   - Fixed:
+>     - The chart hover readout steps down to fit one line (`readoutParts`, levels 0–5; the tide
+>       becomes "OBS / PRED").
+>     - Layer key captions now measure themselves and wrap.
+>     - CHANGES titles, feed-health names, readout values, drawer links and the SOURCE line wrap.
+>     - Readout right-hand notes drop to their own line when there's no room.
+>     - The status line hides UPDATED at mid widths so LATEST still fits.
+>     - Axis labels near an edge are pinned to it.
+>     - The FloodNet series is now labelled DEPTH.
+>   - Left as is on purpose: the one-line LATEST ticker. It's a preview, and the whole line is a
+>     button that opens CHANGES with the full text.
 
 > **NEXT SESSION:** Phases 1, 2 and 2.5 are done. **Notify NYC is live** (2026-11-17 05:57 UTC;
 > the collector runs 17 sources). Next, in order:

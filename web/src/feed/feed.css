@@ -18,6 +18,23 @@
   color: var(--muted);
 }
 
+/* A row: NEW / KIND / title, with a long title wrapping under its own column (it was cut off;
+ * 2026-11-18), and the time pinned right on the first line. */
+.l > .l-main:has(> .fd-row) {
+  flex: 1 1 0;
+}
+
+.fd-row {
+  display: flex;
+  align-items: baseline;
+}
+
+.fd-title {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .fd-title.ended {
   color: var(--muted);
 }

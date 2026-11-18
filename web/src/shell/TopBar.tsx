@@ -1,9 +1,9 @@
-// Top bar: title chip, borough chips with ALL, [CHANGES (n NEW)] (desktop), [HEALTH], [ABOUT]
-// and the theme toggle.
+// Top bar: title chip, borough chips with ALL (desktop; on phone they sit in the layers drawer),
+// [CHANGES (n NEW)], [HEALTH], [ABOUT] and the theme toggle.
 import { useApp } from '../core';
 import { useUnread } from '../feed';
 import type { BoroughCode, PanelId, Theme, ThemeMode } from '../types';
-import { Chip, FreshDot, TextButton } from '../ui';
+import { Chip, FreshDot, TextButton, useIsPhone } from '../ui';
 import { changesLabel, worstState } from './helpers';
 
 const FALLBACK_BOROUGHS: Array<{ id: BoroughCode; label: string }> = [
@@ -15,10 +15,7 @@ const FALLBACK_BOROUGHS: Array<{ id: BoroughCode; label: string }> = [
 ];
 
 export function TopBar() {
-  const catalogBoroughs = useApp((s) => s.catalog?.boroughs);
-  const boroughs = useApp((s) => s.boroughs);
-  const setBoroughs = useApp((s) => s.setBoroughs);
-  const toggleBorough = useApp((s) => s.toggleBorough);
+  const isPhone = useIsPhone();
   const theme = useApp((s) => s.theme);
   const themeMode = useApp((s) => s.themeMode);
   const setThemeMode = useApp((s) => s.setThemeMode);
@@ -26,8 +23,6 @@ export function TopBar() {
   const setPanel = useApp((s) => s.setPanel);
   const health = useApp((s) => s.health);
   const healthError = useApp((s) => s.healthError);
-  const list = catalogBoroughs ?? FALLBACK_BOROUGHS;
-  const all = boroughs.length === 0;
   const flip = (p: PanelId) => setPanel(panel === p ? null : p);
   const healthDot = healthError && !health ? 'degraded' : worstState(health);
   const unread = useUnread();
@@ -40,22 +35,16 @@ export function TopBar() {
           <span className="sh-sub hide-mid muted"> LIVE OPEN DATA, ONE MAP</span>
         </h1>
       </div>
-      <nav className="sh-boro l" aria-label="Borough filter">
-        <span className="l-main hscroll">
-          <span className="muted hide-phone">BOROUGH </span>
-          <Chip pressed={all} onClick={() => setBoroughs([])} ariaLabel="All boroughs">
-            ALL
-          </Chip>
-          {list.map((b) => (
-            <span key={b.id}>
-              {' '}
-              <Chip pressed={boroughs.includes(b.id)} onClick={() => toggleBorough(b.id)} ariaLabel={b.label}>
-                {b.id}
-              </Chip>
-            </span>
-          ))}
-        </span>
-      </nav>
+      {/* Phone: the borough filter moved into the layers drawer (shell/LayerDrawer.tsx), so the
+          top bar is one line and the map gets the room. */}
+      {!isPhone && (
+        <nav className="sh-boro l" aria-label="Borough filter">
+          <span className="l-main hscroll">
+            <span className="muted">BOROUGH </span>
+            <BoroughChips />
+          </span>
+        </nav>
+      )}
       <div className="sh-actions l">
         <span className="l-main">
           {/* On phone too (UX review B11): it was the only way in, and hidden there. */}
@@ -88,6 +77,37 @@ export function TopBar() {
         </span>
       </div>
     </header>
+  );
+}
+
+/** ALL plus one chip per borough. `segmented` joins them into one ruled strip (phone drawer). */
+export function BoroughChips({ segmented = false }: { segmented?: boolean }) {
+  const catalogBoroughs = useApp((s) => s.catalog?.boroughs);
+  const boroughs = useApp((s) => s.boroughs);
+  const setBoroughs = useApp((s) => s.setBoroughs);
+  const toggleBorough = useApp((s) => s.toggleBorough);
+  const list = catalogBoroughs ?? FALLBACK_BOROUGHS;
+  const chips = (
+    <>
+      <Chip pressed={boroughs.length === 0} onClick={() => setBoroughs([])} ariaLabel="All boroughs">
+        ALL
+      </Chip>
+      {list.map((b) => (
+        <span key={b.id}>
+          {segmented ? null : ' '}
+          <Chip pressed={boroughs.includes(b.id)} onClick={() => toggleBorough(b.id)} ariaLabel={b.label}>
+            {b.id}
+          </Chip>
+        </span>
+      ))}
+    </>
+  );
+  return segmented ? (
+    <span className="sh-seg" role="group" aria-label="Borough filter">
+      {chips}
+    </span>
+  ) : (
+    chips
   );
 }
 

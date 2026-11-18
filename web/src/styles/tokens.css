@@ -123,6 +123,11 @@
   --line: calc(var(--lh) * 1rem); /* one printed line: 27px desktop, 25.2px phone */
 
   --pad-x: 1.5ch; /* panel side padding */
+  /* iPhone safe areas (the page fills the screen: viewport-fit=cover). 0 everywhere else. */
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
   --gw: var(--pad-x); /* left padding; numbered panels widen it to hold the gutter */
   --col-panel: 44ch; /* layer panel column (plan §7.2) */
   --col-drawer: 62ch; /* detail drawer overlay (plan §7.2; widened 2026-11-16 for readability) */

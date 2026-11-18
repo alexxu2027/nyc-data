@@ -61,3 +61,8 @@ function subscribeLine(onChange: () => void): () => void {
 export function useLineHeight(): number {
   return useSyncExternalStore(subscribeLine, readLinePx, () => DEFAULT_LINE_PX);
 }
+
+/** No hover on this device's main pointer (phones, tablets): say "touch", not "hover". */
+export function useHoverless(): boolean {
+  return useMedia('(hover: none)');
+}

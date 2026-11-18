@@ -46,10 +46,12 @@ export function StatusLine({ compact = false }: { compact?: boolean }) {
           )}
           {!compact && (
             <>
-              <span className="sh-sep" aria-hidden="true">
+              {/* Mid widths (≤ 860 px) drop UPDATED so the LATEST change keeps its room: at 768 px
+                  it was pushed off the edge entirely (2026-11-18). */}
+              <span className="sh-sep hide-mid" aria-hidden="true">
                 |
               </span>
-              <span>
+              <span className="hide-mid">
                 {/* How fresh the map is, not a countdown that restarts every 30 s (UX review B15). */}
                 UPDATED <span className="num sh-cd">{lastAt === null ? '--' : fmtSince(now - lastAt)}</span>
               </span>

@@ -158,6 +158,8 @@ export function EventItem({ ev, onLocate, stations = true, text = true, collapsi
 
 interface MetricLook {
   label: string;
+  /** For the chart's hover readout when space is short. */
+  short?: string;
   style?: ChartSeries['style'];
   unit?: string;
   map?: (v: number) => number;
@@ -168,8 +170,9 @@ const METRICS: Record<string, MetricLook> = {
   bikes_available: { label: 'BIKES', unit: '', digits: 0 },
   ebikes_available: { label: 'E-BIKES', style: 'dot', unit: '', digits: 0 },
   docks_available: { label: 'DOCKS', style: 'dash', unit: '', digits: 0 },
-  water_level_ft: { label: 'OBSERVED', unit: 'FT', digits: 2 },
-  predicted_ft: { label: 'PREDICTED', style: 'dash', unit: 'FT', digits: 2 },
+  water_level_ft: { label: 'OBSERVED', short: 'OBS', unit: 'FT', digits: 2 },
+  predicted_ft: { label: 'PREDICTED', short: 'PRED', style: 'dash', unit: 'FT', digits: 2 },
+  depth_in: { label: 'DEPTH', unit: 'IN', digits: 1 }, // FloodNet: read "DEPTH_IN 0.0 IN" before
   speed_mph: { label: 'SPEED', unit: 'MPH', digits: 1 },
   temp_c: { label: 'TEMP', unit: '°F', map: (c) => (c * 9) / 5 + 32, digits: 1 },
   wind_kmh: { label: 'WIND', unit: 'MPH', map: (k) => k / 1.609344, digits: 1 },
@@ -239,7 +242,7 @@ export function SeriesBlock({ kind, id, spec, rev }: { kind: string; id: string;
     let pts = clip(s.points, from, to);
     if (m.map) pts = pts.map(([x, y]) => [x, m.map!(y)] as Point);
     if (look.step) pts = holdTo(pts, Math.min(now, to));
-    return { key: s.metric, label: m.label, points: pts, style: m.style ?? 'solid', step: look.step, gap: look.gap, look: m };
+    return { key: s.metric, label: m.label, short: m.short, points: pts, style: m.style ?? 'solid', step: look.step, gap: look.gap, look: m };
   });
   const unit = (series[0]?.look.unit ?? spec.unit).toUpperCase();
   const fmt = (m: MetricLook) => (v: number | null) => (v == null ? '--' : v.toFixed(m.digits ?? 1));

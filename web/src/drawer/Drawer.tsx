@@ -78,7 +78,7 @@ export function Drawer() {
 
 function Footer({ def }: { def: LayerDef }) {
   return (
-    <Line muted nowrap title={def.attribution.text}>
+    <Line muted title={def.attribution.text}>
       SOURCE:{' '}
       <a href={def.attribution.url} target="_blank" rel="noreferrer">
         {def.attribution.text}
