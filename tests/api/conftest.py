@@ -29,6 +29,8 @@ NOW = datetime(2026, 11, 15, 3, 30, tzinfo=UTC)
 RAN_AT = NOW - timedelta(minutes=2)
 REG = load_registry()
 COLLECTED = sorted(s.id for s in REG.sources.values() if s.adapter)
+# What a clone with no .env collects (ADR-018): keyed sources are left out.
+KEYLESS = [s for s in COLLECTED if not REG.sources[s].key_env]
 # Polygon layers need a case that draws: the real Notify NYC capture is text-only (ADR-015).
 CASES = {"nws_alerts": "edge_no_ends", "notify_nyc": "edge_local_polygon"}
 
@@ -175,7 +177,10 @@ def data_dir(tmp_path_factory) -> Path:
 
 @pytest.fixture(scope="session")
 def settings(data_dir) -> Settings:
-    return Settings(data_dir=data_dir, user_agent="t")
+    # Test keys, so the keyed layers (ADR-018) are in the catalog; nothing here calls out.
+    return Settings(
+        data_dir=data_dir, user_agent="t", openaq_api_key="test-aq", mta_bustime_key="test-bus"
+    )
 
 
 @pytest.fixture(scope="session")

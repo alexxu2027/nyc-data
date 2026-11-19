@@ -1,0 +1,1087 @@
+{
+ "meta": {
+  "name": "openaq-api",
+  "website": "/",
+  "page": 1,
+  "limit": 1000,
+  "found": 10
+ },
+ "results": [
+  {
+   "id": 384,
+   "name": "CCNY",
+   "locality": "New York-Northern New Jersey-Long Island",
+   "timezone": "America/New_York",
+   "country": {
+    "id": 155,
+    "code": "US",
+    "name": "United States"
+   },
+   "owner": {
+    "id": 4,
+    "name": "Unknown Governmental Organization"
+   },
+   "provider": {
+    "id": 119,
+    "name": "AirNow"
+   },
+   "isMobile": false,
+   "isMonitor": true,
+   "instruments": [
+    {
+     "id": 2,
+     "name": "Government Monitor"
+    }
+   ],
+   "sensors": [
+    {
+     "id": 9001,
+     "name": "pm25",
+     "parameter": {
+      "id": 2,
+      "name": "pm25",
+      "units": "µg/m³"
+     }
+    },
+    {
+     "id": 9002,
+     "name": "o3 ppb",
+     "parameter": {
+      "id": 3,
+      "name": "o3",
+      "units": "ppb"
+     }
+    },
+    {
+     "id": 9003,
+     "name": "rh",
+     "parameter": {
+      "id": 98,
+      "name": "relativehumidity",
+      "units": "%"
+     }
+    },
+    {
+     "id": 9004,
+     "name": "no2",
+     "parameter": {
+      "id": 7,
+      "name": "no2",
+      "units": "ppm"
+     }
+    }
+   ],
+   "coordinates": {
+    "latitude": 40.8197,
+    "longitude": -73.9481
+   },
+   "licenses": [
+    {
+     "id": 33,
+     "name": "US Public Domain",
+     "attribution": {
+      "name": "Unknown Governmental Organization",
+      "url": null
+     },
+     "dateFrom": "2016-01-30",
+     "dateTo": null
+    }
+   ],
+   "bounds": [
+    -73.9481,
+    40.8197,
+    -73.9481,
+    40.8197
+   ],
+   "distance": null,
+   "datetimeFirst": {
+    "utc": "2016-03-12T09:00:00Z",
+    "local": "2016-03-12T04:00:00-05:00"
+   },
+   "datetimeLast": {
+    "utc": "2026-11-18T23:00:00Z",
+    "local": "2026-11-18T18:00:00-05:00"
+   }
+  },
+  {
+   "id": 999001,
+   "name": "A mobile sensor",
+   "locality": "New York-Northern New Jersey-Long Island",
+   "timezone": "America/New_York",
+   "country": {
+    "id": 155,
+    "code": "US",
+    "name": "United States"
+   },
+   "owner": {
+    "id": 4,
+    "name": "Unknown Governmental Organization"
+   },
+   "provider": {
+    "id": 119,
+    "name": "AirNow"
+   },
+   "isMobile": true,
+   "isMonitor": true,
+   "instruments": [
+    {
+     "id": 2,
+     "name": "Government Monitor"
+    }
+   ],
+   "sensors": [
+    {
+     "id": 9001,
+     "name": "pm25",
+     "parameter": {
+      "id": 2,
+      "name": "pm25",
+      "units": "µg/m³"
+     }
+    },
+    {
+     "id": 9002,
+     "name": "o3 ppb",
+     "parameter": {
+      "id": 3,
+      "name": "o3",
+      "units": "ppb"
+     }
+    },
+    {
+     "id": 9003,
+     "name": "rh",
+     "parameter": {
+      "id": 98,
+      "name": "relativehumidity",
+      "units": "%"
+     }
+    },
+    {
+     "id": 9004,
+     "name": "no2",
+     "parameter": {
+      "id": 7,
+      "name": "no2",
+      "units": "ppm"
+     }
+    }
+   ],
+   "coordinates": {
+    "latitude": 40.8197,
+    "longitude": -73.9481
+   },
+   "licenses": [
+    {
+     "id": 33,
+     "name": "US Public Domain",
+     "attribution": {
+      "name": "Unknown Governmental Organization",
+      "url": null
+     },
+     "dateFrom": "2016-01-30",
+     "dateTo": null
+    }
+   ],
+   "bounds": [
+    -73.9481,
+    40.8197,
+    -73.9481,
+    40.8197
+   ],
+   "distance": null,
+   "datetimeFirst": {
+    "utc": "2016-03-12T09:00:00Z",
+    "local": "2016-03-12T04:00:00-05:00"
+   },
+   "datetimeLast": {
+    "utc": "2026-11-18T23:00:00Z",
+    "local": "2026-11-18T18:00:00-05:00"
+   }
+  },
+  {
+   "id": 626,
+   "name": "Bronx - IS52",
+   "locality": "New York-Northern New Jersey-Long Island",
+   "timezone": "America/New_York",
+   "country": {
+    "id": 155,
+    "code": "US",
+    "name": "United States"
+   },
+   "owner": {
+    "id": 4,
+    "name": "Unknown Governmental Organization"
+   },
+   "provider": {
+    "id": 119,
+    "name": "AirNow"
+   },
+   "isMobile": false,
+   "isMonitor": true,
+   "instruments": [
+    {
+     "id": 2,
+     "name": "Government Monitor"
+    }
+   ],
+   "sensors": [
+    {
+     "id": 1098,
+     "name": "o3 ppm",
+     "parameter": {
+      "id": 10,
+      "name": "o3",
+      "units": "ppm",
+      "displayName": "O₃"
+     }
+    },
+    {
+     "id": 1099,
+     "name": "pm10 µg/m³",
+     "parameter": {
+      "id": 1,
+      "name": "pm10",
+      "units": "µg/m³",
+      "displayName": "PM10"
+     }
+    },
+    {
+     "id": 1102,
+     "name": "pm25 µg/m³",
+     "parameter": {
+      "id": 2,
+      "name": "pm25",
+      "units": "µg/m³",
+      "displayName": "PM2.5"
+     }
+    }
+   ],
+   "coordinates": {
+    "latitude": 40.816101,
+    "longitude": -73.902199
+   },
+   "licenses": [
+    {
+     "id": 33,
+     "name": "US Public Domain",
+     "attribution": {
+      "name": "Unknown Governmental Organization",
+      "url": null
+     },
+     "dateFrom": "2016-01-30",
+     "dateTo": null
+    }
+   ],
+   "bounds": [
+    -73.902199,
+    40.816101,
+    -73.902199,
+    40.816101
+   ],
+   "distance": null,
+   "datetimeFirst": {
+    "utc": "2016-03-10T08:00:00Z",
+    "local": "2016-03-10T03:00:00-05:00"
+   },
+   "datetimeLast": {
+    "utc": "2026-11-18T23:00:00Z",
+    "local": "2026-11-18T18:00:00-05:00"
+   }
+  },
+  {
+   "id": 628,
+   "name": "Maspeth",
+   "locality": "New York-Northern New Jersey-Long Island",
+   "timezone": "America/New_York",
+   "country": {
+    "id": 155,
+    "code": "US",
+    "name": "United States"
+   },
+   "owner": {
+    "id": 4,
+    "name": "Unknown Governmental Organization"
+   },
+   "provider": {
+    "id": 119,
+    "name": "AirNow"
+   },
+   "isMobile": false,
+   "isMonitor": true,
+   "instruments": [
+    {
+     "id": 2,
+     "name": "Government Monitor"
+    }
+   ],
+   "sensors": [
+    {
+     "id": 1103,
+     "name": "pm25 µg/m³",
+     "parameter": {
+      "id": 2,
+      "name": "pm25",
+      "units": "µg/m³",
+      "displayName": "PM2.5"
+     }
+    }
+   ],
+   "coordinates": {
+    "latitude": 40.7269,
+    "longitude": -73.8933
+   },
+   "licenses": [
+    {
+     "id": 33,
+     "name": "US Public Domain",
+     "attribution": {
+      "name": "Unknown Governmental Organization",
+      "url": null
+     },
+     "dateFrom": "2016-01-30",
+     "dateTo": null
+    }
+   ],
+   "bounds": [
+    -73.8933,
+    40.7269,
+    -73.8933,
+    40.7269
+   ],
+   "distance": null,
+   "datetimeFirst": {
+    "utc": "2016-03-10T08:00:00Z",
+    "local": "2016-03-10T03:00:00-05:00"
+   },
+   "datetimeLast": {
+    "utc": "2026-11-18T23:00:00Z",
+    "local": "2026-11-18T18:00:00-05:00"
+   }
+  },
+  {
+   "id": 631,
+   "name": "Queens",
+   "locality": "New York-Northern New Jersey-Long Island",
+   "timezone": "America/New_York",
+   "country": {
+    "id": 155,
+    "code": "US",
+    "name": "United States"
+   },
+   "owner": {
+    "id": 4,
+    "name": "Unknown Governmental Organization"
+   },
+   "provider": {
+    "id": 119,
+    "name": "AirNow"
+   },
+   "isMobile": false,
+   "isMonitor": true,
+   "instruments": [
+    {
+     "id": 2,
+     "name": "Government Monitor"
+    }
+   ],
+   "sensors": [
+    {
+     "id": 1106,
+     "name": "o3 ppm",
+     "parameter": {
+      "id": 10,
+      "name": "o3",
+      "units": "ppm",
+      "displayName": "O₃"
+     }
+    },
+    {
+     "id": 1152,
+     "name": "pm25 µg/m³",
+     "parameter": {
+      "id": 2,
+      "name": "pm25",
+      "units": "µg/m³",
+      "displayName": "PM2.5"
+     }
+    }
+   ],
+   "coordinates": {
+    "latitude": 40.7375,
+    "longitude": -73.8244
+   },
+   "licenses": [
+    {
+     "id": 33,
+     "name": "US Public Domain",
+     "attribution": {
+      "name": "Unknown Governmental Organization",
+      "url": null
+     },
+     "dateFrom": "2016-01-30",
+     "dateTo": null
+    }
+   ],
+   "bounds": [
+    -73.8244,
+    40.7375,
+    -73.8244,
+    40.7375
+   ],
+   "distance": null,
+   "datetimeFirst": {
+    "utc": "2016-03-10T08:00:00Z",
+    "local": "2016-03-10T03:00:00-05:00"
+   },
+   "datetimeLast": {
+    "utc": "2026-11-18T23:00:00Z",
+    "local": "2026-11-18T18:00:00-05:00"
+   }
+  },
+  {
+   "id": 2386747,
+   "name": "Carteret, NJ",
+   "locality": null,
+   "timezone": "America/New_York",
+   "country": {
+    "id": 155,
+    "code": "US",
+    "name": "United States"
+   },
+   "owner": {
+    "id": 11509,
+    "name": "Unknown Person"
+   },
+   "provider": {
+    "id": 66,
+    "name": "AirGradient"
+   },
+   "isMobile": false,
+   "isMonitor": false,
+   "instruments": [
+    {
+     "id": 4975632,
+     "name": "AirGradient Open Air (O-1PP)"
+    },
+    {
+     "id": 4975632,
+     "name": "AirGradient Open Air (O-1PP)"
+    }
+   ],
+   "sensors": [
+    {
+     "id": 7971145,
+     "name": "pm1 µg/m³",
+     "parameter": {
+      "id": 19,
+      "name": "pm1",
+      "units": "µg/m³",
+      "displayName": "PM1"
+     }
+    },
+    {
+     "id": 7979444,
+     "name": "pm1 µg/m³",
+     "parameter": {
+      "id": 19,
+      "name": "pm1",
+      "units": "µg/m³",
+      "displayName": "PM1"
+     }
+    },
+    {
+     "id": 7979475,
+     "name": "pm10 µg/m³",
+     "parameter": {
+      "id": 1,
+      "name": "pm10",
+      "units": "µg/m³",
+      "displayName": "PM10"
+     }
+    },
+    {
+     "id": 7971292,
+     "name": "pm10 µg/m³",
+     "parameter": {
+      "id": 1,
+      "name": "pm10",
+      "units": "µg/m³",
+      "displayName": "PM10"
+     }
+    },
+    {
+     "id": 7815388,
+     "name": "pm25 µg/m³",
+     "parameter": {
+      "id": 2,
+      "name": "pm25",
+      "units": "µg/m³",
+      "displayName": "PM2.5"
+     }
+    },
+    {
+     "id": 7971629,
+     "name": "relativehumidity %",
+     "parameter": {
+      "id": 98,
+      "name": "relativehumidity",
+      "units": "%",
+      "displayName": "RH"
+     }
+    },
+    {
+     "id": 7815389,
+     "name": "temperature c",
+     "parameter": {
+      "id": 100,
+      "name": "temperature",
+      "units": "c",
+      "displayName": "Temperature (C)"
+     }
+    },
+    {
+     "id": 7971668,
+     "name": "um003 particles/cm³",
+     "parameter": {
+      "id": 125,
+      "name": "um003",
+      "units": "particles/cm³",
+      "displayName": "PM0.3 count"
+     }
+    }
+   ],
+   "coordinates": {
+    "latitude": 40.585,
+    "longitude": -74.238
+   },
+   "licenses": [
+    {
+     "id": 41,
+     "name": "CC BY 4.0",
+     "attribution": {
+      "name": "Unknown Person",
+      "url": null
+     },
+     "dateFrom": "2023-07-15",
+     "dateTo": null
+    }
+   ],
+   "bounds": [
+    -74.238,
+    40.585,
+    -74.238,
+    40.585
+   ],
+   "distance": null,
+   "datetimeFirst": {
+    "utc": "2024-02-05T22:00:00Z",
+    "local": "2024-02-05T17:00:00-05:00"
+   },
+   "datetimeLast": {
+    "utc": "2026-11-19T00:00:00Z",
+    "local": "2026-11-18T19:00:00-05:00"
+   }
+  },
+  {
+   "id": 2616564,
+   "name": "7th Ave and W 16th St",
+   "locality": null,
+   "timezone": "America/New_York",
+   "country": {
+    "id": 155,
+    "code": "US",
+    "name": "United States"
+   },
+   "owner": {
+    "id": 11509,
+    "name": "Unknown Person"
+   },
+   "provider": {
+    "id": 66,
+    "name": "AirGradient"
+   },
+   "isMobile": false,
+   "isMonitor": false,
+   "instruments": [
+    {
+     "id": 12496918,
+     "name": "AirGradient Open Air (O-1PS)"
+    }
+   ],
+   "sensors": [
+    {
+     "id": 8520935,
+     "name": "pm1 µg/m³",
+     "parameter": {
+      "id": 19,
+      "name": "pm1",
+      "units": "µg/m³",
+      "displayName": "PM1"
+     }
+    },
+    {
+     "id": 8520936,
+     "name": "pm10 µg/m³",
+     "parameter": {
+      "id": 1,
+      "name": "pm10",
+      "units": "µg/m³",
+      "displayName": "PM10"
+     }
+    },
+    {
+     "id": 8520925,
+     "name": "pm25 µg/m³",
+     "parameter": {
+      "id": 2,
+      "name": "pm25",
+      "units": "µg/m³",
+      "displayName": "PM2.5"
+     }
+    },
+    {
+     "id": 8520920,
+     "name": "relativehumidity %",
+     "parameter": {
+      "id": 98,
+      "name": "relativehumidity",
+      "units": "%",
+      "displayName": "RH"
+     }
+    },
+    {
+     "id": 8520938,
+     "name": "temperature c",
+     "parameter": {
+      "id": 100,
+      "name": "temperature",
+      "units": "c",
+      "displayName": "Temperature (C)"
+     }
+    },
+    {
+     "id": 8520933,
+     "name": "um003 particles/cm³",
+     "parameter": {
+      "id": 125,
+      "name": "um003",
+      "units": "particles/cm³",
+      "displayName": "PM0.3 count"
+     }
+    }
+   ],
+   "coordinates": {
+    "latitude": 40.740022,
+    "longitude": -73.998504
+   },
+   "licenses": [
+    {
+     "id": 41,
+     "name": "CC BY 4.0",
+     "attribution": {
+      "name": "Unknown Person",
+      "url": null
+     },
+     "dateFrom": "2023-07-15",
+     "dateTo": null
+    }
+   ],
+   "bounds": [
+    -73.998504,
+    40.740022,
+    -73.998504,
+    40.740022
+   ],
+   "distance": null,
+   "datetimeFirst": {
+    "utc": "2024-03-18T19:00:00Z",
+    "local": "2024-03-18T15:00:00-04:00"
+   },
+   "datetimeLast": {
+    "utc": "2026-11-19T00:00:00Z",
+    "local": "2026-11-18T19:00:00-05:00"
+   }
+  },
+  {
+   "id": 2903996,
+   "name": "Win Son",
+   "locality": null,
+   "timezone": "America/New_York",
+   "country": {
+    "id": 155,
+    "code": "US",
+    "name": "United States"
+   },
+   "owner": {
+    "id": 11509,
+    "name": "Unknown Person"
+   },
+   "provider": {
+    "id": 66,
+    "name": "AirGradient"
+   },
+   "isMobile": false,
+   "isMonitor": false,
+   "instruments": [
+    {
+     "id": 12496918,
+     "name": "AirGradient Open Air (O-1PS)"
+    }
+   ],
+   "sensors": [
+    {
+     "id": 9648782,
+     "name": "pm1 µg/m³",
+     "parameter": {
+      "id": 19,
+      "name": "pm1",
+      "units": "µg/m³",
+      "displayName": "PM1"
+     }
+    },
+    {
+     "id": 9648783,
+     "name": "pm10 µg/m³",
+     "parameter": {
+      "id": 1,
+      "name": "pm10",
+      "units": "µg/m³",
+      "displayName": "PM10"
+     }
+    },
+    {
+     "id": 9648812,
+     "name": "pm25 µg/m³",
+     "parameter": {
+      "id": 2,
+      "name": "pm25",
+      "units": "µg/m³",
+      "displayName": "PM2.5"
+     }
+    },
+    {
+     "id": 9648774,
+     "name": "relativehumidity %",
+     "parameter": {
+      "id": 98,
+      "name": "relativehumidity",
+      "units": "%",
+      "displayName": "RH"
+     }
+    },
+    {
+     "id": 9648811,
+     "name": "temperature c",
+     "parameter": {
+      "id": 100,
+      "name": "temperature",
+      "units": "c",
+      "displayName": "Temperature (C)"
+     }
+    },
+    {
+     "id": 9648796,
+     "name": "um003 particles/cm³",
+     "parameter": {
+      "id": 125,
+      "name": "um003",
+      "units": "particles/cm³",
+      "displayName": "PM0.3 count"
+     }
+    }
+   ],
+   "coordinates": {
+    "latitude": 40.708,
+    "longitude": -73.944
+   },
+   "licenses": [
+    {
+     "id": 41,
+     "name": "CC BY 4.0",
+     "attribution": {
+      "name": "Unknown Person",
+      "url": null
+     },
+     "dateFrom": "2023-07-15",
+     "dateTo": null
+    }
+   ],
+   "bounds": [
+    -73.944,
+    40.708,
+    -73.944,
+    40.708
+   ],
+   "distance": null,
+   "datetimeFirst": {
+    "utc": "2024-06-19T01:00:00Z",
+    "local": "2024-06-18T21:00:00-04:00"
+   },
+   "datetimeLast": {
+    "utc": "2026-11-19T00:00:00Z",
+    "local": "2026-11-18T19:00:00-05:00"
+   }
+  },
+  {
+   "id": 3041962,
+   "name": "Near Bay 50 St",
+   "locality": null,
+   "timezone": "America/New_York",
+   "country": {
+    "id": 155,
+    "code": "US",
+    "name": "United States"
+   },
+   "owner": {
+    "id": 11137,
+    "name": "Sebastian"
+   },
+   "provider": {
+    "id": 66,
+    "name": "AirGradient"
+   },
+   "isMobile": false,
+   "isMonitor": false,
+   "instruments": [
+    {
+     "id": 12496918,
+     "name": "AirGradient Open Air (O-1PS)"
+    }
+   ],
+   "sensors": [
+    {
+     "id": 10454057,
+     "name": "pm1 µg/m³",
+     "parameter": {
+      "id": 19,
+      "name": "pm1",
+      "units": "µg/m³",
+      "displayName": "PM1"
+     }
+    },
+    {
+     "id": 10454082,
+     "name": "pm10 µg/m³",
+     "parameter": {
+      "id": 1,
+      "name": "pm10",
+      "units": "µg/m³",
+      "displayName": "PM10"
+     }
+    },
+    {
+     "id": 10454043,
+     "name": "pm25 µg/m³",
+     "parameter": {
+      "id": 2,
+      "name": "pm25",
+      "units": "µg/m³",
+      "displayName": "PM2.5"
+     }
+    },
+    {
+     "id": 10454068,
+     "name": "relativehumidity %",
+     "parameter": {
+      "id": 98,
+      "name": "relativehumidity",
+      "units": "%",
+      "displayName": "RH"
+     }
+    },
+    {
+     "id": 10454036,
+     "name": "temperature c",
+     "parameter": {
+      "id": 100,
+      "name": "temperature",
+      "units": "c",
+      "displayName": "Temperature (C)"
+     }
+    },
+    {
+     "id": 10454078,
+     "name": "um003 particles/cm³",
+     "parameter": {
+      "id": 125,
+      "name": "um003",
+      "units": "particles/cm³",
+      "displayName": "PM0.3 count"
+     }
+    }
+   ],
+   "coordinates": {
+    "latitude": 40.5887458,
+    "longitude": -73.9838231
+   },
+   "licenses": [
+    {
+     "id": 41,
+     "name": "CC BY 4.0",
+     "attribution": {
+      "name": "Sebastian",
+      "url": null
+     },
+     "dateFrom": "2023-07-15",
+     "dateTo": null
+    }
+   ],
+   "bounds": [
+    -73.9838231,
+    40.5887458,
+    -73.9838231,
+    40.5887458
+   ],
+   "distance": null,
+   "datetimeFirst": {
+    "utc": "2024-08-31T19:00:00Z",
+    "local": "2024-08-31T15:00:00-04:00"
+   },
+   "datetimeLast": {
+    "utc": "2026-11-19T00:00:00Z",
+    "local": "2026-11-18T19:00:00-05:00"
+   }
+  },
+  {
+   "id": 386,
+   "name": "Susan Wagner",
+   "locality": null,
+   "timezone": "America/New_York",
+   "country": {
+    "id": 155,
+    "code": "US",
+    "name": "United States"
+   },
+   "owner": {
+    "id": 4,
+    "name": "Unknown Governmental Organization"
+   },
+   "provider": {
+    "id": 119,
+    "name": "AirNow"
+   },
+   "isMobile": false,
+   "isMonitor": true,
+   "instruments": [
+    {
+     "id": 2,
+     "name": "Government Monitor"
+    }
+   ],
+   "sensors": [
+    {
+     "id": 674,
+     "name": "o3 ppm",
+     "parameter": {
+      "id": 10,
+      "name": "o3",
+      "units": "ppm",
+      "displayName": "O₃"
+     }
+    }
+   ],
+   "coordinates": {
+    "latitude": 40.5969,
+    "longitude": -74.1264
+   },
+   "licenses": [
+    {
+     "id": 33,
+     "name": "US Public Domain",
+     "attribution": {
+      "name": "Unknown Governmental Organization",
+      "url": null
+     },
+     "dateFrom": "2016-01-30",
+     "dateTo": null
+    }
+   ],
+   "bounds": [
+    -74.1264,
+    40.5969,
+    -74.1264,
+    40.5969
+   ],
+   "distance": null,
+   "datetimeFirst": {
+    "utc": "2016-03-25T04:00:00Z",
+    "local": "2016-03-25T00:00:00-04:00"
+   },
+   "datetimeLast": {
+    "utc": "2017-11-15T22:00:00Z",
+    "local": "2017-11-15T17:00:00-05:00"
+   }
+  },
+  {
+   "id": 625,
+   "name": "Manhattan/IS143",
+   "locality": "New York-Northern New Jersey-Long Island",
+   "timezone": "America/New_York",
+   "country": {
+    "id": 155,
+    "code": "US",
+    "name": "United States"
+   },
+   "owner": {
+    "id": 4,
+    "name": "Unknown Governmental Organization"
+   },
+   "provider": {
+    "id": 119,
+    "name": "AirNow"
+   },
+   "isMobile": false,
+   "isMonitor": true,
+   "instruments": [
+    {
+     "id": 2,
+     "name": "Government Monitor"
+    }
+   ],
+   "sensors": [
+    {
+     "id": 1097,
+     "name": "pm25 µg/m³",
+     "parameter": {
+      "id": 2,
+      "name": "pm25",
+      "units": "µg/m³",
+      "displayName": "PM2.5"
+     }
+    }
+   ],
+   "coordinates": {
+    "latitude": 40.8492,
+    "longitude": -73.9319
+   },
+   "licenses": [
+    {
+     "id": 33,
+     "name": "US Public Domain",
+     "attribution": {
+      "name": "Unknown Governmental Organization",
+      "url": null
+     },
+     "dateFrom": "2016-01-30",
+     "dateTo": null
+    }
+   ],
+   "bounds": [
+    -73.9319,
+    40.8492,
+    -73.9319,
+    40.8492
+   ],
+   "distance": null,
+   "datetimeFirst": {
+    "utc": "2016-03-10T08:00:00Z",
+    "local": "2016-03-10T03:00:00-05:00"
+   },
+   "datetimeLast": {
+    "utc": "2026-11-07T11:00:00Z",
+    "local": "2026-11-07T06:00:00-05:00"
+   }
+  }
+ ]
+}

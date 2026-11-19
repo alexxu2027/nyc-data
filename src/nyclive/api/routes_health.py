@@ -48,7 +48,13 @@ def health(request: Request) -> Response:
     sources, summary = [], dict.fromkeys(STATES, 0)
     newest_attempt = None
     for src in sorted(
-        (s for s in services.registry.sources.values() if s.adapter), key=lambda s: s.id
+        (
+            s
+            for s in services.registry.sources.values()
+            # keyed sources without a key aren't collected, so they aren't "never run" (ADR-018)
+            if s.adapter and (services.settings.has_key_for(s) or s.id in states)
+        ),
+        key=lambda s: s.id,
     ):
         st = states.get(src.id) or {}
         state, age = source_state(src, st, now)

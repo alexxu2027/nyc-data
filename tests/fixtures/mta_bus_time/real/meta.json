@@ -1,0 +1,14 @@
+{
+  "source_id": "mta_bus_time",
+  "captured_at": "2026-11-19T00:37:33+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "body",
+      "url": "https://gtfsrt.prod.obanyc.com/vehiclePositions",
+      "file": "body.bin",
+      "fetched_at": "2026-11-19T00:37:33+00:00"
+    }
+  ],
+  "note": "Bus Time vehicle positions 2026-11-18 ~7:37 PM ET, cut to the header and 96 of 2635 entities at the wire level"
+}

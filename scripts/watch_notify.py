@@ -77,7 +77,7 @@ def main() -> int:
     args = ap.parse_args()
 
     st = load_settings()
-    http = Http(st.user_agent, host_headers=st.host_headers())
+    http = Http(st.user_agent, **st.http_kwargs())
     caps: dict[str, bytes] = {}  # guid -> CAP bytes (fetched once)
     last_key: tuple[str, ...] | None = None
     deadline = time.monotonic() + args.hours * 3600

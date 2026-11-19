@@ -313,6 +313,40 @@ layers:
       - {label: S shuttles, shape: circle, color: "#7c858c"}
       - {label: Staten Island Railway, shape: circle, color: "#08179c"}
 
+  - id: buses
+    label: Buses (live, Bus Time)
+    short: Buses
+    group: transit
+    kind: point
+    sources: [mta_bus_time]
+    default: false
+    poll_s: 60
+    z: 48
+    detail: {type: none}
+    empty_text: "NO BUSES REPORTING"
+    lag_note: "GPS positions from MTA Bus Time, reported about every 30 s"
+    attribution: {text: "MTA Bus Time GTFS-realtime + bus static GTFS", url: "https://bustime.mta.info/"}
+    legend_title: Service
+    filters:
+      - key: service
+        label: Service
+        type: enum
+        apply: client
+        prop: service
+        options:
+          - {value: local, label: Local}
+          - {value: sbs, label: Select Bus Service}
+          - {value: express, label: Express}
+        default: [local, sbs, express]
+    style:
+      color: {prop: service, scale: match, stops: [[local, "#0072b2"], [sbs, "#cc79a7"], [express, "#009e73"]], default: "#0072b2"}
+      radius: {value: 2.6}
+      label: {prop: route, min_zoom: 14}
+    legend:
+      - {label: Local, shape: circle, color: "#0072b2"}
+      - {label: Select Bus Service, shape: circle, color: "#cc79a7"}
+      - {label: Express, shape: circle, color: "#009e73"}
+
   # ------------------------------------------------------------------ water & weather
   - id: flood_sensors
     label: Flood sensors (FloodNet, live depth)
@@ -357,6 +391,41 @@ layers:
       - {label: 4–12 in, shape: circle, color: "#e69f00"}
       - {label: 12+ in, shape: circle, color: "#d55e00"}
       - {label: "No reading in 2 h", shape: ring, color: "#8a8a8a"}
+
+  - id: air_quality
+    label: Air quality (PM2.5, OpenAQ)
+    short: Air
+    group: water
+    kind: point
+    sources: [openaq_nyc]
+    default: false
+    poll_s: 600
+    z: 42
+    detail: {type: entity, kind: air_sensor}
+    empty_text: "NO AIR QUALITY STATIONS"
+    lag_note: "Hourly readings; the official AQI averages over longer periods"
+    attribution: {text: "OpenAQ (AirNow, AirGradient, Clarity)", url: "https://openaq.org/"}
+    legend_title: "PM2.5 on the AQI scale"
+    filters:
+      - key: monitors
+        label: Government monitors only
+        type: toggle
+        apply: client
+        where: {prop: station, op: eq, value: monitor}
+        default: false
+    style:
+      color: {prop: category, scale: match, stops: [[good, "#00e400"], [moderate, "#ffff00"], [sensitive, "#ff7e00"], [unhealthy, "#ff0000"], [very_unhealthy, "#8f3f97"], [hazardous, "#7e0023"]], default: "#8a8a8a"}
+      radius: {prop: station, scale: match, stops: [[monitor, 7], [sensor, 4.5]], default: 4.5}
+      hollow: {prop: live, op: eq, value: false}
+    legend:
+      - {label: "Good (0–9 µg/m³)", shape: circle, color: "#00e400"}
+      - {label: "Moderate (9–35)", shape: circle, color: "#ffff00"}
+      - {label: "Unhealthy for sensitive groups (35–55)", shape: circle, color: "#ff7e00"}
+      - {label: "Unhealthy (55–125)", shape: circle, color: "#ff0000"}
+      - {label: "Very unhealthy (125–225)", shape: circle, color: "#8f3f97"}
+      - {label: "Hazardous (225+)", shape: circle, color: "#7e0023"}
+      - {label: "No reading in 3 h", shape: ring, color: "#8a8a8a"}
+      - {label: "Large: government monitor; small: low-cost sensor", shape: size}
 
   # ------------------------------------------------------------------ transit
   - id: citibike

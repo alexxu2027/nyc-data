@@ -3,7 +3,7 @@
 import sqlite3
 from datetime import timedelta
 
-from conftest import COLLECTED, NOW, RAN_AT, seed
+from conftest import COLLECTED, KEYLESS, NOW, RAN_AT, seed
 from fastapi.testclient import TestClient
 
 from nyclive.api.app import create_app
@@ -47,7 +47,8 @@ def test_stale_never_degraded(tmp_path):
     assert st["nyc_311"] == "ok"
     assert st["dot_cameras"] == "degraded"
     assert st["openmeteo_current"] == "never"
-    assert h["summary"]["never"] == len(COLLECTED) - 3 and h["summary"]["degraded"] == 1
+    assert h["summary"]["never"] == len(KEYLESS) - 3 and h["summary"]["degraded"] == 1
+    assert "mta_bus_time" not in st  # no key in these settings, so not "never run" (ADR-018)
     assert h["collector"]["state"] == "stalled"  # last attempt is 12 minutes old
     assert health(settings, NOW)["collector"]["state"] == "running"
 
@@ -69,4 +70,4 @@ def test_unknown_collector_and_missing_db(tmp_path):
     conn.commit()
     conn.close()
     h = TestClient(app).get("/api/health").json()
-    assert h["collector"]["state"] == "unknown" and h["summary"]["never"] == len(COLLECTED)
+    assert h["collector"]["state"] == "unknown" and h["summary"]["never"] == len(KEYLESS)

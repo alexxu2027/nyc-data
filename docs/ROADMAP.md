@@ -171,7 +171,8 @@ Later (needs weeks of archive, so with or after Phase 3):
 - Flood risk shade (surge + rain + FloodNet).
 - NYC Ferry positions; DOT street closures; presets (Commute, Flood watch, Safety);
   heatmap mode for 311 / collisions; neighbourhood card (needs NTA outlines).
-- Keyed sources (MTA buses, OpenAQ) only if ADR-007 is relaxed.
+- ✅ (2026-11-18) Keyed sources as optional extras (ADR-018): **live buses** (MTA Bus Time) and
+  **air quality** (OpenAQ). They appear only where their keys are in `.env`.
 
 **Acceptance criteria**
 - [x] (restarted 2026-11-17 01:57 UTC; `scripts/golive_check.py` all PASS but the 24 h trains
@@ -224,8 +225,8 @@ labeled set. Layer is visible in live and replay.
 - Neighborhood card (NTA polygon click): live summary plus 7-day trends.
 - Anomaly flags: robust z-score versus same hour and weekday over the trailing 4 weeks, for bikes,
   cams and speeds.
-- Extras: subway trains (GTFS-rt protobuf), OpenSky aircraft, Kalshi NYC-high panel, OpenAQ (key),
-  511NY traffic incidents (key; `ny511_events`).
+- Extras: subway trains (GTFS-rt protobuf), OpenSky aircraft, Kalshi NYC-high panel,
+  511NY traffic incidents (request form; `ny511_events`). OpenAQ is done (ADR-018).
 - **"Ask the map"** (key, optional under ADR-007): a question bar answered by a Claude tool loop
   over our own API, with grounded answers that cite each source's age and highlights on the map.
   Build after Notify NYC is live and Phase 3 replay exists. Design note:

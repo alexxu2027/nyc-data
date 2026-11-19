@@ -70,6 +70,8 @@ WKT `LINESTRING(lon lat, …)`. Everything source-specific that doesn't fit a co
 | `nyc_311` | events | `complaint_311` | subtype = `complaint_type`; ends_at = `closed_date` |
 | `nyc_collisions` | events | `collision` | instant event, `ends_at = starts_at`; severity from injured/killed counts; `crash_date` + `crash_time` are NY local |
 | `dot_traffic_speeds` | entities + observations | `road_segment` | `speed_mph`, `travel_time_s`; geometry from `encoded_poly_line` (`link_points` is truncated) |
+| `mta_bus_time` (key) | events | `bus` | one per trip; props route, dir, stop (next), vehicle, service; lat/lon live (ADR-018: not versioned on their own) |
+| `openaq_nyc` (key) | entities + observations | `air_sensor` | `pm25_ugm3`, `pm10_ugm3`, `o3_ppm`, `no2_ppm`; props provider, monitor, license |
 
 ## Borough normalization
 | Inputs seen | Code |

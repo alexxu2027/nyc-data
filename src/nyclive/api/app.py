@@ -80,6 +80,16 @@ def create_app(
     missing = built ^ set(BUILDERS)
     if missing:
         raise ValueError(f"layers without a builder or builders without a layer: {missing}")
+    # A layer fed only by keyed sources whose keys aren't set is left out (ADR-018), so a clone
+    # without .env shows no empty Buses layer.
+    catalog = catalog.without(
+        {
+            lid
+            for lid, d in catalog.layers.items()
+            if d["sources"]
+            and not any(settings.has_key_for(registry.sources[s]) for s in d["sources"])
+        }
+    )
     services = Services(settings, catalog, BoroughIndex(boroughs_path), registry, now)
 
     app = FastAPI(

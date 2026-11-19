@@ -149,9 +149,9 @@ police/FDNY activity and air quality, within minutes. Faster sources for the lat
 |---|---|---|---|
 | `kalshi_nyc_high` | `api.elections.kalshi.com/trade-api/v2/markets?series_ticker=KXHIGHNY` | none | ✅ open markets returned (e.g. NOV15) |
 | `opensky_nyc` | `opensky-network.org/api/states/all?lamin=40.4&lomin=-74.3&lamax=41.0&lomax=-73.6` | none (limited anon credits) | ✅ planes near EWR/LGA returned |
-| `openaq_nyc` | `api.openaq.org/v3/...` | free key | ❌ 401 without key |
-| `ny511_events` | `511ny.org/api/getevents?key=…&format=json` | free key (account + approval) | not yet tested; live incidents and closures (ADR-007: optional) |
-| `mta_bus_time` | Bus Time GTFS-rt | free key | not yet tested |
+| `openaq_nyc` | `api.openaq.org/v3/locations?bbox=…` + `/locations/{id}/latest` per station | free key, `X-API-Key` header | ✅ collected (ADR-018): 76 stations in the bbox, 46 reporting (18 AirNow monitors, 28 low-cost) on 2026-11-18 |
+| `ny511_events` | 511NY data feeds (the old `511ny.org/api/getevents` now serves the new site's map page) | access by request form, reviewed weekly | not requested yet; 511ny.org/help/24 links the form and the Developer Access Agreement |
+| `mta_bus_time` | `gtfsrt.prod.obanyc.com/vehiclePositions` (GTFS-rt) | free key, `key` param | ✅ collected (ADR-018): ~2,700 buses, 338 routes at 7 PM, ~360 KB per poll |
 | `basemap_openfreemap` | `tiles.openfreemap.org/styles/positron` | none | ✅ |
 
 ## Candidates (not yet in registry; verify dataset ids first)

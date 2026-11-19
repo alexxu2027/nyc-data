@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -35,23 +36,29 @@ class Source:
     # Complete-feed events missing for less than this are kept open (ADR-014): a trip that
     # flickers out of one poll isn't closed and reopened. None = close at once.
     close_grace_s: int | None = None
+    # Live position (ADR-018): an event's lat/lon update state.db every run but never make a new
+    # archive version on their own, so a moving bus is archived once per stop, not once a minute.
+    live_position: bool = False
 
     @property
     def key_env(self) -> str | None:
         """Env var holding this source's API key, if it needs one."""
         return self.auth.split(":", 1)[1] if self.auth.startswith("key:") else None
 
-    def missing_env(self) -> list[str]:
-        """Env vars this source needs (auth key or ${VAR} in the probe URL) that aren't set."""
+    def missing_env(self, env: Mapping[str, str] | None = None) -> list[str]:
+        """Env vars this source needs (auth key or ${VAR} in the probe URL) that aren't set.
+        `env` defaults to the process environment."""
+        env = os.environ if env is None else env
         needed = set(_ENV_REF.findall(self.probe or ""))
         if self.key_env:
             needed.add(self.key_env)
-        return sorted(v for v in needed if not os.environ.get(v))
+        return sorted(v for v in needed if not env.get(v))
 
-    def probe_url(self) -> str | None:
+    def probe_url(self, env: Mapping[str, str] | None = None) -> str | None:
         if not self.probe:
             return None
-        return _ENV_REF.sub(lambda m: os.environ.get(m.group(1), ""), self.probe)
+        env = os.environ if env is None else env
+        return _ENV_REF.sub(lambda m: env.get(m.group(1), ""), self.probe)
 
 
 @dataclass(frozen=True)

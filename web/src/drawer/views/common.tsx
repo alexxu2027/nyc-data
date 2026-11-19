@@ -172,6 +172,8 @@ const METRICS: Record<string, MetricLook> = {
   docks_available: { label: 'DOCKS', style: 'dash', unit: '', digits: 0 },
   water_level_ft: { label: 'OBSERVED', short: 'OBS', unit: 'FT', digits: 2 },
   predicted_ft: { label: 'PREDICTED', short: 'PRED', style: 'dash', unit: 'FT', digits: 2 },
+  pm25_ugm3: { label: 'PM2.5', unit: 'µG/M³', digits: 1 },
+  o3_ppm: { label: 'OZONE', unit: 'PPM', digits: 3 },
   depth_in: { label: 'DEPTH', unit: 'IN', digits: 1 }, // FloodNet: read "DEPTH_IN 0.0 IN" before
   speed_mph: { label: 'SPEED', unit: 'MPH', digits: 1 },
   temp_c: { label: 'TEMP', unit: '°F', map: (c) => (c * 9) / 5 + 32, digits: 1 },
@@ -190,6 +192,7 @@ const KINDS: Record<string, KindLook> = {
   tide_gauge: { gap: 1800, minSpan: 1 },
   road_segment: { gap: 1800, zero: true, minSpan: 10 },
   weather_point: { gap: 7200, minSpan: 4 },
+  air_sensor: { gap: 3 * 3600, zero: true, minSpan: 10 }, // hourly readings
 };
 
 const GLYPH: Record<NonNullable<ChartSeries['style']>, string> = { solid: '──', dash: '╌╌', dot: '··' };

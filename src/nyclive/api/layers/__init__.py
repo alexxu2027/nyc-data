@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from nyclive.api.layers import city, streets, trains, transit, water
+from nyclive.api.layers import air, buses, city, streets, trains, transit, water
 from nyclive.api.layers.common import Ctx, LayerResult
 
 BUILDERS: dict[str, Callable[[Ctx], LayerResult]] = {
@@ -24,6 +24,8 @@ BUILDERS: dict[str, Callable[[Ctx], LayerResult]] = {
     "weather": water.weather,
     "tide_gauge": water.tide_gauge,
     "city_alerts": streets.city_alerts,
+    "buses": buses.buses,  # ADR-018 (MTA_BUSTIME_KEY)
+    "air_quality": air.air_quality,  # ADR-018 (OPENAQ_API_KEY)
 }
 
 # Default and maximum `limit` per layer (None = everything).

@@ -1,0 +1,14 @@
+{
+  "source_id": "mta_bus_time",
+  "captured_at": "2026-11-19T00:37:33+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "body",
+      "url": "https://gtfsrt.prod.obanyc.com/vehiclePositions",
+      "file": "body.bin",
+      "fetched_at": "2026-11-19T00:37:33+00:00"
+    }
+  ],
+  "note": "real + synthetic buses: B15 trip 147000 on 20261117 (origin 24:30 -> 2026-11-18 00:30 ET); an MTA Bus Company Q33 trip with no origin code (service-day midnight); a ghost 20 min old, one outside the NYC bbox, one with no stop and one with no route (all skipped); a repeat of the first entity (deduped)"
+}

@@ -88,6 +88,8 @@ class RunCommit:
     entities: list[dict[str, Any]] = field(default_factory=list)  # full rows (ENTITY_COLS)
     seen_entities: list[tuple[str, str]] = field(default_factory=list)  # bump last_seen only
     seen_events: list[str] = field(default_factory=list)  # event_ids: bump last_seen only
+    # (event_id, lat, lon) for a live-position source (ADR-018): position moved, nothing else did
+    moved_events: list[tuple[str, float | None, float | None]] = field(default_factory=list)
     latest: list[dict[str, Any]] = field(default_factory=list)  # LATEST_COLS
     events: list[dict[str, Any]] = field(default_factory=list)  # EVENT_COLS
     lag_s: float | None = None
@@ -221,6 +223,11 @@ class StateStore:
                     conn.executemany(
                         "UPDATE events SET last_seen = ? WHERE source = ? AND event_id = ?",
                         [(run["finished_at"], c.source, e) for e in c.seen_events],
+                    )
+                if c.moved_events:
+                    conn.executemany(
+                        "UPDATE events SET lat = ?, lon = ? WHERE source = ? AND event_id = ?",
+                        [(la, lo, c.source, e) for e, la, lo in c.moved_events],
                     )
                 _insert_run(conn, run)
                 conn.execute(

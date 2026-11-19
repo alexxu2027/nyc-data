@@ -45,10 +45,19 @@ PROPS = {
                 "wind_kmh": N, "wind_mph": N, "wet": B, "observed_at": S},
     "complaints_311": {"starts_at": S, "type": S, "group": S, "status": S, "agency": S},
     "boroughs": {"name": S, "borocode": I},
+    "air_quality": {"name": S, "provider": S + NULL, "monitor": B, "station": S,
+                    "pm25": N + NULL, "pm25_at": S + NULL, "live": B, "aqi": I + NULL,
+                    "category": S + NULL, "category_name": S + NULL, "pm10": N + NULL,
+                    "o3_ppm": N + NULL, "no2_ppm": N + NULL},
+    "buses": {"route": S, "service": S, "service_name": S, "route_name": S + NULL,
+              "route_color": S, "route_text": S, "headsign": S + NULL, "next_stop": S + NULL,
+              "next_name": S + NULL, "vehicle": S + NULL, "since": S, "seen_at": S},
 }  # fmt: skip
 ENUMS = {
     ("citibike", "state"): {"empty", "low", "ok", "full", "offline"},
     ("cameras", "status"): {"online", "offline"},
+    ("air_quality", "station"): {"monitor", "sensor"},
+    ("buses", "service"): {"local", "sbs", "express"},
     ("road_speeds", "band"): {"lt10", "10_20", "20_35", "35_50", "gte50", "none"},
     ("subway_alerts", "status"): {"active", "upcoming"},
     ("elevator_outages", "status"): {"current", "upcoming"},
@@ -91,7 +100,9 @@ def test_layer_shape(client, layer):
     assert set(meta) == {"layer", "count", "total", "truncated", "unlocated", "data_as_of",
                          "updated_at", "window", "note"}  # fmt: skip
     assert meta["layer"] == layer and meta["count"] == len(body["features"])
-    if layer != "subway_trains":  # U2 seeds trains and drops this exemption
+    # Trains and buses only show trips seen in the last few minutes, and the seed stamps them
+    # with their fixture's fetch time; tests/api/test_keyed_layers.py seeds buses at RAN_AT.
+    if layer not in ("subway_trains", "buses"):
         assert body["features"], f"{layer}: seeded fixtures should give a feature"
     kind = client.get("/api/layers").json()["layers"]
     kind = next(x["kind"] for x in kind if x["id"] == layer)

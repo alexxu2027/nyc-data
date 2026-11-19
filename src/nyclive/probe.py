@@ -7,6 +7,7 @@ write a JSON report (handy for keeping docs/DATA_SOURCES.md honest).
 from __future__ import annotations
 
 import json
+import os
 import time
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
@@ -15,6 +16,7 @@ from pathlib import Path
 import httpx
 
 from nyclive.registry import Registry, Source
+from nyclive.settings import Settings
 
 
 @dataclass
@@ -28,15 +30,22 @@ class ProbeResult:
     detail: str = ""
 
 
-def probe_source(client: httpx.Client, src: Source) -> ProbeResult:
+def probe_source(
+    client: httpx.Client, src: Source, settings: Settings | None = None
+) -> ProbeResult:
     if not src.probe:
         return ProbeResult(src.id, ok=True, status="skipped", detail="no probe URL")
-    missing = src.missing_env()
+    # Keys come from .env as well as the process env (ADR-018); OpenAQ wants its key as a header.
+    env = {**os.environ, **_keys(settings, src)}
+    missing = src.missing_env(env)
     if missing:
         return ProbeResult(src.id, ok=True, status="skipped", detail=f"needs {', '.join(missing)}")
+    url = src.probe_url(env) or ""
+    host = (httpx.URL(url).host or "").lower()
+    headers = (settings.host_headers() if settings else {}).get(host, {})
     t0 = time.perf_counter()
     try:
-        r = client.get(src.probe_url())
+        r = client.get(url, headers=headers)
     except httpx.HTTPError as e:
         return ProbeResult(src.id, ok=False, status="error", detail=type(e).__name__)
     ms = int((time.perf_counter() - t0) * 1000)
@@ -51,13 +60,24 @@ def probe_source(client: httpx.Client, src: Source) -> ProbeResult:
     )
 
 
+def _keys(settings: Settings | None, src: Source) -> dict[str, str]:
+    if settings is None or not src.key_env:
+        return {}
+    value = settings.key(src.key_env)
+    return {src.key_env: value} if value else {}
+
+
 def run_probe(
-    reg: Registry, max_phase: int = 99, only: list[str] | None = None, json_out: Path | None = None
+    reg: Registry,
+    max_phase: int = 99,
+    only: list[str] | None = None,
+    json_out: Path | None = None,
+    settings: Settings | None = None,
 ) -> int:
     sources = [s for s in reg.by_phase(max_phase) if not only or s.id in only]
     headers = {"User-Agent": reg.user_agent}
     with httpx.Client(timeout=25, follow_redirects=True, headers=headers) as client:
-        results = [probe_source(client, s) for s in sources]
+        results = [probe_source(client, s, settings) for s in sources]
 
     width = max(len(r.id) for r in results) if results else 10
     print(f"{'source':<{width}}  ok   status  ms     bytes      detail")

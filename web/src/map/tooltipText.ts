@@ -1,5 +1,6 @@
 // Hover tooltip copy per layer (plan §7.3): text only, never an image. Pure, so it is tested.
 import { fmtInt, fmtTime } from '../core';
+import { headsignOnly } from '../core/bus';
 import type { LayerDef } from '../types';
 import { catKey } from './layers/clusters';
 
@@ -79,6 +80,22 @@ export function tooltipText(layer: string, p: Record<string, unknown>, def?: Lay
       if (p.flooding === true) {
         lines.push(typeof p.flood_since === 'string' ? `Flooding since ${fmtTime(p.flood_since)}` : 'Flooding now');
       }
+      return { title: name, lines };
+    }
+    case 'buses': {
+      const head = headsignOnly(str(p.headsign));
+      const next = str(p.next_name);
+      const lines = [head ? `To ${head}` : '', next ? `Next: ${next}` : ''];
+      if (p.service !== 'local' && p.service_name) lines.push(str(p.service_name));
+      return { title: `${str(p.route)} bus`, lines: lines.filter(Boolean) };
+    }
+    case 'air_quality': {
+      const pm = num(p.pm25);
+      const lines =
+        pm !== null && p.live === true
+          ? [`PM2.5 ${pm.toFixed(1)} µg/m³ · ${str(p.category_name)}`]
+          : ['No reading in 3 h'];
+      lines.push(p.monitor === true ? 'Government monitor' : 'Low-cost sensor');
       return { title: name, lines };
     }
     case 'subway_trains': {

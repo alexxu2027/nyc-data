@@ -30,11 +30,12 @@ KINDS = frozenset(
         "subway_station",
         "weather_point",
         "elevator",
+        "air_sensor",  # OpenAQ (ADR-018)
     }
 )
 
 # Kinds an Event may reference without anyone writing them as entities.
-REF_ONLY_KINDS = frozenset({"subway_route"})
+REF_ONLY_KINDS = frozenset({"subway_route", "bus_route"})
 
 METRICS = frozenset(
     {
@@ -56,6 +57,11 @@ METRICS = frozenset(
         "wind_kmh",
         # FloodNet live (if the spike succeeds)
         "depth_in",
+        # OpenAQ air quality (ADR-018)
+        "pm25_ugm3",
+        "pm10_ugm3",
+        "o3_ppm",
+        "no2_ppm",
         # CV counts (Phase 4)
         "count_car",
         "count_truck",
@@ -75,6 +81,7 @@ CATEGORIES = frozenset(
         "collision",
         "flood",
         "train",
+        "bus",  # MTA Bus Time (ADR-018)
         "city_alert",  # Notify NYC (ADR-015)
     }
 )

@@ -1,4 +1,5 @@
 // Pure helpers for the detail drawer: endpoint paths, titles, "as of" times and number formats.
+import { headsignOnly } from '../core/bus';
 import type { DetailRef, EntityDetail, FeatureProps, LayerMeta } from '../types';
 
 const enc = encodeURIComponent;
@@ -31,8 +32,13 @@ export function featureTitle(props: Partial<FeatureProps> | undefined, fallback:
   if (!props) return fallback;
   const street = str(props.street);
   if (str(props.title) === 'Collision' && street) return `Collision on ${street}`;
-  // A subway train: "F train to Coney Island-Stillwell Av" (not its trip id).
+  // A bus (ADR-018): "B41 bus to DOWNTOWN BKLYN ..." (checked first: buses also have next_name).
   const route = str(props.route);
+  if (route && 'service_name' in props) {
+    const head = headsignOnly(str(props.headsign));
+    return `${route} bus${head ? ` to ${head}` : ''}`;
+  }
+  // A subway train: "F train to Coney Island-Stillwell Av" (not its trip id).
   if (route && 'next_name' in props) {
     const head = str(props.headsign);
     return `${trainName(route)}${head ? ` to ${head}` : ''}`;

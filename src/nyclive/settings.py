@@ -2,6 +2,9 @@
 
 Values come from the process environment, then from a `.env` file at the repo root (see
 `.env.example`). Nothing here is required for Phases 1-4.
+
+API keys (ADR-018) never reach adapter code: `host_headers()` and `host_params()` hand them to
+`Http`, which attaches them per host and redacts them from every URL it logs or raises.
 """
 
 from __future__ import annotations
@@ -11,12 +14,15 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from nyclive.registry import REPO_ROOT, load_registry
+from nyclive.registry import REPO_ROOT, Source, load_registry
 
 DOTENV = REPO_ROOT / ".env"
 
 # Socrata hosts that accept the optional app token (raises rate limits; same token works on both).
 SOCRATA_HOSTS = ("data.cityofnewyork.us", "data.ny.gov")
+# Keyed hosts (ADR-018): OpenAQ takes its key as a header, MTA Bus Time as a `key` query param.
+OPENAQ_HOST = "api.openaq.org"
+BUSTIME_HOST = "gtfsrt.prod.obanyc.com"
 
 
 @dataclass(frozen=True)
@@ -26,6 +32,30 @@ class Settings:
     socrata_app_token: str | None = None
     openaq_api_key: str | None = None
     mta_bustime_key: str | None = None
+    ny511_api_key: str | None = None
+
+    def key(self, env_name: str) -> str | None:
+        """The value of a registry `auth: key:<ENV_VAR>`, or None if it isn't set."""
+        return {
+            "OPENAQ_API_KEY": self.openaq_api_key,
+            "MTA_BUSTIME_KEY": self.mta_bustime_key,
+            "NY511_API_KEY": self.ny511_api_key,
+            "SOCRATA_APP_TOKEN": self.socrata_app_token,
+        }.get(env_name)
+
+    def has_key_for(self, src: Source) -> bool:
+        """True if the source is keyless or its key is set."""
+        return src.key_env is None or self.key(src.key_env) is not None
+
+    def secrets(self) -> tuple[str, ...]:
+        """Every key value that is set, for redaction."""
+        vals = (
+            self.socrata_app_token,
+            self.openaq_api_key,
+            self.mta_bustime_key,
+            self.ny511_api_key,
+        )
+        return tuple(v for v in vals if v)
 
     @property
     def state_db(self) -> Path:
@@ -53,9 +83,24 @@ class Settings:
 
     def host_headers(self) -> dict[str, dict[str, str]]:
         """Extra headers per host, for `Http(host_headers=...)`."""
-        if not self.socrata_app_token:
-            return {}
-        return {h: {"X-App-Token": self.socrata_app_token} for h in SOCRATA_HOSTS}
+        out: dict[str, dict[str, str]] = {}
+        if self.socrata_app_token:
+            out.update({h: {"X-App-Token": self.socrata_app_token} for h in SOCRATA_HOSTS})
+        if self.openaq_api_key:
+            out[OPENAQ_HOST] = {"X-API-Key": self.openaq_api_key}
+        return out
+
+    def host_params(self) -> dict[str, dict[str, str]]:
+        """Extra query params per host, for `Http(host_params=...)`."""
+        return {BUSTIME_HOST: {"key": self.mta_bustime_key}} if self.mta_bustime_key else {}
+
+    def http_kwargs(self) -> dict:
+        """Everything `Http(...)` needs from settings besides the user agent."""
+        return {
+            "host_headers": self.host_headers(),
+            "host_params": self.host_params(),
+            "secrets": self.secrets(),
+        }
 
 
 def read_dotenv(path: Path = DOTENV) -> dict[str, str]:
@@ -100,4 +145,5 @@ def load_settings(
         socrata_app_token=get("SOCRATA_APP_TOKEN"),
         openaq_api_key=get("OPENAQ_API_KEY"),
         mta_bustime_key=get("MTA_BUSTIME_KEY"),
+        ny511_api_key=get("NY511_API_KEY"),
     )

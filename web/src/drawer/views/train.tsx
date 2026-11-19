@@ -29,7 +29,7 @@ export const TRUNK: Record<string, string> = {
 const s = (v: unknown): string | null => (typeof v === 'string' && v.trim() !== '' ? v.trim() : null);
 
 /** Black or white text on the route's colour (the N Q R W yellow needs black). */
-function bulletInk(hex: string): string {
+export function bulletInk(hex: string): string {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex);
   if (!m) return '#ffffff';
   const n = parseInt(m[1], 16);

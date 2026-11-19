@@ -110,7 +110,7 @@ def run_once(
         with WRITE_LOCK:
             rows = _write(
                 source.id, batch, fetched_at, run_id, store, archive_dir, state,
-                close_grace_s=source.close_grace_s or 0,
+                close_grace_s=source.close_grace_s or 0, live_position=source.live_position,
             )  # fmt: skip
             if after_archive:
                 after_archive()
@@ -133,6 +133,7 @@ def run_once(
                     entities=rows.entity_state,
                     seen_entities=rows.seen_entities,
                     seen_events=rows.seen_events,
+                    moved_events=rows.moved_events,
                     latest=rows.latest_state,
                     events=rows.event_state,
                     lag_s=_lag_s(batch, fetched_at),
@@ -165,6 +166,7 @@ class _Rows:
     entity_state: list = field(default_factory=list)
     seen_entities: list = field(default_factory=list)
     seen_events: list = field(default_factory=list)
+    moved_events: list = field(default_factory=list)  # (event_id, lat, lon): live position only
     latest_state: list = field(default_factory=list)
     event_state: list = field(default_factory=list)
 
@@ -178,6 +180,7 @@ def _write(
     archive_dir: Path,
     state: dict,
     close_grace_s: int = 0,
+    live_position: bool = False,
 ) -> _Rows:
     keyframe = state.get("keyframe_date") != fetched_at.date().isoformat()
     out = _Rows(keyframe=keyframe)
@@ -241,10 +244,14 @@ def _write(
     in_batch = set()
     for ev in batch.events:
         in_batch.add(ev.event_id)
-        h = payload_hash(ev)
+        # Live position (ADR-018): lat/lon are left out of the hash, so moving alone doesn't make
+        # a version; state still gets the new spot. A version (a new stop) carries the position.
+        h = payload_hash(replace(ev, lat=None, lon=None) if live_position else ev)
         prev = known_ev.get(ev.event_id)
         if prev and prev["payload_hash"] == h:
             out.seen_events.append(ev.event_id)
+            if live_position and (prev["lat"], prev["lon"]) != (ev.lat, ev.lon):
+                out.moved_events.append((ev.event_id, ev.lat, ev.lon))
             continue
         row = archive.event_row(ev, h, fetched_at)
         ev_rows.append(row)

@@ -54,6 +54,18 @@ class Catalog:
     layers: dict[str, dict[str, Any]]  # id -> filled LayerDef (public)
     classify: dict[str, dict[str, list[str]]]  # layer id -> group -> substrings (server-only)
 
+    def without(self, layer_ids: set[str]) -> Catalog:
+        """The catalog minus some layers (ADR-018: a keyed layer whose key isn't set)."""
+        if not layer_ids:
+            return self
+        layers = {k: v for k, v in self.layers.items() if k not in layer_ids}
+        public = {
+            **self.public,
+            "layers": [v for v in self.public["layers"] if v["id"] not in layer_ids],
+        }
+        classify = {k: v for k, v in self.classify.items() if k not in layer_ids}
+        return Catalog(public=public, layers=layers, classify=classify)
+
     def server_filters(self, layer_id: str) -> dict[str, dict[str, Any]]:
         return {f["key"]: f for f in self.layers[layer_id]["filters"] if f["apply"] == "server"}
 
@@ -180,6 +192,10 @@ def _layer_problems(layer: dict, groups: set[str], registry_ids: set[str] | None
     for k in ("radius", "width"):
         if k in style:
             p += _scale_problems(style[k], f"style.{k}", color=False)
+    if isinstance(style.get("radius"), dict) and "zoom" in style["radius"]:
+        # The client already scales point radii by zoom (styleToPaint ZOOM_FACTOR); a zoom
+        # radius would nest one zoom curve in another, which MapLibre rejects (draws nothing).
+        p.append("style.radius can't be a zoom scale: point radii are already scaled by zoom")
     for k in ("hollow", "pulse", "dash", "fade"):
         if k in style:
             p += _where_problems(style[k], f"style.{k}")

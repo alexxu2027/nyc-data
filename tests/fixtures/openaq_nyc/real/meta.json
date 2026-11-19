@@ -1,0 +1,62 @@
+{
+  "source_id": "openaq_nyc",
+  "captured_at": "2026-11-19T00:46:15.920649+00:00",
+  "cursor": null,
+  "parts": [
+    {
+      "name": "locations",
+      "url": "https://api.openaq.org/v3/locations?bbox=-74.26,40.49,-73.70,40.92&limit=1000",
+      "file": "locations.json",
+      "fetched_at": "2026-11-19T00:46:15.920649+00:00"
+    },
+    {
+      "name": "latest-384",
+      "url": "https://api.openaq.org/v3/locations/384/latest",
+      "file": "latest-384.json",
+      "fetched_at": "2026-11-19T00:46:15.920649+00:00"
+    },
+    {
+      "name": "latest-626",
+      "url": "https://api.openaq.org/v3/locations/626/latest",
+      "file": "latest-626.json",
+      "fetched_at": "2026-11-19T00:46:15.920649+00:00"
+    },
+    {
+      "name": "latest-628",
+      "url": "https://api.openaq.org/v3/locations/628/latest",
+      "file": "latest-628.json",
+      "fetched_at": "2026-11-19T00:46:15.920649+00:00"
+    },
+    {
+      "name": "latest-631",
+      "url": "https://api.openaq.org/v3/locations/631/latest",
+      "file": "latest-631.json",
+      "fetched_at": "2026-11-19T00:46:15.920649+00:00"
+    },
+    {
+      "name": "latest-2386747",
+      "url": "https://api.openaq.org/v3/locations/2386747/latest",
+      "file": "latest-2386747.json",
+      "fetched_at": "2026-11-19T00:46:15.920649+00:00"
+    },
+    {
+      "name": "latest-2616564",
+      "url": "https://api.openaq.org/v3/locations/2616564/latest",
+      "file": "latest-2616564.json",
+      "fetched_at": "2026-11-19T00:46:15.920649+00:00"
+    },
+    {
+      "name": "latest-2903996",
+      "url": "https://api.openaq.org/v3/locations/2903996/latest",
+      "file": "latest-2903996.json",
+      "fetched_at": "2026-11-19T00:46:15.920649+00:00"
+    },
+    {
+      "name": "latest-3041962",
+      "url": "https://api.openaq.org/v3/locations/3041962/latest",
+      "file": "latest-3041962.json",
+      "fetched_at": "2026-11-19T00:46:15.920649+00:00"
+    }
+  ],
+  "note": "OpenAQ NYC bbox, cut to 4 monitors and 4 low-cost sensors with their latest readings, plus 2 listed stations that weren't fetched (stale)"
+}

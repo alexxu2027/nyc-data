@@ -13,6 +13,8 @@
 #   status      verified | partial | unverified   (last manual check in `verified_on`)
 #   adapter     module in src/nyclive/sources that collects it (omit = not collected)
 #   max_lag_s   optional: data older than this is "stale" in `nyclive status`
+#   close_grace_s  optional: complete-feed events missing this long stay open (ADR-014)
+#   live_position  optional: event lat/lon update state but don't version the archive (ADR-018)
 #
 # Times: every source timestamp is stored in UTC; the UI renders America/New_York.
 
@@ -363,31 +365,50 @@ sources:
     status: unverified
     verified_on: 2026-11-16
     notes: >
-      Free key after a 511NY account and approval; 10 calls per 60 s. Incidents, crashes,
-      construction and closures with lat/lon. The Developer's Access Agreement allows giving the
-      data to end users with its disclaimer. Possibly state-maintained roads only (verify).
-      Optional extra under ADR-007.
+      511NY moved to a new site (checked 2026-11-18): the old /api/getevents path now serves the
+      map page, and feed access is by a request form reviewed weekly (511ny.org/help/24). Feeds:
+      traffic events (JSON), cameras (XML), winter roads, signs. The agreement allows giving
+      the data to end users unchanged in meaning, with its publish time shown. Possibly
+      state-maintained roads only (verify). Optional extra under ADR-007/018; probe URL is old.
 
   openaq_nyc:
-    name: OpenAQ air quality
+    name: OpenAQ air quality (NYC stations)
+    adapter: openaq
     phase: 5
     shape: observations
-    cadence_s: 1800
+    cadence_s: 3600
+    max_lag_s: 10800
     auth: key:OPENAQ_API_KEY
-    probe: https://api.openaq.org/v3/locations?bbox=-74.3,40.4,-73.6,41.0&limit=1
-    status: unverified
-    verified_on: 2026-11-14
-    notes: Returned 401 without a key. Free key required (X-API-Key header).
+    probe: https://api.openaq.org/v3/locations?bbox=-74.26,40.49,-73.70,40.92&limit=1
+    expect: results
+    status: verified
+    verified_on: 2026-11-18
+    notes: >
+      Free key, sent as the X-API-Key header (Http host_headers, ADR-018); 60 calls/min, 2,000/h.
+      One call lists the stations in the NYC bbox, then one /locations/{id}/latest per station
+      that reported in the last 48 h (~46 on 2026-11-18: 18 AirNow monitors, 28 low-cost
+      AirGradient/Clarity sensors). /parameters/{id}/latest ignores bbox and radius (it returns
+      the whole world), so it can't replace the per-station calls. Readings are hourly.
 
   mta_bus_time:
-    name: MTA Bus Time vehicle positions
+    name: MTA Bus Time vehicle positions (GTFS-rt protobuf)
+    adapter: mta_buses
     phase: 5
-    shape: observations
+    shape: events
     cadence_s: 60
+    max_lag_s: 900
+    close_grace_s: 150
+    live_position: true
     auth: key:MTA_BUSTIME_KEY
     probe: https://gtfsrt.prod.obanyc.com/vehiclePositions?key=${MTA_BUSTIME_KEY}
-    status: unverified
-    notes: Needs a free Bus Time developer key.
+    status: verified
+    verified_on: 2026-11-18
+    notes: >
+      Free key from register.developer.obanyc.com, sent as the `key` query param (Http
+      host_params, redacted from every logged URL, ADR-018). One ~360 KB feed with every bus
+      (~2,700 at 7 PM): trip, route, direction_id, next stop, lat/lon, bearing, vehicle id. Trip
+      ids carry the origin time like NYCT's ("..-117200_.." = 19:32). One event per trip;
+      live_position keeps the GPS in state.db without a new archive version per poll.
 
   basemap_openfreemap:
     name: OpenFreeMap vector basemap style

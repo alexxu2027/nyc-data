@@ -60,7 +60,13 @@ class Collector:
         now: Callable[[], datetime] = now_utc,
     ):
         collected = {s.id: s for s in reg.sources.values() if s.adapter}
-        wanted = list(only) if only else sorted(collected)
+        # Keyed sources (ADR-018) run only when their key is set; without it they're skipped,
+        # so a fresh clone with no .env still collects every keyless feed.
+        keyless_ok = sorted(i for i, s in collected.items() if settings.has_key_for(s))
+        self.skipped = sorted(set(collected) - set(keyless_ok)) if not only else []
+        for sid in self.skipped:
+            log.info("%s: skipped (set %s in .env to collect it)", sid, collected[sid].key_env)
+        wanted = list(only) if only else keyless_ok
         unknown = [i for i in wanted if i not in reg.sources]
         not_collected = [i for i in wanted if i in reg.sources and i not in collected]
         if unknown or not_collected:
@@ -69,12 +75,16 @@ class Collector:
                 + ("unknown ids " if unknown else "")
                 + ("no adapter yet" if not_collected else "")
             )
+        no_key = [i for i in wanted if not settings.has_key_for(collected[i])]
+        if no_key:
+            envs = sorted({collected[i].key_env for i in no_key})
+            raise SystemExit(f"cannot collect {no_key}: set {', '.join(envs)} in .env")
         self.sources: dict[str, Source] = {i: collected[i] for i in wanted}
         self.adapters = adapters or {i: load_adapter(s.adapter) for i, s in self.sources.items()}
         self.settings = settings
         self.now = now
         settings.ensure_dirs()
-        self.http = http or Http(settings.user_agent, host_headers=settings.host_headers())
+        self.http = http or Http(settings.user_agent, **settings.http_kwargs())
         self.store = store or StateStore(settings.state_db)
 
     # --------------------------------------------------------------------------------- runs

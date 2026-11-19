@@ -10,6 +10,7 @@ from datetime import datetime
 
 from nyclive.collect.scheduler import DEGRADED_AFTER
 from nyclive.registry import Registry
+from nyclive.settings import Settings
 from nyclive.storage.state import StateStore
 from nyclive.timeutil import to_ny
 
@@ -27,10 +28,18 @@ def _age(seconds: float | None) -> str:
     return f"{s // 86400}d"
 
 
-def source_rows(reg: Registry, store: StateStore, now: datetime) -> list[dict]:
+def source_rows(
+    reg: Registry, store: StateStore, now: datetime, settings: Settings | None = None
+) -> list[dict]:
     states = store.all_source_states()
     rows = []
-    for src in sorted((s for s in reg.sources.values() if s.adapter), key=lambda s: s.id):
+
+    def shown(s) -> bool:  # keyed sources without a key aren't collected (ADR-018)
+        if not s.adapter:
+            return False
+        return s.key_env is None or s.id in states or bool(settings and settings.has_key_for(s))
+
+    for src in sorted((s for s in reg.sources.values() if shown(s)), key=lambda s: s.id):
         st = states.get(src.id) or {}
         last = st.get("last_success")
         age = (now - datetime.fromisoformat(last)).total_seconds() if last else None

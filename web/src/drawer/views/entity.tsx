@@ -6,7 +6,7 @@ import type { EntityDetail, EventSummary, FeatureProps } from '../../types';
 import { Blank, Heading, Line, Num, Readout } from '../../ui';
 import { CameraFrame } from '../CameraFrame';
 import { depthFromTitle, fixed, fmtDuration, num, signed } from '../detail';
-import { EventItem, Loading, SeriesBlock } from './common';
+import { EventItem, Loading, SeriesBlock, Text } from './common';
 
 export interface EntityViewProps {
   kind: string;
@@ -176,6 +176,46 @@ function WeatherView(p: EntityViewProps) {
   );
 }
 
+// ---- Air quality (OpenAQ, ADR-018) ------------------------------------------------------------
+
+/** "MODERATE" etc. for the PM2.5 readout; the AQI number goes on the right. */
+export function airReadout(pm25: number | null, live: boolean, category: string | null | undefined, aqi: number | null) {
+  if (pm25 === null) return { k: 'PM2.5', v: '--', r: 'NO READING YET' };
+  if (!live) return { k: 'PM2.5', v: 'NO READING IN 3 H', r: `LAST ${pm25.toFixed(1)} µG/M³` };
+  return { k: 'PM2.5', v: `${pm25.toFixed(1)} µG/M³`, r: `${(category ?? '').toUpperCase()}${aqi === null ? '' : ` · AQI ${aqi}`}` };
+}
+
+function AirView(p: EntityViewProps) {
+  const d = p.detail?.derived ?? {};
+  const pm25 = pick(p.props?.pm25, d.pm25);
+  const live = ((p.props?.live ?? d.live) as boolean | undefined) === true;
+  const aqi = pick(p.props?.aqi, d.aqi);
+  const category = (p.props?.category_name ?? d.category_name) as string | null | undefined;
+  const at = (p.props?.pm25_at ?? d.pm25_at) as string | null | undefined;
+  const monitor = (p.props?.monitor ?? d.monitor) === true;
+  const provider = (p.props?.provider ?? d.provider) as string | null | undefined;
+  const o3 = pick(p.props?.o3_ppm, d.o3_ppm);
+  const pm10 = pick(p.props?.pm10, d.pm10);
+  const no2 = pick(p.props?.no2_ppm, d.no2_ppm);
+  const r = airReadout(pm25, live, category, aqi);
+  return (
+    <>
+      <Readout k={r.k} v={r.v} r={r.r} />
+      {at && <Readout k="READING" v={dt(at)} r="HOURLY" />}
+      {o3 !== null && <Readout k="OZONE" v={`${o3.toFixed(3)} PPM`} />}
+      {pm10 !== null && <Readout k="PM10" v={`${pm10.toFixed(1)} µG/M³`} />}
+      {no2 !== null && <Readout k="NO2" v={`${no2.toFixed(3)} PPM`} />}
+      <Readout k="STATION" v={monitor ? 'GOVERNMENT MONITOR' : 'LOW-COST SENSOR'} r={provider ? provider.toUpperCase() : undefined} />
+      <Text muted>
+        {monitor
+          ? 'A government regulatory monitor, part of the EPA AirNow network.'
+          : 'A low-cost sensor: good for trends, less precise than a government monitor.'}
+      </Text>
+      <Series {...p} />
+    </>
+  );
+}
+
 // ---- Flood sensor ---------------------------------------------------------------------------
 
 /** The live-depth ledger row: a reading now, an old reading, or none ever collected. */
@@ -306,6 +346,7 @@ const VIEWS: Record<string, (p: EntityViewProps) => React.JSX.Element> = {
   road_segment: RoadView,
   weather_point: WeatherView,
   flood_sensor: FloodSensorView,
+  air_sensor: AirView,
   subway_station: StationView,
 };
 

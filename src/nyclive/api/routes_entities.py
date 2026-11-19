@@ -18,6 +18,7 @@ from nyclive.api.db import reading
 from nyclive.api.errors import bad_request, not_found
 from nyclive.api.events import Lookup, summary
 from nyclive.api.geo import r5
+from nyclive.api.layers.air import air_derived
 from nyclive.api.layers.common import iso, loads, ts_text
 from nyclive.api.layers.streets import camera_props, is_stale, speed_band
 from nyclive.api.layers.transit import ALERT_HORIZON, bike_derived
@@ -45,6 +46,10 @@ UNITS = {
     "rain_mm": "mm",
     "wind_kmh": "km/h",
     "depth_in": "in",
+    "pm25_ugm3": "µg/m³",
+    "pm10_ugm3": "µg/m³",
+    "o3_ppm": "ppm",
+    "no2_ppm": "ppm",
 }
 SERIES = {
     "bike_station": [
@@ -74,6 +79,10 @@ SERIES = {
     "weather_point": [
         {"label": "Temperature", "unit": "°C", "metrics": ["temp_c"], "hours": 24, "ahead": 0},
         {"label": "Wind", "unit": "km/h", "metrics": ["wind_kmh"], "hours": 24, "ahead": 0},
+    ],
+    "air_sensor": [
+        {"label": "PM2.5", "unit": "µg/m³", "metrics": ["pm25_ugm3"], "hours": 48, "ahead": 0},
+        {"label": "Ozone", "unit": "ppm", "metrics": ["o3_ppm"], "hours": 48, "ahead": 0},
     ],
 }
 STATION_EVENT_SOURCES = ("mta_subway_alerts", "mta_elevator_outages")
@@ -160,6 +169,9 @@ def _derived(services, conn, kind: str, ent, latest: dict[str, tuple], now) -> d
         return {k: t[k] for k in ("predicted_ft", "surge_ft", "trend", "next_high", "next_low")}
     if kind == "weather_point":
         return weather_derived(latest)
+    if kind == "air_sensor":
+        return {**air_derived(latest, now), "monitor": props.get("monitor") is True,
+                "provider": props.get("provider"), "license": props.get("license")}  # fmt: skip
     if kind == "road_segment":
         speed = latest.get("speed_mph")
         return {

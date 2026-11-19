@@ -11,6 +11,7 @@ import { ListView } from './ListView';
 import { ErrorState } from './views/common';
 import { EntityView } from './views/entity';
 import { EventView } from './views/event';
+import { BusView } from './views/bus';
 import { TrainView } from './views/train';
 import './drawer.css';
 
@@ -151,6 +152,8 @@ function FeatureView({ def, id, back }: { def: LayerDef; id: string; back?: () =
         <EventView source={source} id={id} props={props} detail={event} />
       ) : def.id === 'subway_trains' ? (
         <TrainView props={props} />
+      ) : def.id === 'buses' ? (
+        <BusView props={props} />
       ) : (
         <PropsTable props={props} />
       )}

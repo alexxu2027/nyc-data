@@ -1,3 +1,5 @@
+import pytest
+
 """Group 1: the layer catalog and its builders."""
 
 from nyclive.api.catalog import TOKENS, is_color, load_catalog
@@ -62,3 +64,18 @@ def test_api_layers_fills_defaults(client):
     assert by_id["boroughs"]["borough_filter"] is False
     assert by_id["cameras"]["list"] is False and by_id["subway_alerts"]["list"] is True
     assert by_id["citibike"]["lag_note"] is None
+
+
+def test_point_radius_cannot_be_a_zoom_scale(tmp_path):
+    """The client scales point radii by zoom already; a zoom radius drew nothing (2026-11-18)."""
+    import yaml
+
+    from nyclive.api.catalog import DEFAULT_LAYERS, load_catalog
+
+    raw = yaml.safe_load(DEFAULT_LAYERS.read_text(encoding="utf-8"))
+    bus = next(x for x in raw["layers"] if x["id"] == "buses")
+    bus["style"]["radius"] = {"zoom": [[10, 2], [16, 5]]}
+    path = tmp_path / "layers.yaml"
+    path.write_text(yaml.safe_dump(raw, allow_unicode=True), encoding="utf-8")
+    with pytest.raises(ValueError, match="radius can't be a zoom scale"):
+        load_catalog(path)

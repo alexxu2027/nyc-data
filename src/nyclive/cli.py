@@ -86,8 +86,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "probe":
         from nyclive.probe import run_probe
+        from nyclive.settings import load_settings
 
-        return run_probe(reg, max_phase=args.phase, only=args.only, json_out=args.json)
+        return run_probe(
+            reg, max_phase=args.phase, only=args.only, json_out=args.json, settings=load_settings()
+        )
 
     if args.cmd == "sources":
         for s in sorted(reg.sources.values(), key=lambda s: (s.phase, s.id)):
@@ -112,7 +115,7 @@ def _storage_command(args, reg) -> int:
             print(f"no state yet at {settings.state_db}; run `nyclive collect` first")
             return 1
         with StateStore(settings.state_db) as store:
-            print(render(source_rows(reg, store, now_utc())))
+            print(render(source_rows(reg, store, now_utc(), settings)))
         return 0
 
     setup_logging(settings.logs_dir, verbose=getattr(args, "verbose", False))

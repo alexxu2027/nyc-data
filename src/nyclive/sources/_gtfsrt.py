@@ -16,8 +16,9 @@ Field numbers follow gtfs-realtime.proto (google/transit) and nyct-subway.proto 
     TripDescriptor 1 trip_id, 2 start_time, 3 start_date, 4 schedule_relationship, 5 route_id,
                   6 direction_id; ext 1001 NyctTripDescriptor 1 train_id, 2 is_assigned, 3 direction
     VehiclePosition 1 trip, 2 position, 3 current_stop_sequence, 4 current_status, 5 timestamp,
-                  7 stop_id
-    Position      1 latitude (float), 2 longitude (float)
+                  7 stop_id, 8 vehicle
+    Position      1 latitude (float), 2 longitude (float), 3 bearing (float)
+    VehicleDescriptor 1 id, 2 label
     NyctStopTimeUpdate 1 scheduled_track, 2 actual_track
 
 Malformed or truncated bytes raise `ValueError` (the adapter contract's rejection signal).
@@ -84,6 +85,8 @@ class VehiclePosition:
     timestamp: int = 0
     latitude: float | None = None
     longitude: float | None = None
+    bearing: float | None = None  # degrees clockwise from north (buses send it; NYCT doesn't)
+    vehicle_id: str = ""  # VehicleDescriptor.id ("MTA NYCT_8440")
 
 
 @dataclass(frozen=True)
@@ -278,8 +281,8 @@ def _vehicle(buf: bytes) -> VehiclePosition:
             d["trip"] = _trip(_msg(v))
         elif num == 2:
             for n2, wt2, v2 in fields(_msg(v)):
-                if n2 in (1, 2) and wt2 == _I32:
-                    d["latitude" if n2 == 1 else "longitude"] = _float(_int(v2))
+                if n2 in (1, 2, 3) and wt2 == _I32:
+                    d[("latitude", "longitude", "bearing")[n2 - 1]] = _float(_int(v2))
         elif num == 3:
             d["current_stop_sequence"] = _int(v)
         elif num == 4:
@@ -288,6 +291,10 @@ def _vehicle(buf: bytes) -> VehiclePosition:
             d["timestamp"] = _int(v)
         elif num == 7:
             d["stop_id"] = _str(v)
+        elif num == 8:
+            for n2, _, v2 in fields(_msg(v)):
+                if n2 == 1:
+                    d["vehicle_id"] = _str(v2)
     return VehiclePosition(**d)
 
 

@@ -49,7 +49,7 @@ def capture(
         raise SystemExit(f"{case_dir} exists; pass --force to replace it")
 
     own_http = http is None
-    http = http or Http(settings.user_agent, host_headers=settings.host_headers())
+    http = http or Http(settings.user_agent, **settings.http_kwargs())
     try:
         if parts:
             raw = _fetch_parts(http, source_id, parts, cursor)
@@ -65,6 +65,7 @@ def capture(
         if own_http:
             http.close()
 
+    raw = _redacted(raw, http)
     notes = [note] if note else []
     if trim is not None:
         raw, trimmed = _trim_payload(raw, trim)
@@ -80,13 +81,19 @@ def capture(
     return case_dir
 
 
+def _redacted(raw: RawPayload, http: Http) -> RawPayload:
+    parts = tuple(replace(p, url=http.redact(p.url)) for p in raw.parts)
+    return replace(raw, parts=parts)
+
+
 def _fetch_parts(
     http: Http, source_id: str, parts: list[tuple[str, str]], cursor: str | None
 ) -> RawPayload:
     got = []
     for name, url in parts:
         r = http.get(url)
-        got.append(RawPart(name=name, url=str(r.url), content=r.content, fetched_at=now_utc()))
+        url = http.redact(str(r.url))  # a fixture must never hold a key (ADR-018)
+        got.append(RawPart(name=name, url=url, content=r.content, fetched_at=now_utc()))
     return RawPayload(source_id=source_id, parts=tuple(got), cursor=cursor)
 
 

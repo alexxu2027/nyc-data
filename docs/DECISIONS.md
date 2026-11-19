@@ -316,3 +316,51 @@ Plan and research: `docs/research/3d-sun-shadows.md`.
 **Consequences:** shadows are an estimate (OSM heights, no trees or terrain, ground and lower
 roofs only). They cost a recompute per settled move and per minute at z ≥ 15. Phase 3 replay
 can drive the sun from its time bar.
+
+## ADR-018: Optional keyed extras: buses and air quality (2026-11-18)
+**Context:** Alex got free keys for MTA Bus Time and OpenAQ and asked for both layers now, ahead
+of the Phase 5 slot. ADR-007 keeps Phases 1–4 keyless and allows keys as optional extras from
+`.env`; nothing had been built for keys yet. Bus Time takes its key as a URL parameter, so a
+careless log line, run error or fixture would leak it, and `/api/health` serves run errors.
+
+**Decision:**
+1. **Keys never reach adapter code.** `Settings` maps each key to its host:
+   `host_headers()` (OpenAQ's `X-API-Key`, the Socrata token) and `host_params()` (Bus Time's
+   `key`). `Http` attaches them per host and redacts every URL it logs or raises
+   (`redact_url`: `key`/`api_key`/`token` params and every known secret value). Adapters
+   record the plain URL in `RawPart.url`; `capture` redacts what it saves. The adapter
+   contract (v1) is unchanged.
+2. **Without a key, a keyed source doesn't exist for that install.** The collector skips it
+   (and refuses `--only` it with a clear message), `/api/health` and `nyclive status` leave it
+   out unless it has run before, and `/api/layers` drops a layer whose sources are all keyless-
+   missing. `git clone && uv sync && nyclive collect` still works with no `.env` (ADR-007).
+3. **Live position** (`live_position: true` in the registry, used by `mta_bus_time`): an
+   event's lat/lon are left out of its payload hash. A bus that only moved updates `lat`/`lon`
+   in state.db (`RunCommit.moved_events`) and writes no archive row; a new version is written
+   when its props change (it moves on to the next stop), carrying the position then. So replay
+   sees each bus at stop-change resolution, like the subway, without a GPS row per minute.
+4. **Buses:** `mta_buses` adapter, one event per trip (category `bus`, refs `bus_route:<id>`),
+   props route / dir / next stop / fleet number / service (local, sbs, express). Start time from
+   the NYCT trip id's origin code; MTA Bus Company ids have none and use the service day's
+   midnight (stable, so no version per poll). Names and colours come from
+   `config/bus_static.json` (`scripts/build_bus_static.py`, the 6 MTA bus GTFS zips): route
+   long name and colours, stop names, the usual headsign per route + direction. Every route,
+   stop and route + direction in a 2,635-bus snapshot matched it.
+5. **Air quality:** `openaq` adapter, `air_sensor` entities (government monitors vs low-cost
+   sensors) and observations `pm25_ugm3`, `pm10_ugm3`, `o3_ppm`, `no2_ppm`. OpenAQ has no
+   one-call "latest in a box" (`/parameters/{id}/latest` ignores bbox and radius), so it is the
+   station list plus one `/locations/{id}/latest` per station that reported in 48 h: ~47 calls
+   per run, hourly, ~1,100 a day against a 2,000/hour limit. The layer colours PM2.5 on the EPA
+   AQI scale (2024 breakpoints) and says it is one hourly reading, not the official averaged AQI.
+
+**Measured (trial collector, 2026-11-18 8:15–8:30 PM ET, separate data dir):** ~2,200 buses
+on the map; ~1,100 of them reach a new stop each minute, so ~1,100 bus versions a minute at
+36 B/row compacted (small sample; bigger day files compress better). Over a day with rush hours
+that projects to roughly **40–60 MB/day (15–20 GB/year)**, 5–8× every other source combined.
+Disk isn't the constraint (ARCHITECTURE §5), but if it becomes one, the options are a 30-day
+retention for this source (Phase 3 needs 30 days) or archiving a version per N stops. OpenAQ
+is ~135 rows an hour. The buses layer is ~1.1 MB of JSON per poll, 96 KB gzipped.
+
+**Consequences:** two layers, off by default, that appear only where the keys are set. A key
+change is an `.env` edit plus a collector restart. Buses are now the largest archive stream. 511NY moved to a request form reviewed weekly (2026-11-18), so it stays
+a registry entry with no adapter until access is granted.

@@ -2,7 +2,21 @@
 
 _Last updated: 2026-11-18_
 
-> **2026-11-18, phone / iPhone pass (not yet committed):**
+> **2026-11-18 evening, live buses and air quality (ADR-018; not yet committed):**
+> - Alex got free keys for MTA Bus Time and OpenAQ; they live in `.env` (gitignored, never
+>   printed). `Http` attaches them per host and redacts them from every logged/raised/saved URL.
+>   Without a key the source and its layer simply aren't there (collector, health, catalog).
+> - New: `mta_buses` and `openaq` adapters with fixtures and tests, `config/bus_static.json`
+>   (`scripts/build_bus_static.py`), layers `buses` (transit) and `air_quality` (water &
+>   weather), a bus drawer view and an air station view with PM2.5 / ozone charts.
+> - Registry `live_position` (ADR-018): a moving bus updates its spot in state.db every poll
+>   but writes an archive version only when it reaches its next stop.
+> - **Storage decision pending with Alex:** buses project to ~40–60 MB/day (ADR-018 numbers).
+> - Checked in Chrome against a trial collector + server in a scratch data dir (port 8001).
+>   The main collector/server don't run the new code until they're restarted.
+> - 511NY: the old API is gone; access is now a request form reviewed weekly (511ny.org/help/24).
+
+> **2026-11-18, phone / iPhone pass (committed in fa0c554):**
 > - **iPhone basics:**
 >   - Safe areas: the top bar clears the Dynamic Island, and the sheets clear the home bar
 >     (`--safe-*` tokens in tokens.css, `--sh-top-full`).
